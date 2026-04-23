@@ -774,10 +774,28 @@ function renderHist() {
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
 function isoToLocal(d){if(!d)return '';var m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:d;}
 function downloadBlob(blob,filename){
+  if(isIOS()&&navigator.share&&typeof navigator.canShare==='function'){
+    var file=new File([blob],filename,{type:blob.type});
+    if(navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:filename})
+        .then(function(){toast('Arquivo pronto para salvar!','ok',4000);})
+        .catch(function(e){if(e.name!=='AbortError')_downloadFallback(blob,filename);});
+      return;
+    }
+  }
+  _downloadFallback(blob,filename);
+}
+function _downloadFallback(blob,filename){
   var u=URL.createObjectURL(blob);
-  if(isIOS()){var a=document.createElement('a');a.href=u;a.target='_blank';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('iOS: toque em Compartilhar → Salvar em Arquivos','ok',6000);}
-  else{var a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);}
-  setTimeout(function(){URL.revokeObjectURL(u);},2000);
+  if(isIOS()){
+    var a=document.createElement('a');a.href=u;a.target='_blank';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Toque em Compartilhar ↗ → Salvar em Arquivos','ok',7000);
+  } else {
+    var a=document.createElement('a');a.href=u;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  setTimeout(function(){URL.revokeObjectURL(u);},3000);
 }
 function printWindow(html){
   var win=window.open('','_blank');
