@@ -758,8 +758,50 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     });
     return proxy;
   }
-  window.google={script:{get run(){return makeRunner();}}};
+  if(typeof Proxy==='undefined'){
+    // Fallback para Safari muito antigo (iOS < 10) — stub sem Proxy
+    window.google={script:{run:{withSuccessHandler:function(){return this;},withFailureHandler:function(){return this;}}}};
+  } else {
+    window.google={script:{get run(){return makeRunner();}}};
+  }
 })();
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Helpers globais de compatibilidade mobile ─────────────────────────────────
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
+
+// Converte yyyy-mm-dd (iOS date input) para dd/mm/yyyy (pt-BR)
+function isoToLocal(d){
+  if(!d) return '';
+  var m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3]+'/'+m[2]+'/'+m[1] : d;
+}
+
+// Download seguro: abre em aba no iOS (Safari não suporta <a download>)
+function downloadBlob(blob, filename){
+  var u=URL.createObjectURL(blob);
+  if(isIOS()){
+    var a=document.createElement('a');a.href=u;a.target='_blank';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('iOS: toque em Compartilhar → Salvar em Arquivos para guardar o arquivo','ok',6000);
+  } else {
+    var a=document.createElement('a');a.href=u;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  setTimeout(function(){URL.revokeObjectURL(u);},2000);
+}
+
+// Impressão segura: iOS não suporta win.print() — abre conteúdo e orienta usuário
+function printWindow(html){
+  var win=window.open('','_blank');
+  if(!win){toast('Libere pop-ups para imprimir','warn',5000);return;}
+  win.document.write(html);win.document.close();
+  if(isIOS()){
+    toast('iOS: no Safari, toque em Compartilhar → Imprimir','ok',6000);
+  } else {
+    setTimeout(function(){try{win.focus();win.print();}catch(ex){}},500);
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // ── Constants ────────────────────────────────────────────────
 var RATES = {
@@ -1034,7 +1076,7 @@ function salvar(){
   var btn=document.getElementById('saveBtn'); if(btn)btn.disabled=true;
   document.getElementById('saveTxt').textContent='Salvando...';
   showLoad('Salvando no Google Sheets...');
-  var dados={data:g('fDt'),cliente:cli.trim(),tecnico:tec,veiculo:g('fVei'),kmVeiculo:g('fKmV'),quilometragem:k,horas:h,tipo:tp,descricao:g('fDesc'),local:loc,assinatura:sigData||'',valorContrato:tp==='Contrato Fechado'?g('fCt'):'0',salesforce:g('fSalesforce')||'',notaCS:g('fNotaCS')||''};
+  var dados={data:isoToLocal(g('fDt'))||g('fDt'),cliente:cli.trim(),tecnico:tec,veiculo:g('fVei'),kmVeiculo:g('fKmV'),quilometragem:k,horas:h,tipo:tp,descricao:g('fDesc'),local:loc,assinatura:sigData||'',valorContrato:tp==='Contrato Fechado'?g('fCt'):'0',salesforce:g('fSalesforce')||'',notaCS:g('fNotaCS')||''};
   google.script.run
     .withSuccessHandler(function(res){
       hideLoad(); if(btn)btn.disabled=false; document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';
@@ -1091,40 +1133,35 @@ function printOS(o){
   win.document.open();
   // Half-A4 (148mm x 210mm = half of A4 landscape, or top-half of portrait)
   // Layout: compact header + 2-col grid + small sig area
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
-  win.document.write('<style>*{box-sizing:border-box;margin:0;padding:0}');
-  win.document.write('body{font-family:Segoe UI,Arial,sans-serif;background:#fff;width:190mm;padding:4mm;display:flex;flex-direction:column;gap:3px;max-height:135mm;overflow:hidden}');
-  win.document.write('@media print{@page{size:A4 portrait;margin:0}body{padding:4mm;width:190mm;height:135mm;max-height:135mm}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}');
-  win.document.write('.sec{border:1px solid #ccc;border-radius:2px;overflow:hidden}.sh{background:#1A6B2A;color:#fff;padding:2px 6px;font-size:7px;font-weight:700}.g2{display:grid;grid-template-columns:1fr 1fr;gap:3px}.v3{display:grid;grid-template-columns:1fr 1fr 1fr}.vc{padding:3px 6px;border-right:1px solid #eee}.vc:last-child{border:none}');
-  win.document.write('</style></head><body>');
-  // Header
-  win.document.write('<div style="background:#1A6B2A;color:#fff;padding:3px 8px;display:flex;align-items:center;justify-content:space-between;border-radius:2px">');
-  win.document.write('<div style="display:flex;align-items:center;gap:6px"><img src="data:image/svg+xml;base64,'+SVG64+'" style="height:20px"><span style="font-size:12px;font-weight:700">Juliomaq</span></div>');
-  win.document.write('<div style="text-align:right"><div style="font-size:6px;opacity:.8;text-transform:uppercase">Ordem de Servico</div><div style="background:#E85A0C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;display:inline-block">'+(o.num||'OS')+'</div></div></div>');
-  win.document.write('<div style="height:2px;background:#E85A0C"></div>');
-  // 2-col: atendimento + veiculo
-  win.document.write('<div class="g2"><div class="sec"><div class="sh">ATENDIMENTO</div><table style="width:100%;border-collapse:collapse">'+R('Cliente',o.cliente)+R('Tecnico',o.tecnico)+R('Data',o.data)+R('Local',o.local)+'</table></div>');
-  win.document.write('<div class="sec"><div class="sh">VEICULO</div><table style="width:100%;border-collapse:collapse">'+R('Veiculo',o.veiculo)+R('Hodometro',(o.kmVeiculo||'--')+' km')+R('KM',(o.quilometragem||o.km||0)+' km')+R('Horas',(o.horas||0)+' h')+'</table></div></div>');
-  // Servico
-  win.document.write('<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>SERVICO</span><span style="background:'+cor+';font-size:6px;padding:1px 5px;border-radius:8px">'+(o.tipo||'--')+'</span></div>');
-  win.document.write('<div style="padding:3px 6px;font-size:8.5px;line-height:1.4;border-left:3px solid #1A6B2A;margin:2px;background:#f0f7ff;border-radius:2px">'+(o.descricao||'Sem descricao')+'</div></div>');
-  // Valor
-  win.document.write('<div class="sec"><div class="sh">VALOR</div><div class="v3">');
-  win.document.write('<div class="vc"><div style="font-size:6.5px;color:#333;font-weight:700">Mao de obra</div><div style="font-size:10px;font-weight:700;color:#111">'+fmt(vH)+'</div></div>');
-  win.document.write('<div class="vc" style="background:#dceeff"><div style="font-size:6.5px;color:#0d47a1;font-weight:700;text-transform:uppercase">Deslocamento</div><div style="font-size:10px;font-weight:700;color:#0d47a1">'+fmt(vK)+'</div></div>');
-  win.document.write('<div class="vc" style="background:#d4edda"><div style="font-size:6.5px;color:#1A6B2A;font-weight:700">TOTAL</div><div style="font-size:14px;font-weight:700;color:#1A6B2A">'+fmt(vT)+'</div></div></div></div>');
-  // Assinatura — compact
-  win.document.write('<div class="sec" style="display:flex;flex-direction:row;align-items:center;gap:0"><div class="sh" style="writing-mode:vertical-lr;text-orientation:mixed;padding:6px 3px;min-width:18px">ASSINATURA</div>');
-  win.document.write('<div style="flex:1;display:flex;align-items:center;padding:4px 8px;min-height:38px">');
-  if(sig){win.document.write('<img src="'+sig+'" style="max-height:38px;max-width:120px;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">');}
-  else{win.document.write('<div style="border:2px dashed #ccc;border-radius:4px;padding:6px 20px;color:#aaa;font-size:9px;text-align:center">Sem assinatura</div>');}
-  win.document.write('</div>');
-  win.document.write('<div style="padding:4px 8px;border-left:1px solid #eee;min-width:80px;font-size:8px"><div style="color:#888;text-transform:uppercase;font-size:6.5px">Local</div><div style="font-weight:600">'+(o.local||'--')+'</div><div style="color:#888;text-transform:uppercase;font-size:6.5px;margin-top:3px">Data</div><div style="font-weight:600">'+(o.data||'--')+'</div></div></div>');
-  // Footer
-  win.document.write('<div style="text-align:center;font-size:6.5px;color:#333;border-top:1px solid #ccc;padding-top:2px">'+(o.num||'')+' | Juliomaq | '+new Date().toLocaleString('pt-BR')+' | Total: '+fmt(vT)+'</div>');
-  win.document.write('</body></html>');
-  win.document.close();
-  setTimeout(function(){win.focus();win.print();},500);
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html+='<style>*{box-sizing:border-box;margin:0;padding:0}';
+  html+='body{font-family:Segoe UI,Arial,sans-serif;background:#fff;width:190mm;padding:4mm;display:flex;flex-direction:column;gap:3px;max-height:135mm;overflow:hidden}';
+  html+='@media print{@page{size:A4 portrait;margin:0}body{padding:4mm;width:190mm;height:135mm;max-height:135mm}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}';
+  html+='.sec{border:1px solid #ccc;border-radius:2px;overflow:hidden}.sh{background:#1A6B2A;color:#fff;padding:2px 6px;font-size:7px;font-weight:700}.g2{display:grid;grid-template-columns:1fr 1fr;gap:3px}.v3{display:grid;grid-template-columns:1fr 1fr 1fr}.vc{padding:3px 6px;border-right:1px solid #eee}.vc:last-child{border:none}';
+  html+='</style></head><body>';
+  html+='<div style="background:#1A6B2A;color:#fff;padding:3px 8px;display:flex;align-items:center;justify-content:space-between;border-radius:2px">';
+  html+='<div style="display:flex;align-items:center;gap:6px"><img src="data:image/svg+xml;base64,'+SVG64+'" style="height:20px"><span style="font-size:12px;font-weight:700">Juliomaq</span></div>';
+  html+='<div style="text-align:right"><div style="font-size:6px;opacity:.8;text-transform:uppercase">Ordem de Servico</div><div style="background:#E85A0C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;display:inline-block">'+(o.num||'OS')+'</div></div></div>';
+  html+='<div style="height:2px;background:#E85A0C"></div>';
+  html+='<div class="g2"><div class="sec"><div class="sh">ATENDIMENTO</div><table style="width:100%;border-collapse:collapse">'+R('Cliente',o.cliente)+R('Tecnico',o.tecnico)+R('Data',o.data)+R('Local',o.local)+'</table></div>';
+  html+='<div class="sec"><div class="sh">VEICULO</div><table style="width:100%;border-collapse:collapse">'+R('Veiculo',o.veiculo)+R('Hodometro',(o.kmVeiculo||'--')+' km')+R('KM',(o.quilometragem||o.km||0)+' km')+R('Horas',(o.horas||0)+' h')+'</table></div></div>';
+  html+='<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>SERVICO</span><span style="background:'+cor+';font-size:6px;padding:1px 5px;border-radius:8px">'+(o.tipo||'--')+'</span></div>';
+  html+='<div style="padding:3px 6px;font-size:8.5px;line-height:1.4;border-left:3px solid #1A6B2A;margin:2px;background:#f0f7ff;border-radius:2px">'+(o.descricao||'Sem descricao')+'</div></div>';
+  html+='<div class="sec"><div class="sh">VALOR</div><div class="v3">';
+  html+='<div class="vc"><div style="font-size:6.5px;color:#333;font-weight:700">Mao de obra</div><div style="font-size:10px;font-weight:700;color:#111">'+fmt(vH)+'</div></div>';
+  html+='<div class="vc" style="background:#dceeff"><div style="font-size:6.5px;color:#0d47a1;font-weight:700;text-transform:uppercase">Deslocamento</div><div style="font-size:10px;font-weight:700;color:#0d47a1">'+fmt(vK)+'</div></div>';
+  html+='<div class="vc" style="background:#d4edda"><div style="font-size:6.5px;color:#1A6B2A;font-weight:700">TOTAL</div><div style="font-size:14px;font-weight:700;color:#1A6B2A">'+fmt(vT)+'</div></div></div></div>';
+  html+='<div class="sec" style="display:flex;flex-direction:row;align-items:center;gap:0"><div class="sh" style="writing-mode:vertical-lr;text-orientation:mixed;padding:6px 3px;min-width:18px">ASSINATURA</div>';
+  html+='<div style="flex:1;display:flex;align-items:center;padding:4px 8px;min-height:38px">';
+  if(sig){html+='<img src="'+sig+'" style="max-height:38px;max-width:120px;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">';}
+  else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:6px 20px;color:#aaa;font-size:9px;text-align:center">Sem assinatura</div>';}
+  html+='</div>';
+  html+='<div style="padding:4px 8px;border-left:1px solid #eee;min-width:80px;font-size:8px"><div style="color:#888;text-transform:uppercase;font-size:6.5px">Local</div><div style="font-weight:600">'+(o.local||'--')+'</div><div style="color:#888;text-transform:uppercase;font-size:6.5px;margin-top:3px">Data</div><div style="font-weight:600">'+(o.data||'--')+'</div></div></div>';
+  html+='<div style="text-align:center;font-size:6.5px;color:#333;border-top:1px solid #ccc;padding-top:2px">'+(o.num||'')+' | Juliomaq | '+new Date().toLocaleString('pt-BR')+' | Total: '+fmt(vT)+'</div>';
+  html+='</body></html>';
+  win.document.write(html);win.document.close();
+  if(isIOS()){toast('iOS: no Safari, toque em Compartilhar → Imprimir','ok',6000);}
+  else{setTimeout(function(){try{win.focus();win.print();}catch(ex){}},500);}
 }
 
 function waOS(o){
@@ -1178,7 +1215,7 @@ function togglePaga(i){
 function exportAll(){
   showLoad('Exportando...');
   google.script.run
-    .withSuccessHandler(function(data){hideLoad();var b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='juliomaq_backup_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);toast('Exportado! (assinaturas do online estao no Sheets/Drive)','ok',5000);})
+    .withSuccessHandler(function(data){hideLoad();var b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});downloadBlob(b,'juliomaq_backup_'+new Date().toISOString().slice(0,10)+'.json');toast('Exportado! (assinaturas do online estao no Sheets/Drive)','ok',5000);})
     .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
     .exportarTudo();
 }
@@ -1551,8 +1588,7 @@ function exportProsp(){
     .withSuccessHandler(function(ps){
       hideLoad();
       var b=new Blob([JSON.stringify({prospeccoes:ps||[],exportadoEm:new Date().toISOString()},null,2)],{type:'application/json'});
-      var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='juliomaq_prospeccoes_'+new Date().toISOString().slice(0,10)+'.json';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+      downloadBlob(b,'juliomaq_prospeccoes_'+new Date().toISOString().slice(0,10)+'.json');
       toast('Prospecções exportadas!','ok');
     })
     .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
@@ -1631,10 +1667,7 @@ function printOrc(){
   } else {
     // Fallback: blob download
     var blob=new Blob([html],{type:'text/html'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.target='_blank';a.download=num+'.html';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(url);},3000);
+    downloadBlob(blob,num+'.html');
     toast('PDF aberto em nova aba. Salve como PDF no menu de impressao.','ok',6000);
   }
 }
@@ -2408,9 +2441,7 @@ function exportOrc(){
   var orcs=LS_orc();
   if(!orcs.length){toast('Nenhum orcamento salvo','warn');return;}
   var b=new Blob([JSON.stringify({orcamentos:orcs,exportadoEm:new Date().toISOString()},null,2)],{type:'application/json'});
-  var u=URL.createObjectURL(b);var a=document.createElement('a');
-  a.href=u;a.download='juliomaq_orcamentos_'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+  downloadBlob(b,'juliomaq_orcamentos_'+new Date().toISOString().slice(0,10)+'.json');
   toast(orcs.length+' orcamentos exportados!','ok');
 }
 
@@ -2650,9 +2681,7 @@ function exportGarantias(){
     .withSuccessHandler(function(gars){
       hideLoad();
       var b=new Blob([JSON.stringify({garantias:gars||[],exportadoEm:new Date().toISOString()},null,2)],{type:'application/json'});
-      var u=URL.createObjectURL(b);var a=document.createElement('a');
-      a.href=u;a.download='juliomaq_garantias_'+new Date().toISOString().slice(0,10)+'.json';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+      downloadBlob(b,'juliomaq_garantias_'+new Date().toISOString().slice(0,10)+'.json');
       toast('Garantias exportadas!','ok');
     })
     .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
@@ -2699,9 +2728,7 @@ function exportVei(){
       hideLoad();
       var data={exportadoEm:new Date().toISOString(),manutencoes:mns||[]};
       var b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-      var u=URL.createObjectURL(b);var a=document.createElement('a');
-      a.href=u;a.download='juliomaq_veiculos_'+new Date().toISOString().slice(0,10)+'.json';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+      downloadBlob(b,'juliomaq_veiculos_'+new Date().toISOString().slice(0,10)+'.json');
       toast('Veiculos exportados!','ok',4000);
     })
     .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
@@ -2736,12 +2763,6 @@ function importVei(event){
 function importData(event){
   var file=event.target.files[0];if(!file)return;
   document.getElementById('impAllFile').value='';
-  // Converte data ISO (yyyy-mm-dd) para pt-BR (dd/mm/yyyy)
-  function isoToLocal(d){
-    if(!d) return '';
-    var m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return m ? m[3]+'/'+m[2]+'/'+m[1] : d;
-  }
   var reader=new FileReader();
   reader.onload=function(e){
     try{
