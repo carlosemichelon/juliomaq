@@ -1548,12 +1548,15 @@ function openSig(t){abrirSig(t);}
 function closeSig(){fecharSig();}  // alias
 function abrirSig(target) {
   sigTarget = target;
-  var tit = (target==='tec') ? 'Assinatura do Tecnico' : 'Assinatura do Cliente';
+  var titles = {tec:'Assinatura do Tecnico', desp:'Assinatura do Comprador'};
+  var colors = {tec:'#1a4a7a', desp:'#6a1b9a'};
+  var tit = titles[target] || 'Assinatura do Cliente';
+  var cor = colors[target] || '#1A6B2A';
   var modal = document.getElementById('sigModal');
   if (!modal) return;
   var titEl = document.getElementById('sigTit');
   if (titEl) titEl.textContent = tit;
-  modal.style.background = (target==='tec') ? '#1a4a7a' : '#1A6B2A';
+  modal.style.background = cor;
   // Use both classList AND inline style for iOS compatibility
   modal.style.display = 'flex';
   modal.style.position = 'fixed';
