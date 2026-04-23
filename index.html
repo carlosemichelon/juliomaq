@@ -148,6 +148,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <button class="tab" id="tb7" onclick="goTab('ferr')" style="order:7"><span class="tico">🔧</span>Ferr.</button>
   <button class="tab" id="tb8" onclick="goTab('gar')" style="order:8;color:#bf360c"><span class="tico">🛡️</span>Garant.</button>
   <button class="tab" id="tb9" onclick="goTab('chk')" style="order:9;color:#1a4a7a"><span class="tico">☑️</span>Check</button>
+  <button class="tab" id="tb10" onclick="goTab('desp')" style="order:10;color:#7b1fa2"><span class="tico">💰</span>Desp.</button>
 </div>
 
 <!-- NOVA OS -->
@@ -700,7 +701,89 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 </div>
 </div>
 
-<div id="sigModal">
+<!-- ══ DESPESAS GERAIS ══════════════════════════════════════════════════════ -->
+<div id="despTab" style="display:none">
+<div class="body">
+  <div class="sec">
+    <div class="sh" style="background:#6a1b9a">
+      <div class="si" style="background:rgba(255,255,255,.1)">💰</div>
+      Nova Despesa
+    </div>
+    <div class="f"><label class="fl">Data</label><input class="fi" id="dDt" type="date"></div>
+    <div class="f"><label class="fl">Comprador</label>
+      <select class="fi" id="dComp">
+        <option value="">Selecione</option>
+        <option>Christiano</option><option>Lucas</option><option>Carlos</option>
+      </select>
+    </div>
+    <div class="f"><label class="fl">CNPJ do Fornecedor</label>
+      <input class="fi" id="dCNPJ" type="text" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCNPJ(this)">
+    </div>
+    <div class="f"><label class="fl">Fornecedor (onde comprou)</label>
+      <input class="fi" id="dForn" type="text" placeholder="Nome da loja / empresa...">
+    </div>
+    <div class="f"><label class="fl">Descrição (o que comprou)</label>
+      <textarea class="fi" id="dDesc" placeholder="Descreva os itens comprados..." style="height:70px"></textarea>
+    </div>
+    <div class="f"><label class="fl">Categoria</label>
+      <select class="fi" id="dCat">
+        <option value="">Selecione</option>
+        <option>Peças</option><option>Combustível</option><option>Ferramentas</option>
+        <option>Material de limpeza</option><option>EPI</option><option>Outros</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
+      <div><label class="fl">Valor (R$)</label>
+        <input class="fi" id="dValor" type="number" step="0.01" min="0" placeholder="0,00">
+      </div>
+      <div><label class="fl">Forma de Pagamento</label>
+        <select class="fi" id="dPgto">
+          <option value="">Selecione</option>
+          <option>PIX</option><option>Cartão Débito</option>
+          <option>Cartão Crédito</option><option>Dinheiro</option><option>Boleto</option>
+        </select>
+      </div>
+    </div>
+    <div class="f">
+      <label class="fl">Foto da Nota / Cupom Fiscal</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('dFotoInp').click()">📷 Anexar Foto</button>
+        <input type="file" id="dFotoInp" accept="image/*" capture="environment" style="display:none" onchange="previewDespFoto(this)">
+        <span id="dFotoNome" style="font-size:11px;color:var(--mu)">Nenhuma foto</span>
+      </div>
+      <div id="dFotoPreview" style="margin-top:8px;display:none">
+        <img id="dFotoImg" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--bd)">
+        <button onclick="clearDespFoto()" style="display:block;margin-top:4px;font-size:11px;color:#c00;background:none;border:none;cursor:pointer;padding:0">✕ Remover foto</button>
+      </div>
+    </div>
+    <div class="f">
+      <label class="fl">Assinatura do Comprador</label>
+      <div class="sigw" id="dSigW" onclick="openSig('desp')" style="border-color:#6a1b9a">
+        <div class="sigtp" id="dSigTap"><div class="sigic" style="color:#6a1b9a">✍️</div><div class="sigtxt" style="color:#6a1b9a">Toque para assinar</div></div>
+        <div class="sigdn" id="dSigDn" style="display:none"><img id="dSigImg" alt="" style="max-height:68px;max-width:90%"><div class="sigok" style="color:#6a1b9a">ASSINADO</div><span class="sigre" onclick="event.stopPropagation();openSig('desp')">Refazer</span></div>
+      </div>
+    </div>
+    <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 12px;background:#6a1b9a">💾 Salvar Despesa</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="sec" style="margin-top:8px">
+    <div class="sh" style="background:#6a1b9a">Despesas Salvas</div>
+    <div style="padding:8px 12px 4px;display:flex;gap:6px;flex-wrap:wrap">
+      <select id="dFiltCat" onchange="renderDesps()" style="flex:1;min-width:120px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+        <option value="">Todas as categorias</option>
+        <option>Peças</option><option>Combustível</option><option>Ferramentas</option>
+        <option>Material de limpeza</option><option>EPI</option><option>Outros</option>
+      </select>
+      <select id="dFiltMes" onchange="renderDesps()" style="flex:1;min-width:120px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+        <option value="">Todos os meses</option>
+      </select>
+    </div>
+    <div id="dTotalBar" style="padding:4px 12px 8px;font-size:12px;color:var(--mu)"></div>
+    <div id="despList"><div class="empty">Carregando...</div></div>
+  </div>
+</div>
+</div>
   <div class="mhdr"><div class="mtit" id="sigTit">Assinatura</div><button class="mcl" onclick="closeSig()">X</button></div>
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.7);padding:0 0 8px;flex-shrink:0">Assine com o dedo</div>
   <div class="cwrap"><canvas id="sigCv"></canvas><div class="blx"></div><div class="bltxt">ASSINE AQUI</div></div>
@@ -925,9 +1008,9 @@ function _confirmarDriveUrls(){
 
 // ── Tabs ─────────────────────────────────────────────────────
 function goTab(t){
-  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9'];
-  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab'];
-  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8};
+  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10'];
+  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab'];
+  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9};
   TBS.forEach(function(id,i){
     var b=document.getElementById(id), p=document.getElementById(PANES[i]);
     if(b) b.className='tab'; if(p) p.style.display='none';
@@ -952,6 +1035,7 @@ function goTab(t){
   if(t==='vei')  loadVei();
   if(t==='ferr') loadFerr();
   if(t==='prosp') loadProsp();
+  if(t==='desp') loadDesps();
   if(t==='gar'){
     loadGarantias();
     // Auto-refresh every 90 seconds while on this tab
@@ -1985,9 +2069,11 @@ var sigCtx=sigCv.getContext('2d');
 
 function openSig(target){
   sigTarget=target;
-  document.getElementById('sigTit').textContent=target==='tec'?'Assinatura do Tecnico':'Assinatura do Cliente';
+  var titles={tec:'Assinatura do Tecnico', desp:'Assinatura do Comprador'};
+  var colors={tec:'#1a4a7a', desp:'#6a1b9a'};
+  document.getElementById('sigTit').textContent = titles[target] || 'Assinatura do Cliente';
   var modal=document.getElementById('sigModal');
-  modal.style.background=target==='tec'?'#1a4a7a':'#1A6B2A';
+  modal.style.background = colors[target] || '#1A6B2A';
   modal.classList.add('open');
   setTimeout(rdimSig,60);
 }
@@ -2019,6 +2105,7 @@ function confirmSig(){
   tCtx.drawImage(sigCv,0,0,240,80);
   var data=tmp.toDataURL('image/jpeg',0.7);
   if(sigTarget==='tec'){vmSigData=data;document.getElementById('vmSigImg').src=data;document.getElementById('vmSigTap').style.display='none';document.getElementById('vmSigDn').style.display='flex';document.getElementById('vmSigW').classList.add('on');}
+  else if(sigTarget==='desp'){_despSigData=data;document.getElementById('dSigImg').src=data;document.getElementById('dSigTap').style.display='none';document.getElementById('dSigDn').style.display='flex';document.getElementById('dSigW').classList.add('on');}
   else{sigData=data;document.getElementById('sigImg').src=data;document.getElementById('sigTap').style.display='none';document.getElementById('sigDn').style.display='flex';document.getElementById('sigWrap').classList.add('on');}
   closeSig();toast('Assinatura capturada','ok');
 }
@@ -2949,6 +3036,145 @@ function printOrcSalvo(num){
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);}
 }
 
+
+// ══ DESPESAS GERAIS ══════════════════════════════════════════════════════════
+var despesas = [];
+var _despFotoB64 = null, _despFotoMime = null, _despSigData = null;
+
+function maskCNPJ(inp){
+  var v=inp.value.replace(/\D/g,'').slice(0,14);
+  v=v.replace(/^(\d{2})(\d)/,'$1.$2')
+     .replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3')
+     .replace(/\.(\d{3})(\d)/,'.$1/$2')
+     .replace(/(\d{4})(\d)/,'$1-$2');
+  inp.value=v;
+}
+
+function previewDespFoto(inp){
+  var f=inp.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    _despFotoB64=e.target.result;
+    _despFotoMime=f.type;
+    document.getElementById('dFotoNome').textContent=f.name;
+    var img=document.getElementById('dFotoImg');
+    img.src=e.target.result;
+    document.getElementById('dFotoPreview').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+
+function clearDespFoto(){
+  _despFotoB64=null; _despFotoMime=null;
+  document.getElementById('dFotoNome').textContent='Nenhuma foto';
+  document.getElementById('dFotoPreview').style.display='none';
+  document.getElementById('dFotoImg').src='';
+  document.getElementById('dFotoInp').value='';
+}
+
+function salvarDesp(){
+  var dt=isoToLocal(g('dDt'))||g('dDt');
+  var comp=g('dComp'), forn=g('dForn'), desc=g('dDesc');
+  var cat=g('dCat'), valor=g('dValor'), pgto=g('dPgto');
+  if(!dt||!comp||!forn||!desc||!cat||!valor||!pgto){
+    toast('Preencha todos os campos obrigatórios','warn'); return;
+  }
+  var btn=document.getElementById('dSalvarBtn');
+  btn.disabled=true; btn.textContent='Salvando...';
+  showLoad('Salvando despesa...');
+  var dados={
+    data:dt, comprador:comp, cnpj:g('dCNPJ')||'',
+    fornecedor:forn, descricao:desc, categoria:cat,
+    valor:parseFloat(valor)||0, formaPgto:pgto,
+    fotoB64:_despFotoB64||'', fotoMime:_despFotoMime||'',
+    assinatura:_despSigData||''
+  };
+  google.script.run
+    .withSuccessHandler(function(r){
+      hideLoad();
+      btn.disabled=false; btn.textContent='💾 Salvar Despesa';
+      if(r&&r.success){
+        toast('Despesa salva! '+r.num,'ok');
+        // Limpar form
+        ['dDt','dComp','dCNPJ','dForn','dDesc','dCat','dValor','dPgto'].forEach(function(id){
+          var el=document.getElementById(id); if(el) el.value='';
+        });
+        clearDespFoto();
+        // Limpar assinatura
+        _despSigData=null;
+        var dw=document.getElementById('dSigW');if(dw)dw.classList.remove('on');
+        var ddn=document.getElementById('dSigDn');if(ddn)ddn.style.display='none';
+        var dtp=document.getElementById('dSigTap');if(dtp)dtp.style.display='flex';
+        loadDesps();
+      } else { toast('Erro ao salvar: '+(r&&r.error||'desconhecido'),'err'); }
+    })
+    .withFailureHandler(function(e){
+      hideLoad(); btn.disabled=false; btn.textContent='💾 Salvar Despesa';
+      toast('Erro: '+e.message,'err');
+    })
+    .salvarDespesa(dados);
+}
+
+function loadDesps(){
+  var list=document.getElementById('despList');
+  if(list) list.innerHTML='<div class="empty">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(rows){
+      despesas=rows||[];
+      preencherFiltroMesDesp();
+      renderDesps();
+    })
+    .withFailureHandler(function(e){ toast('Erro ao carregar despesas: '+e.message,'err'); })
+    .getDespesas();
+}
+
+function preencherFiltroMesDesp(){
+  var sel=document.getElementById('dFiltMes'); if(!sel) return;
+  var meses={};
+  despesas.forEach(function(d){ if(d.data){var m=_osMes(d.data);if(m)meses[m]=true;} });
+  var cur=sel.value;
+  var opts='<option value="">Todos os meses</option>';
+  Object.keys(meses).sort().reverse().forEach(function(m){
+    opts+='<option value="'+m+'"'+(m===cur?' selected':'')+'>'+_osMesLabel(m)+'</option>';
+  });
+  sel.innerHTML=opts;
+}
+
+function renderDesps(){
+  var list=document.getElementById('despList');
+  var filtCat=g('dFiltCat')||'', filtMes=document.getElementById('dFiltMes').value||'';
+  var lista=despesas.filter(function(d){
+    return (!filtCat||d.categoria===filtCat)&&(!filtMes||_osMes(d.data)===filtMes);
+  });
+  // Total
+  var total=lista.reduce(function(acc,d){return acc+(parseFloat(d.valor)||0);},0);
+  var bar=document.getElementById('dTotalBar');
+  if(bar) bar.innerHTML='<strong>'+lista.length+' despesas</strong> &nbsp;|&nbsp; Total: <strong style="color:#6a1b9a">R$ '+total.toFixed(2).replace('.',',')+'</strong>';
+  if(!lista.length){if(list)list.innerHTML='<div class="empty">Nenhuma despesa'+(filtCat||filtMes?' com este filtro':'')+'</div>';return;}
+  var catColor={'Peças':'#1a4a7a','Combustível':'#e65100','Ferramentas':'#4a148c','Material de limpeza':'#006064','EPI':'#1b5e20','Outros':'#37474f'};
+  var html='';
+  lista.slice().reverse().forEach(function(d){
+    var cor=catColor[d.categoria]||'#37474f';
+    var vStr='R$ '+(parseFloat(d.valor)||0).toFixed(2).replace('.',',');
+    html+='<div style="border:1px solid var(--bd);border-radius:10px;margin:8px 12px;padding:10px 12px;background:var(--wh)">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    html+='<span style="font-size:10px;font-weight:700;background:'+cor+';color:#fff;padding:2px 8px;border-radius:10px">'+d.categoria+'</span>';
+    html+='<span style="font-size:16px;font-weight:700;color:#6a1b9a">'+vStr+'</span></div>';
+    html+='<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+d.fornecedor+'</div>';
+    html+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px">'+d.data+' · '+d.comprador+' · '+d.formaPgto+'</div>';
+    if(d.cnpj) html+='<div style="font-size:10px;color:var(--mu)">CNPJ: '+d.cnpj+'</div>';
+    html+='<div style="font-size:12px;margin-top:4px;line-height:1.4;border-left:3px solid '+cor+';padding-left:6px">'+d.descricao+'</div>';
+    if(d.fotoUrl) html+='<div style="margin-top:6px"><img src="'+d.fotoUrl+'" style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid var(--bd);cursor:pointer" onclick="window.open(\''+d.fotoUrl+'\',\'_blank\')"></div>';
+    html+='</div>';
+  });
+  if(list) list.innerHTML=html;
+}
+
+// Init data on despTab
+(function(){
+  try{document.getElementById('dDt').valueAsDate=new Date();}catch(e){}
+})();
+// ═════════════════════════════════════════════════════════════════════════════
 
 </script>
 </body>
