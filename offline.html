@@ -477,14 +477,11 @@ function renderHist() {
   <span>Dados salvos localmente</span>
   <button class="opbtn" style="background:var(--or)" onclick="exportarTudo()">Exportar Tudo</button>
 </div>
-<div class="tabs" style="display:grid;grid-template-columns:repeat(3,1fr)">
+<div class="tabs" style="display:grid;grid-template-columns:repeat(4,1fr)">
   <button class="tab active" id="t1" onclick="showTab('form')">Nova OS</button>
-  
   <button class="tab" id="t3" onclick="showTab('hist')">Resumo OS</button>
-  
-  
   <button class="tab" id="t6" onclick="showTab('vei')">Veículos</button>
-  
+  <button class="tab" id="t7" onclick="showTab('desp')" style="color:#7b1fa2">💰 Desp.</button>
 </div>
 
 <div id="formTab">
@@ -756,6 +753,91 @@ function renderHist() {
 
 
 
+<!-- ══ DESPESAS ══════════════════════════════════════════════════════════════ -->
+<div id="despTab" style="display:none">
+<div class="fbody">
+  <div class="sec">
+    <div class="sh" style="background:#6a1b9a"><div class="si">💰</div>Nova Despesa</div>
+    <div class="f"><label class="fl">Data</label><input class="fi" id="ddDt" type="date"></div>
+    <div class="f"><label class="fl">Comprador</label>
+      <select class="fi" id="ddComp">
+        <option value="">Selecione</option>
+        <option>Christiano</option><option>Lucas</option><option>Carlos</option>
+      </select>
+    </div>
+    <div class="f"><label class="fl">CNPJ do Fornecedor</label>
+      <input class="fi" id="ddCNPJ" type="text" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCNPJOff(this)">
+    </div>
+    <div class="f"><label class="fl">Fornecedor (onde comprou)</label>
+      <input class="fi" id="ddForn" type="text" placeholder="Nome da loja / empresa...">
+    </div>
+    <div class="f"><label class="fl">Descrição</label>
+      <textarea class="fi" id="ddDesc" placeholder="O que comprou..." style="height:70px"></textarea>
+    </div>
+    <div class="f"><label class="fl">Categoria</label>
+      <select class="fi" id="ddCat">
+        <option value="">Selecione</option>
+        <option>Alimentação</option><option>Hospedagem</option>
+        <option>Itens de Serviço</option><option>Outros</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
+      <div><label class="fl">Valor (R$)</label>
+        <input class="fi" id="ddValor" type="number" step="0.01" min="0" placeholder="0,00">
+      </div>
+      <div><label class="fl">Pagamento</label>
+        <select class="fi" id="ddPgto">
+          <option value="">Selecione</option>
+          <option>PIX</option><option>Cartão Débito</option>
+          <option>Cartão Crédito</option><option>Dinheiro</option><option>Boleto</option>
+        </select>
+      </div>
+    </div>
+    <div class="f">
+      <label class="fl">Foto da Nota / Cupom</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('ddFotoInp').click()">📷 Anexar</button>
+        <input type="file" id="ddFotoInp" accept="image/*" capture="environment" style="display:none" onchange="previewDespFotoOff(this)">
+        <span id="ddFotoNome" style="font-size:11px;color:var(--mu)">Nenhuma foto</span>
+      </div>
+      <div id="ddFotoPreview" style="margin-top:8px;display:none">
+        <img id="ddFotoImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--bd)">
+        <button onclick="clearDespFotoOff()" style="display:block;margin-top:4px;font-size:11px;color:#c00;background:none;border:none;cursor:pointer;padding:0">✕ Remover</button>
+      </div>
+    </div>
+    <div class="f">
+      <label class="fl">Assinatura do Comprador</label>
+      <div class="sigw" id="ddSigW" onclick="abrirSig('desp')">
+        <div class="sigtp" id="ddSigTap"><div class="sigic">✍️</div><div class="sigtxt">Toque para assinar</div></div>
+        <div class="sigdn" id="ddSigDn" style="display:none"><img id="ddSigImg" alt="" style="max-height:60px;max-width:90%"><div class="sigok">ASSINADO</div><span class="sigre" onclick="event.stopPropagation();abrirSig('desp')">Refazer</span></div>
+      </div>
+    </div>
+    <button class="btn" id="ddSalvarBtn" onclick="salvarDespOff()" style="margin:8px 12px 12px;background:#6a1b9a">💾 Salvar Despesa</button>
+  </div>
+
+  <div class="sec" style="margin-top:8px">
+    <div class="sh" style="background:#6a1b9a">Despesas Salvas</div>
+    <div style="padding:8px 12px 4px;display:flex;gap:6px;flex-wrap:wrap">
+      <select id="ddFiltCat" onchange="renderDespOff()" style="flex:1;min-width:110px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+        <option value="">Todas as categorias</option>
+        <option>Alimentação</option><option>Hospedagem</option>
+        <option>Itens de Serviço</option><option>Outros</option>
+      </select>
+      <select id="ddFiltComp" onchange="renderDespOff()" style="flex:1;min-width:100px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+        <option value="">Todos</option>
+        <option>Christiano</option><option>Lucas</option><option>Carlos</option>
+      </select>
+    </div>
+    <div id="ddTotalBar" style="padding:4px 12px 6px;font-size:12px;color:var(--mu)"></div>
+    <div style="padding:0 12px 8px">
+      <button class="opbtn" style="background:#6a1b9a;font-size:11px" onclick="exportDespOff()">📥 Exportar JSON</button>
+      <button class="opbtn" style="background:#c0392b;font-size:11px;margin-left:6px" onclick="apagarKey('jm_despesas',renderDespOff)">Apagar Tudo</button>
+    </div>
+    <div id="despListOff"><div class="empty">Nenhuma despesa salva</div></div>
+  </div>
+</div>
+</div>
+
 <div id="sigModal">
   <div class="mhdr"><div class="mtit" id="sigTit">Assinatura</div><button class="mcl" onclick="fecharSig()">X</button></div>
   <div class="mhint">Assine com o dedo na area abaixo</div>
@@ -839,9 +921,9 @@ function apagarKey(k, fn) { if(!confirm('Apagar tudo?')) return; SS(k, []); if(f
 
 // Tabs
 function showTab(t) {
-  var tabs  = ['t1','t3','t6'];
-  var panes = ['formTab','histTab','veiTab'];
-  var map   = {form:0,hist:1,vei:2};
+  var tabs  = ['t1','t3','t6','t7'];
+  var panes = ['formTab','histTab','veiTab','despTab'];
+  var map   = {form:0,hist:1,vei:2,desp:3};
   for(var i=0;i<tabs.length;i++){
     var b=document.getElementById(tabs[i]);
     var p=document.getElementById(panes[i]);
@@ -856,6 +938,7 @@ function showTab(t) {
   if(pn) pn.style.display='block';
   if(t==='hist') renderHist();
   if(t==='vei')  renderVei();
+  if(t==='desp') renderDespOff();
 }
 
 // Tecnicos
@@ -1416,6 +1499,7 @@ function exportarTudo(){
   var ferramentas = LS('jm_ferramentas') || [];
   var prospeccoes = LS('jm_prospeccoes') || [];
   var orcamentos  = LS('jm_orcamentos')  || [];
+  var despesas_exp= LS('jm_despesas')    || [];
   var fotos       = LS('jm_fotos')       || [];  // {numOS, name, b64, type}
   // Filtra fotos órfãs (numOS sem OS correspondente no localStorage)
   var numsOrdens = {};
@@ -1438,6 +1522,7 @@ function exportarTudo(){
     ferramentas : ferramentas,
     prospeccoes : prospeccoes,
     orcamentos  : orcamentos,
+    despesas    : despesas_exp,
     fotos       : fotos         // [{numOS, name, b64, type}]
   };
   var json = JSON.stringify(data, null, 2);
@@ -1547,6 +1632,12 @@ function confirmarSig() {
     document.getElementById('vmSigTap').style.display = 'none';
     document.getElementById('vmSigDn').style.display = 'flex';
     document.getElementById('vmSigWrap').classList.add('signed');
+  } else if(sigTarget === 'desp') {
+    _ddSigData = data;
+    document.getElementById('ddSigImg').src = data;
+    document.getElementById('ddSigTap').style.display = 'none';
+    document.getElementById('ddSigDn').style.display = 'flex';
+    document.getElementById('ddSigW').classList.add('signed');
   } else {
     sigData = data;
     document.getElementById('sigImg').src = data;
@@ -1816,6 +1907,122 @@ function setVeiFiltroOff(c,v){
   renderVei();
 }
 
+
+// ══ DESPESAS OFFLINE ═════════════════════════════════════════════════════════
+var _ddSigData = null, _ddFotoB64 = null;
+
+function maskCNPJOff(inp){
+  var v=inp.value.replace(/\D/g,'').slice(0,14);
+  v=v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3')
+     .replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');
+  inp.value=v;
+}
+
+function previewDespFotoOff(inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    _ddFotoB64=e.target.result;
+    document.getElementById('ddFotoNome').textContent=f.name;
+    document.getElementById('ddFotoImg').src=e.target.result;
+    document.getElementById('ddFotoPreview').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+
+function clearDespFotoOff(){
+  _ddFotoB64=null;
+  document.getElementById('ddFotoNome').textContent='Nenhuma foto';
+  document.getElementById('ddFotoPreview').style.display='none';
+  document.getElementById('ddFotoImg').src='';
+  document.getElementById('ddFotoInp').value='';
+}
+
+function getNextDespNumOff(){
+  var desps=LS('jm_despesas');
+  if(!desps.length) return 'DESP-001';
+  var nums=desps.map(function(d){return parseInt((d.num||'').replace('DESP-',''))||0;});
+  return 'DESP-'+String(Math.max.apply(null,nums)+1).padStart(3,'0');
+}
+
+function salvarDespOff(){
+  var dt=isoToLocal(document.getElementById('ddDt').value)||document.getElementById('ddDt').value;
+  var comp=(document.getElementById('ddComp')||{}).value||'';
+  var forn=(document.getElementById('ddForn')||{}).value||'';
+  var desc=(document.getElementById('ddDesc')||{}).value||'';
+  var cat=(document.getElementById('ddCat')||{}).value||'';
+  var valor=(document.getElementById('ddValor')||{}).value||'';
+  var pgto=(document.getElementById('ddPgto')||{}).value||'';
+  if(!dt||!comp||!forn||!desc||!cat||!valor||!pgto){
+    toast('Preencha todos os campos obrigat\u00f3rios','warn');return;
+  }
+  var num=getNextDespNumOff();
+  var desp={
+    num:num, data:dt, comprador:comp,
+    cnpj:(document.getElementById('ddCNPJ')||{}).value||'',
+    fornecedor:forn, descricao:desc, categoria:cat,
+    valor:parseFloat(valor)||0, formaPgto:pgto,
+    assinatura:_ddSigData||'', fotoB64:_ddFotoB64||'',
+    salvo:new Date().toLocaleString('pt-BR')
+  };
+  var desps=LS('jm_despesas');
+  desps.push(desp);
+  SS('jm_despesas',desps);
+  ['ddDt','ddComp','ddCNPJ','ddForn','ddDesc','ddCat','ddValor','ddPgto'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  try{document.getElementById('ddDt').valueAsDate=new Date();}catch(e){}
+  clearDespFotoOff();
+  _ddSigData=null;
+  var dw=document.getElementById('ddSigW');if(dw)dw.classList.remove('signed');
+  var ddn=document.getElementById('ddSigDn');if(ddn)ddn.style.display='none';
+  var dtp=document.getElementById('ddSigTap');if(dtp)dtp.style.display='flex';
+  toast('Despesa '+num+' salva!','ok');
+  renderDespOff();
+}
+
+function renderDespOff(){
+  var list=document.getElementById('despListOff');
+  var desps=LS('jm_despesas');
+  var filtCat=(document.getElementById('ddFiltCat')||{}).value||'';
+  var filtComp=(document.getElementById('ddFiltComp')||{}).value||'';
+  var lista=desps.filter(function(d){
+    return (!filtCat||d.categoria===filtCat)&&(!filtComp||d.comprador===filtComp);
+  });
+  var total=lista.reduce(function(acc,d){return acc+(parseFloat(d.valor)||0);},0);
+  var bar=document.getElementById('ddTotalBar');
+  if(bar) bar.innerHTML='<strong>'+lista.length+' despesas</strong> &nbsp;|&nbsp; Total: <strong style="color:#6a1b9a">R$ '+total.toFixed(2).replace('.',',')+'</strong>';
+  if(!lista.length){if(list)list.innerHTML='<div class="empty">Nenhuma despesa'+(filtCat||filtComp?' com este filtro':'')+'</div>';return;}
+  var catColor={'Alimenta\u00e7\u00e3o':'#b71c1c','Hospedagem':'#1a4a7a','Itens de Servi\u00e7o':'#4a148c','Outros':'#37474f'};
+  var html='';
+  lista.slice().reverse().forEach(function(d){
+    var cor=catColor[d.categoria]||'#37474f';
+    var vStr='R$ '+(parseFloat(d.valor)||0).toFixed(2).replace('.',',');
+    html+='<div style="border:1px solid var(--bd);border-radius:10px;margin:8px 12px;padding:10px 12px;background:var(--wh)">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    html+='<span style="font-size:10px;font-weight:700;background:'+cor+';color:#fff;padding:2px 8px;border-radius:10px">'+d.categoria+'</span>';
+    html+='<span style="font-size:16px;font-weight:700;color:#6a1b9a">'+vStr+'</span></div>';
+    html+='<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+d.fornecedor+'</div>';
+    html+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px">'+d.data+' \u00b7 '+d.comprador+' \u00b7 '+d.formaPgto+'</div>';
+    if(d.cnpj) html+='<div style="font-size:10px;color:var(--mu)">CNPJ: '+d.cnpj+'</div>';
+    html+='<div style="font-size:12px;margin-top:4px;line-height:1.4;border-left:3px solid '+cor+';padding-left:6px">'+d.descricao+'</div>';
+    if(d.fotoB64) html+='<div style="margin-top:6px"><img src="'+d.fotoB64+'" style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid var(--bd)"></div>';
+    if(d.assinatura) html+='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)"><div style="font-size:9px;color:var(--mu);font-weight:700;text-transform:uppercase;margin-bottom:3px">Assinatura</div><img src="'+d.assinatura+'" style="max-height:50px;max-width:160px;border:1px solid var(--bd);border-radius:4px;padding:2px"></div>';
+    html+='</div>';
+  });
+  if(list) list.innerHTML=html;
+}
+
+function exportDespOff(){
+  var desps=LS('jm_despesas');
+  if(!desps.length){toast('Nenhuma despesa para exportar','warn');return;}
+  var b=new Blob([JSON.stringify({despesas:desps,exportadoEm:new Date().toISOString(),fonte:'offline'},null,2)],{type:'application/json'});
+  downloadBlob(b,'juliomaq_despesas_offline_'+new Date().toISOString().slice(0,10)+'.json');
+  toast(desps.length+' despesas exportadas!','ok');
+}
+
+try{document.getElementById('ddDt').valueAsDate=new Date();}catch(e){}
+// ════════════════════════════════════════════════════════════════════════════════
 </script>
 
 
