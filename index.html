@@ -728,8 +728,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="f"><label class="fl">Categoria</label>
       <select class="fi" id="dCat">
         <option value="">Selecione</option>
-        <option>Peças</option><option>Combustível</option><option>Ferramentas</option>
-        <option>Material de limpeza</option><option>EPI</option><option>Outros</option>
+        <option>Alimentação</option><option>Hospedagem</option>
+        <option>Itens de Serviço</option><option>Outros</option>
       </select>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
@@ -772,12 +772,19 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div style="padding:8px 12px 4px;display:flex;gap:6px;flex-wrap:wrap">
       <select id="dFiltCat" onchange="renderDesps()" style="flex:1;min-width:120px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
         <option value="">Todas as categorias</option>
-        <option>Peças</option><option>Combustível</option><option>Ferramentas</option>
-        <option>Material de limpeza</option><option>EPI</option><option>Outros</option>
+        <option>Alimentação</option><option>Hospedagem</option>
+        <option>Itens de Serviço</option><option>Outros</option>
       </select>
-      <select id="dFiltMes" onchange="renderDesps()" style="flex:1;min-width:120px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+      <select id="dFiltComp" onchange="renderDesps()" style="flex:1;min-width:110px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
+        <option value="">Todos compradores</option>
+        <option>Christiano</option><option>Lucas</option><option>Carlos</option>
+      </select>
+      <select id="dFiltMes" onchange="renderDesps()" style="flex:1;min-width:110px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color:var(--tx);background:var(--wh)">
         <option value="">Todos os meses</option>
       </select>
+    </div>
+    <div style="padding:4px 12px 6px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="opbtn" style="background:#6a1b9a;font-size:11px" onclick="exportDespJSON()">📥 Exportar JSON</button>
     </div>
     <div id="dTotalBar" style="padding:4px 12px 8px;font-size:12px;color:var(--mu)"></div>
     <div id="despList"><div class="empty">Carregando...</div></div>
@@ -3142,16 +3149,20 @@ function preencherFiltroMesDesp(){
 
 function renderDesps(){
   var list=document.getElementById('despList');
-  var filtCat=g('dFiltCat')||'', filtMes=document.getElementById('dFiltMes').value||'';
+  var filtCat=g('dFiltCat')||'';
+  var filtComp=(document.getElementById('dFiltComp')||{}).value||'';
+  var filtMes=(document.getElementById('dFiltMes')||{}).value||'';
   var lista=despesas.filter(function(d){
-    return (!filtCat||d.categoria===filtCat)&&(!filtMes||_osMes(d.data)===filtMes);
+    return (!filtCat||d.categoria===filtCat)
+      &&(!filtComp||d.comprador===filtComp)
+      &&(!filtMes||_osMes(d.data)===filtMes);
   });
   // Total
   var total=lista.reduce(function(acc,d){return acc+(parseFloat(d.valor)||0);},0);
   var bar=document.getElementById('dTotalBar');
   if(bar) bar.innerHTML='<strong>'+lista.length+' despesas</strong> &nbsp;|&nbsp; Total: <strong style="color:#6a1b9a">R$ '+total.toFixed(2).replace('.',',')+'</strong>';
-  if(!lista.length){if(list)list.innerHTML='<div class="empty">Nenhuma despesa'+(filtCat||filtMes?' com este filtro':'')+'</div>';return;}
-  var catColor={'Peças':'#1a4a7a','Combustível':'#e65100','Ferramentas':'#4a148c','Material de limpeza':'#006064','EPI':'#1b5e20','Outros':'#37474f'};
+  if(!lista.length){if(list)list.innerHTML='<div class="empty">Nenhuma despesa'+(filtCat||filtComp||filtMes?' com este filtro':'')+'</div>';return;}
+  var catColor={'Alimentação':'#b71c1c','Hospedagem':'#1a4a7a','Itens de Serviço':'#4a148c','Outros':'#37474f'};
   var html='';
   lista.slice().reverse().forEach(function(d){
     var cor=catColor[d.categoria]||'#37474f';
@@ -3165,9 +3176,25 @@ function renderDesps(){
     if(d.cnpj) html+='<div style="font-size:10px;color:var(--mu)">CNPJ: '+d.cnpj+'</div>';
     html+='<div style="font-size:12px;margin-top:4px;line-height:1.4;border-left:3px solid '+cor+';padding-left:6px">'+d.descricao+'</div>';
     if(d.fotoUrl) html+='<div style="margin-top:6px"><img src="'+d.fotoUrl+'" style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid var(--bd);cursor:pointer" onclick="window.open(\''+d.fotoUrl+'\',\'_blank\')"></div>';
+    if(d.assinatura||d.sigUrl){var sUrl=d.assinatura||d.sigUrl;html+='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)"><div style="font-size:9px;color:var(--mu);font-weight:700;text-transform:uppercase;margin-bottom:3px">Assinatura</div><img src="'+sUrl+'" style="max-height:50px;max-width:160px;border:1px solid var(--bd);border-radius:4px;padding:2px"></div>';}
     html+='</div>';
   });
   if(list) list.innerHTML=html;
+}
+
+function exportDespJSON(){
+  if(!despesas.length){toast('Nenhuma despesa para exportar','warn');return;}
+  var filtCat=g('dFiltCat')||'';
+  var filtComp=(document.getElementById('dFiltComp')||{}).value||'';
+  var filtMes=(document.getElementById('dFiltMes')||{}).value||'';
+  var lista=despesas.filter(function(d){
+    return (!filtCat||d.categoria===filtCat)
+      &&(!filtComp||d.comprador===filtComp)
+      &&(!filtMes||_osMes(d.data)===filtMes);
+  });
+  var b=new Blob([JSON.stringify({despesas:lista,exportadoEm:new Date().toISOString(),filtros:{categoria:filtCat,comprador:filtComp,mes:filtMes}},null,2)],{type:'application/json'});
+  downloadBlob(b,'juliomaq_despesas_'+new Date().toISOString().slice(0,10)+'.json');
+  toast(lista.length+' despesas exportadas!','ok');
 }
 
 // Init data on despTab
