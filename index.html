@@ -200,10 +200,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <!-- Garantia: hidden fields for spreadsheet columns - editável no Resumo OS -->
     <input type="hidden" id="fSalesforce" value="">
     <input type="hidden" id="fNotaCS" value="">
-    <input type="hidden" id="fCSStatusSel" value="Aberto">
-    <span id="csStatus" style="display:none"></span>
     <div id="garRow" style="display:none"></div>
-    <div id="csStatusRow" style="display:none"></div>
     <div class="f"><label class="fl">Descricao</label><textarea class="fi" id="fDesc" placeholder="Descreva o servico..."></textarea></div>
   </div>
 
@@ -931,17 +928,6 @@ function setSalesforce(sim){
   var bs=document.getElementById('sfSim'),bn=document.getElementById('sfNao');
   if(bs)bs.classList.toggle('on',sim);if(bn)bn.classList.toggle('on',!sim);
 }
-function updateCSStatus(){
-  var nota=(document.getElementById('fNotaCS')||{}).value||'';
-  var sp=document.getElementById('csStatus'),row=document.getElementById('csStatusRow');
-  if(nota.trim()){
-    if(sp){sp.style.display='inline-block';sp.style.background='#e8f5ec';sp.style.color='#1A6B2A';sp.textContent='Nota vinculada';}
-    if(row)row.style.display='block';
-  } else {
-    if(sp)sp.style.display='none';
-    if(row)row.style.display='none';
-  }
-}
 function toggleOutroObj(val){
   var el=document.getElementById('prObjecaoOutro');
   if(el)el.style.display=val==='Outro'?'block':'none';
@@ -1048,7 +1034,7 @@ function salvar(){
   var btn=document.getElementById('saveBtn'); if(btn)btn.disabled=true;
   document.getElementById('saveTxt').textContent='Salvando...';
   showLoad('Salvando no Google Sheets...');
-  var dados={data:g('fDt'),cliente:cli.trim(),tecnico:tec,veiculo:g('fVei'),kmVeiculo:g('fKmV'),quilometragem:k,horas:h,tipo:tp,descricao:g('fDesc'),local:loc,assinatura:sigData||'',valorContrato:tp==='Contrato Fechado'?g('fCt'):'0',salesforce:g('fSalesforce')||'',notaCS:g('fNotaCS')||'',csStatus:g('fCSStatusSel')||'Aberto'};
+  var dados={data:g('fDt'),cliente:cli.trim(),tecnico:tec,veiculo:g('fVei'),kmVeiculo:g('fKmV'),quilometragem:k,horas:h,tipo:tp,descricao:g('fDesc'),local:loc,assinatura:sigData||'',valorContrato:tp==='Contrato Fechado'?g('fCt'):'0',salesforce:g('fSalesforce')||'',notaCS:g('fNotaCS')||''};
   google.script.run
     .withSuccessHandler(function(res){
       hideLoad(); if(btn)btn.disabled=false; document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';
@@ -1074,7 +1060,7 @@ function novaOrdem(){
   document.getElementById('fVei').value='';
   document.getElementById('fTp').value='';
   document.getElementById('ctRow').style.display='none';
-  // garRow/csStatusRow hidden by default (not visible in Nova OS)
+  // garRow hidden by default (not visible in Nova OS)
   ['tipG','tipC','tipX','tipF'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});
   ['sfSim','sfNao'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});
   document.getElementById('fSalesforce').value='';
@@ -2157,7 +2143,6 @@ document.addEventListener('change', function(e){
   var inp=e.target;
   if(inp.classList.contains('gar-cs-inp')){var num=inp.getAttribute('data-num');if(num&&inp.value.trim())atualizarNotaCS(num,inp.value.trim());return;}
   if(inp.classList.contains('gar-caso-inp')){var num3=inp.getAttribute('data-num');if(num3&&inp.value.trim())google.script.run.withSuccessHandler(function(){loadOrdens();toast('Caso SF salvo!','ok');}).withFailureHandler(function(e){toast('Erro: '+(e&&e.message?e.message:e),'err');}).atualizarCampoOS(num3,'salesforce',inp.value.trim());return;}
-  if(inp.classList.contains('gar-cs-sel')){var num2=inp.getAttribute('data-num');if(num2)atualizarCSStatus(num2,inp.value);return;}
 });
 function waProsp(btn){var tel=(btn.getAttribute('data-tel')||'').replace(/[^0-9]/g,'');window.open('https://wa.me/55'+tel,'_blank');}
 
@@ -2390,12 +2375,6 @@ function atualizarNotaCS(numOS, val){
     .withSuccessHandler(function(r){if(r&&r.success){loadOrdens();toast('Nota CS salva!','ok');}else toast('Erro','err');})
     .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
     .atualizarCampoOS(numOS,'notaCS',val.trim());
-}
-function atualizarCSStatus(numOS, val){
-  google.script.run
-    .withSuccessHandler(function(r){if(r&&r.success){loadOrdens();toast('Status CS atualizado!','ok');}else toast('Erro','err');})
-    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
-    .atualizarCampoOS(numOS,'csStatus',val);
 }
 // ── Orçamento salvar no Sheets ────────────────────────────────
 function salvarOrcSheets(){
@@ -2837,7 +2816,7 @@ function importData(event){
               assinatura:(o.assinatura&&o.assinatura.indexOf('data:')===0)?o.assinatura:(o.sig||''),
               valorContrato:o.tipo==='Contrato Fechado'?String(o.valorContrato||o.vTotal||0):'0',
               salesforce:o.casoSF||o.salesforce||'',
-              notaCS:o.notaCS||'',csStatus:o.csStatus||o.csStatus||'Aberto'
+              notaCS:o.notaCS||''
             });
         }
         next();
