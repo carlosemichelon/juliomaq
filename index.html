@@ -956,6 +956,19 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
   </div>
 
+  <!-- ── Lista de Eventos ──────────────────────────────────────── -->
+  <div class="sec">
+    <div class="sh" style="background:var(--bl);display:flex;align-items:center;justify-content:space-between">
+      <span style="display:flex;align-items:center"><div class="si" style="background:rgba(255,255,255,.1)">📋</div>Eventos</span>
+      <div style="display:flex;gap:5px;margin-right:6px">
+        <button onclick="setAgFiltro('todos')" id="agf_todos" class="opbtn" style="font-size:9px;padding:2px 8px;background:rgba(255,255,255,.9);color:var(--bl)">Todos</button>
+        <button onclick="setAgFiltro('proximos')" id="agf_prox" class="opbtn" style="font-size:9px;padding:2px 8px;background:rgba(255,255,255,.3);color:#fff">📅 Próximos</button>
+        <button onclick="setAgFiltro('mes')" id="agf_mes" class="opbtn" style="font-size:9px;padding:2px 8px;background:rgba(255,255,255,.3);color:#fff">📆 Mês</button>
+      </div>
+    </div>
+    <div id="agList"><div class="empty" style="padding:20px">Carregando...</div></div>
+  </div>
+
 </div>
 </div>
 
@@ -5409,7 +5422,9 @@ function loadAgendaEventos(){
   google.script.run
     .withSuccessHandler(function(eventos){
       _agendaEventos = eventos||[];
+      _agEventos = _agendaEventos; // sync list variable
       renderAgendaGrade();
+      renderAgEventos();
     })
     .withFailureHandler(function(){
       var el=document.getElementById('agendaEventos');
