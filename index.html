@@ -5413,9 +5413,9 @@ function loadAgendaEventos(){
     })
     .withFailureHandler(function(){
       var el=document.getElementById('agendaEventos');
-      if(el) el.innerHTML = '<div class="empty" style="padding:16px;color:#c00">Nao foi possivel carregar. <a href="https://calendar.google.com/calendar/u/4" target="_blank" style="color:var(--bl)">Abrir Calendar</a></div>';
+      if(el) el.innerHTML = '<div class="empty" style="padding:16px;color:#c00">Erro ao carregar eventos.</div>';
     })
-    .getAgendaEventos();
+    .getAgendaEventosSalvos();
 }
 
 function navAgenda(dir){
