@@ -1779,16 +1779,8 @@ function goTab(t){
     var hc=document.getElementById('histConteudo');if(hc)hc.style.display='block';
     var ol=document.getElementById('osList');if(ol)ol.innerHTML='<div class="empty">Carregando...</div>';loadOrdens();
   }
-  if(t==='gar'){ loadGarantias(); loadAtividades(); }
-  if(t==='vei')  loadVei();
-  if(t==='ferr') loadFerr();
-  if(t==='prosp') loadProsp();
-  if(t==='desp'){
-    carregarFornecedores();
-  }
   if(t==='gar'){
-    loadGarantias();
-    // Auto-refresh every 90 seconds while on this tab
+    loadGarantias(); loadAtividades();
     if(window._garRefreshTimer) clearInterval(window._garRefreshTimer);
     window._garRefreshTimer = setInterval(function(){
       var garPane=document.getElementById('garTab');
@@ -1796,6 +1788,17 @@ function goTab(t){
       else clearInterval(window._garRefreshTimer);
     }, 90000);
   }
+  if(t==='vei')  loadVei();
+  if(t==='ferr') loadFerr();
+  if(t==='prosp') loadProsp();
+  if(t==='desp') carregarFornecedores();
+  if(t==='mkt')  loadMkt();
+  if(t==='cobr') { if(window._cobrUnlocked) loadCobr(); }
+  if(t==='fin')  { if(window._finUnlocked)  loadFin();  }
+  if(t==='rdesp'){ if(window._rdespUnlocked) loadRdespData(); }
+  if(t==='conc') { if(typeof loadConc==='function') loadConc(); }
+  if(t==='parq') { if(typeof loadParq==='function') loadParq(); }
+  if(t==='usad') { if(typeof loadUsad==='function') loadUsad(); }
 }
 
 // ── Salesforce / Nota CS ─────────────────────────────────────
