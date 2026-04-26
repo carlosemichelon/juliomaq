@@ -1570,7 +1570,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         return function(){
           var args=Array.from(arguments);
           var s=_s,f=_f;
-          fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args})})
+          fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({fn:prop,args:args})})
             .then(function(r){return r.json();})
             .then(function(d){if(d.success!==false&&s)s(d.result!==undefined?d.result:d);else if(d.success===false&&f)f(new Error(d.error||'Erro no servidor'));})
             .catch(function(e){if(f)f(e);});
