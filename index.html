@@ -1770,13 +1770,7 @@ function goTab(t){
     loadChecklist();
   }
   if(t==='agenda'){
-    try{
-      document.getElementById('agDt').valueAsDate=new Date();
-      var hoje=new Date();
-      document.getElementById('agImpIni').valueAsDate=hoje;
-      var fim=new Date(hoje); fim.setDate(fim.getDate()+30);
-      document.getElementById('agImpFim').valueAsDate=fim;
-    }catch(e){}
+    try{ document.getElementById('agDt').valueAsDate=new Date(); }catch(e){}
     loadAgendaEventos();
   }
   if(t==='hist'){
