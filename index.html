@@ -1776,6 +1776,8 @@ function goTab(t){
   var i=MAP[t]; if(i===undefined) return;
   var b=document.getElementById(TBS[i]), p=document.getElementById(PANES[i]);
   if(b) b.className='tab on'; if(p) p.style.display='block';
+  // Rola para o topo ao trocar de aba
+  window.scrollTo(0,0);
   if(t==='orc'){renderOrcSalvos();}
   if(t==='chk'){
     var chkDt=document.getElementById('chkDt');
