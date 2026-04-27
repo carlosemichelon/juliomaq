@@ -1787,7 +1787,7 @@ function salvarNovaGar(){
   var notaCS=(document.getElementById('gNotaCS')||{}).value||'';
   var desc=(document.getElementById('gDesc')||{}).value||'';
   if(!cli||!notaCS||!desc){toast('Preencha: Cliente, Nota CS e Descrição','warn');return;}
-  showLoad('Salvando garantia...');
+  _iniciarProgresso('🔒 Garantia',[{pct:25,label:'Preparando...'},{pct:65,label:'Salvando...'}]);
   var dados={
     dataCSPeca   :isoToLocal((document.getElementById('gDtPeca')||{}).value||''),
     cliente      :cli.trim(),
@@ -1803,7 +1803,7 @@ function salvarNovaGar(){
   };
   google.script.run
     .withSuccessHandler(function(r){
-      hideLoad();
+      _concluirProgresso(r&&r.success,'Garantia salva!');
       if(r&&r.success){
         toast('Garantia salva!','ok');
         ['gDtPeca','gCli','gNSerie','gOT','gNotaCS','gPeca','gDesc','gDtServ','gNotaServ','gObs'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -1812,7 +1812,7 @@ function salvarNovaGar(){
         loadGarantias();
       } else { toast('Erro: '+(r&&r.error||'desconhecido'),'err'); }
     })
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarGarantia(dados);
 }
 // ─────────────────────────────────────────────────────────────
@@ -1909,11 +1909,11 @@ function salvar(){
   var loc=(document.getElementById('fLoc')||{}).value||'Julio de Castilhos';
   var btn=document.getElementById('saveBtn'); if(btn)btn.disabled=true;
   document.getElementById('saveTxt').textContent='Salvando...';
-  showLoad('Salvando no Google Sheets...');
+  _iniciarProgresso('📋 Nova OS',[{pct:15,label:'Preparando OS...'},{pct:45,label:'Enviando dados...'},{pct:75,label:'Salvando na planilha...'}]);
   var dados={data:isoToLocal(g('fDt'))||g('fDt'),cliente:cli.trim(),tecnico:tec,veiculo:g('fVei'),kmVeiculo:g('fKmV'),quilometragem:k,horas:h,tipo:tp,descricao:g('fDesc'),local:loc,assinatura:sigData||'',valorContrato:tp==='Contrato Fechado'?g('fCt'):'0',salesforce:g('fSalesforce')||'',notaCS:g('fNotaCS')||''};
   google.script.run
     .withSuccessHandler(function(res){
-      hideLoad(); if(btn)btn.disabled=false; document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';
+      _concluirProgresso(true,''); if(btn)btn.disabled=false; document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';
       if(res&&res.success){
         ultimaSalva={num:res.num,data:dados.data,cliente:dados.cliente,tecnico:dados.tecnico,veiculo:dados.veiculo,kmVeiculo:dados.kmVeiculo,quilometragem:k,horas:h,tipo:tp,descricao:dados.descricao,local:loc,vHora:vH,vKm:vK,vTotal:vT,sig:sigData||''};
         document.getElementById('sbNum').textContent=res.num;
@@ -1924,7 +1924,7 @@ function salvar(){
         setTimeout(loadAssinaturas,2000);
       } else toast('Erro: '+(res?res.error:'?'),'err');
     })
-    .withFailureHandler(function(e){hideLoad();if(btn)btn.disabled=false;document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';toast('Erro: '+(e.message||'falha'),'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');if(btn)btn.disabled=false;document.getElementById('saveTxt').textContent='Salvar Ordem de Servico';toast('Erro: '+(e.message||'falha'),'err');})
     .salvarOrdem(dados);
 }
 
@@ -2261,10 +2261,10 @@ function atualizarPlanilha(){
 function saveFerr(){
   var vei=g('frrVei'),nome=g('frrNome');
   if(!vei||!nome.trim()){toast('Preencha veiculo e ferramenta','err');return;}
-  showLoad('Salvando...');
+  _iniciarProgresso('🔧 Ferramenta',[{pct:30,label:'Enviando...'},{pct:70,label:'Salvando...'}]);
   google.script.run
-    .withSuccessHandler(function(r){hideLoad();if(r&&r.success){toast('Salvo!','ok');['frrVei','frrNome','frrResp'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('frrQtd').value='1';loadFerr();}else toast('Erro','err');})
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withSuccessHandler(function(r){_concluirProgresso(r&&r.success,'');if(r&&r.success){toast('Salvo!','ok');['frrVei','frrNome','frrResp'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('frrQtd').value='1';loadFerr();}else toast('Erro','err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarFerramenta({veiculo:vei,ferramenta:nome.trim(),qtd:g('frrQtd')||1,estado:g('frrEst'),responsavel:g('frrResp'),obs:''});
 }
 function loadFerr(){
@@ -2285,10 +2285,10 @@ function saveProsp(){
   var cli=g('prCli');if(!cli.trim()){toast('Informe o cliente','err');return;}
   var obj=g('prObjecao');
   if(obj==='Outro'){var extra=(document.getElementById('prObjecaoOutro')||{value:''}).value;if(extra.trim())obj='Outro: '+extra.trim();}
-  showLoad('Salvando...');
+  _iniciarProgresso('🎯 Prospecção',[{pct:25,label:'Preparando...'},{pct:65,label:'Salvando...'}]);
   google.script.run
     .withSuccessHandler(function(r){
-      hideLoad();
+      _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
         toast((r.num||'')+'salvo!','ok');
         _registrarUltimoSalvo('Nova OS', r.num||'', {
@@ -2305,7 +2305,7 @@ function saveProsp(){
         loadProsp();
       } else toast('Erro: '+(r?r.error:'?'),'err');
     })
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarProspeccao({
       data:g('prDt'),
       cliente:cli.trim(),
@@ -2736,10 +2736,10 @@ function salvarChecklist(){
     };
   });
 
-  showLoad('Salvando checklist...');
+  _iniciarProgresso('☑️ Checklist',[{pct:20,label:'Preparando itens...'},{pct:55,label:'Salvando na planilha...'},{pct:85,label:'Finalizando...'}]);
   google.script.run
     .withSuccessHandler(function(r){
-      hideLoad();
+      _concluirProgresso(r&&r.success,'Checklist salvo!');
       if(r&&r.success){
         toast('Checklist salvo! ✓','ok',3000);
         loadHistoricoChk();
@@ -2747,7 +2747,7 @@ function salvarChecklist(){
         toast('Erro: '+(r?r.error:'?'),'err');
       }
     })
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarChecklistSemanal({veiculo:vei,data:dt,km:km,tecnico:tec,itens:itens});
 }
 
@@ -3417,16 +3417,16 @@ function salvarOrcSheets(){
   var pecasStr=orcItems.map(function(it){return (it.cod?'['+it.cod+'] ':'')+it.desc+' x'+it.qtd+' = '+fmt((it.qtd||1)*(it.unit||0));}).join(' | ');
   // Build orc object for localStorage
   var orc={id:Date.now(),num:num,cli:g('oCli'),equip:g('oEquip'),desc:g('oDesc'),obs:g('oObs'),horas:h,taxa:t,desconto:d,descontoTp:tp,items:JSON.parse(JSON.stringify(orcItems)),totPecas:p,totMO:mo,total:total,responsavel:g('oResp')||'',data:new Date().toLocaleDateString('pt-BR')};
-  showLoad('Salvando no Sheets...');
+  _iniciarProgresso('💵 Orçamento',[{pct:25,label:'Preparando...'},{pct:65,label:'Salvando na planilha...'}]);
   google.script.run
     .withSuccessHandler(function(r){
-      hideLoad();
+      _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
         var orcs=LS_orc();orcs.push(orc);SS_orc(orcs);renderOrcSalvos();
-        toast('Despesa '+r.num+' salva na planilha!','ok');
+        toast('Orçamento '+r.num+' salvo na planilha!','ok');
       } else toast('Erro: '+(r?r.error:'?'),'err');
     })
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarOrcamento({num:num,data:new Date().toLocaleDateString('pt-BR'),cliente:g('oCli'),equip:g('oEquip'),servico:g('oDesc'),pecas:pecasStr,moDeObra:mo,desconto:dVal,total:total,obs:g('oObs'),responsavel:g('oResp')||'',items:JSON.parse(JSON.stringify(orcItems))});
 }
 // ── Export Orçamentos Salvos ─────────────────────────────────
@@ -4651,7 +4651,7 @@ function salvarParqueM(){
   if(!_pmLinhas.length){toast('Adicione pelo menos uma máquina','warn');return;}
   var validas = _pmLinhas.filter(function(l){return l.marca||l.modelo;});
   if(!validas.length){toast('Preencha ao menos Marca ou Modelo','warn');return;}
-  toast('Salvando parque...','ok',2000);
+  _iniciarProgresso('🚜 Parque de Máquinas',[{pct:30,label:'Enviando máquinas...'},{pct:70,label:'Salvando na planilha...'}]);
   var dados = {
     cliente: cli.trim(),
     maquinas: JSON.stringify(validas),
@@ -4660,6 +4660,7 @@ function salvarParqueM(){
   };
   google.script.run
     .withSuccessHandler(function(r){
+      _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
         toast(validas.length+' máquina(s) salvas para '+cli+'!','ok',4000);
         _pmLinhas=[];
@@ -4670,7 +4671,7 @@ function salvarParqueM(){
         toast('Erro ao salvar: '+(r&&r.error||'desconhecido'),'err');
       }
     })
-    .withFailureHandler(function(e){toast('Erro: '+e,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e,'err');})
     .salvarParqueMaquinas(dados);
 }
 
@@ -4968,10 +4969,10 @@ function salvarMkt(sec){
   });
   if(!ok)return;
   dados.criadoEm=new Date().toLocaleString('pt-BR');
-  showLoad('Salvando...');
+  _iniciarProgresso('📣 Marketing',[{pct:30,label:'Enviando...'},{pct:70,label:'Salvando...'}]);
   google.script.run
     .withSuccessHandler(function(r){
-      hideLoad();
+      _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
         toast('Salvo!','ok');
         _registrarUltimoSalvo('Marketing', dados.nome||dados.url||'');
@@ -4979,7 +4980,7 @@ function salvarMkt(sec){
         _loadMktSec(sec,cfg.listId);
       } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
     })
-    .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
     .salvarMarketing(sec, dados);
 }
 
