@@ -385,10 +385,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <!-- VEICULOS -->
 <div id="veiTab" style="display:none">
 <div class="dbody">
-  <div id="vmResBox" style="display:none;background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">
-    <div class="sh" style="background:var(--bl)"><div class="si" style="background:rgba(255,255,255,.1)">&#128202;</div>Resumo por Tipo</div>
-    <div id="vmResTipos" style="padding:8px 14px"></div>
-  </div>
+
   <div class="sec">
     <div class="sh"><div class="si">&#128663;</div>Registrar Manutencao</div>
     <div class="f"><label class="fl">Veiculo</label>
@@ -1173,30 +1170,27 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <div id="mktTab" style="display:none">
 <div class="dbody">
 
-  <!-- EVENTOS -->
-  <div class="sec" style="margin-bottom:8px">
-    <div class="sh" style="background:#6a1b9a"><div class="si" style="background:rgba(255,255,255,.1)">🎪</div>Eventos</div>
-    <div class="f"><label class="fl">Data do Evento</label><input class="fi" id="evDt" type="date"></div>
-    <div class="f"><label class="fl">Nome / Título *</label><input class="fi" id="evNome" type="text" placeholder="Ex: Dia de Campo Stara"></div>
-    <div class="f"><label class="fl">Local</label><input class="fi" id="evLocal" type="text" placeholder="Cidade, propriedade..."></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
-      <div><label class="fl">Público (pessoas)</label><input class="fi" id="evPublico" type="number" placeholder="Ex: 50"></div>
-      <div><label class="fl">Responsável</label>
-        <select class="fi" id="evResp"><option value="">Selecione</option>
-          <option>Carlos</option><option>Christiano</option><option>Lucas</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>Everaldo</option><option>João Dias</option>
-        </select>
-      </div>
-    </div>
-    <div class="f"><label class="fl">Resultado</label><textarea class="fi" id="evResult" placeholder="Leads gerados, vendas, impressões..." style="height:55px"></textarea></div>
-    <div class="f"><label class="fl">Obs</label><input class="fi" id="evObs" type="text" placeholder="Observações..."></div>
-    <button class="btn" style="margin:8px 12px 12px;background:#6a1b9a" onclick="salvarMkt('eventos')">💾 Salvar Evento</button>
-    <div id="evList"><div class="empty">Carregando...</div></div>
-  </div>
 
   <!-- CAMPANHAS -->
   <div class="sec" style="margin-bottom:8px">
-    <div class="sh" style="background:#6a1b9a"><div class="si" style="background:rgba(255,255,255,.1)">📢</div>Campanhas</div>
-    <div class="f"><label class="fl">Nome da Campanha *</label><input class="fi" id="campNome" type="text" placeholder="Ex: Colheita 2025 Instagram"></div>
+    <div class="sh" style="background:#6a1b9a"><div class="si" style="background:rgba(255,255,255,.1)">📢</div>Posts e Campanhas</div>
+    <!-- Tipo: Post ou Campanha -->
+    <div class="f" style="align-items:center">
+      <label class="fl">Tipo</label>
+      <div style="display:flex;gap:8px;padding:4px 2px">
+        <button type="button" id="ctPost" onclick="setCampTipo('Post')" class="topt sel" style="flex:1"><div class="tico">📸</div><div class="tlbl">Post</div></button>
+        <button type="button" id="ctCamp" onclick="setCampTipo('Campanha')" class="topt" style="flex:1"><div class="tico">📢</div><div class="tlbl">Campanha</div></button>
+      </div>
+      <input type="hidden" id="campTipo" value="Post">
+    </div>
+    <div class="f"><label class="fl">Título / Descrição *</label><input class="fi" id="campNome" type="text" placeholder="Ex: Post colheita 2025 · Promoção Outubro..."></div>
+    <!-- Datas (só Campanha) -->
+    <div id="campDatasBox" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
+        <div><label class="fl">Data Início</label><input class="fi" id="campDtIni" type="date"></div>
+        <div><label class="fl">Data Fim</label><input class="fi" id="campDtFim" type="date"></div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
       <div><label class="fl">Canal</label>
         <select class="fi" id="campCanal">
@@ -1220,34 +1214,10 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       </div>
     </div>
     <div class="f"><label class="fl">Obs</label><input class="fi" id="campObs" type="text" placeholder="Objetivo, resultado esperado..."></div>
-    <button class="btn" style="margin:8px 12px 12px;background:#6a1b9a" onclick="salvarMkt('campanhas')">💾 Salvar Campanha</button>
+    <button class="btn" id="campSalvarBtn" style="margin:8px 12px 12px;background:#6a1b9a" onclick="salvarMkt('campanhas')">💾 Salvar Post</button>
     <div id="campList"><div class="empty">Carregando...</div></div>
   </div>
 
-  <!-- LEADS -->
-  <div class="sec">
-    <div class="sh" style="background:#6a1b9a"><div class="si" style="background:rgba(255,255,255,.1)">🎯</div>Leads</div>
-    <div class="f"><label class="fl">Contato / Nome *</label><input class="fi" id="leadNome" type="text" placeholder="Nome do lead..."></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
-      <div><label class="fl">Telefone</label><input class="fi" id="leadTel" type="tel" placeholder="(00) 90000-0000"></div>
-      <div><label class="fl">Interesse</label><input class="fi" id="leadInt" type="text" placeholder="Ex: Pulverizador"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
-      <div><label class="fl">Status</label>
-        <select class="fi" id="leadStatus">
-          <option>Novo</option><option>Contatado</option><option>Qualificado</option><option>Perdido</option>
-        </select>
-      </div>
-      <div><label class="fl">Responsável</label>
-        <select class="fi" id="leadResp"><option value="">Selecione</option>
-          <option>Carlos</option><option>Christiano</option><option>Lucas</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>Everaldo</option><option>João Dias</option>
-        </select>
-      </div>
-    </div>
-    <div class="f"><label class="fl">Obs</label><input class="fi" id="leadObs" type="text" placeholder="Fonte, observações..."></div>
-    <button class="btn" style="margin:8px 12px 12px;background:#6a1b9a" onclick="salvarMkt('leads')">💾 Salvar Lead</button>
-    <div id="leadList"><div class="empty">Carregando...</div></div>
-  </div>
 
   <!-- LINKS DE INSPIRAÇÃO -->
   <div class="sec">
@@ -1384,22 +1354,69 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 
   <!-- Despesas -->
   <div id="rdPane_desp">
-    <div style="padding:8px 12px 4px;display:flex;gap:6px;flex-wrap:wrap">
-      <select id="dResFiltCat" onchange="renderResumoDespesas()" style="flex:1;min-width:130px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--wh)">
-        <option value="">Todas as categorias</option>
-        <option>Alimentação</option><option>Hospedagem e Transporte</option>
-        <option>Itens de Serviço e Peças</option><option>Outros</option>
-      </select>
-      <select id="dResFiltComp" onchange="renderResumoDespesas()" style="flex:1;min-width:120px;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--wh)">
-        <option value="">Todos compradores</option>
-        <option>Carlos</option><option>Christiano</option><option>Lucas</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>Everaldo</option><option>João Dias</option>
-      </select>
+    <input type="hidden" id="dResFiltCat" value="">
+    <input type="hidden" id="dResFiltComp" value="">
+    <div class="stats s3" style="margin-bottom:8px">
+      <div class="stat"><div class="stn" id="rdSt0" style="color:#4a148c;font-size:13px">R$0</div><div class="stl">Total</div></div>
+      <div class="stat"><div class="stn" id="rdSt1" style="color:#e65100;font-size:13px">R$0</div><div class="stl">A Pagar</div></div>
+      <div class="stat"><div class="stn" id="rdSt2" style="color:#1A6B2A">0</div><div class="stl">Despesas</div></div>
+    </div>
+    <div class="sec" style="margin-bottom:0;border-radius:0;border-left:none;border-right:none;border-top:none">
+      <div style="padding:10px 12px">
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Categoria</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+          <button onclick="setRdFiltro('cat','')" id="rdCatAll" class="opbtn" style="background:#6a1b9a;font-size:10px;padding:4px 10px">Todas</button>
+          <button onclick="setRdFiltro('cat','Alimentação')" id="rdCatAli" class="opbtn" style="background:#b71c1c;font-size:10px;padding:4px 10px;opacity:.45">🍽️ Aliment.</button>
+          <button onclick="setRdFiltro('cat','Hospedagem e Transporte')" id="rdCatHos" class="opbtn" style="background:#1a4a7a;font-size:10px;padding:4px 10px;opacity:.45">🏨 Hosp./Transp.</button>
+          <button onclick="setRdFiltro('cat','Itens de Serviço e Peças')" id="rdCatSrv" class="opbtn" style="background:#4a148c;font-size:10px;padding:4px 10px;opacity:.45">🔧 Serv./Peças</button>
+          <button onclick="setRdFiltro('cat','Outros')" id="rdCatOut" class="opbtn" style="background:#37474f;font-size:10px;padding:4px 10px;opacity:.45">📦 Outros</button>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Responsável</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <button onclick="setRdFiltro('resp','')" id="rdRespAll" class="opbtn" style="background:#6a1b9a;font-size:10px;padding:4px 10px">Todos</button>
+          <button onclick="setRdFiltro('resp','Carlos')" id="rdRespCar" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Carlos</button>
+          <button onclick="setRdFiltro('resp','Christiano')" id="rdRespChr" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Christiano</button>
+          <button onclick="setRdFiltro('resp','Lucas')" id="rdRespLuc" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Lucas</button>
+          <button onclick="setRdFiltro('resp','Sandro')" id="rdRespSan" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Sandro</button>
+          <button onclick="setRdFiltro('resp','João Acker')" id="rdRespJAc" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">João Acker</button>
+          <button onclick="setRdFiltro('resp','Welinton')" id="rdRespWel" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Welinton</button>
+          <button onclick="setRdFiltro('resp','Everaldo')" id="rdRespEve" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Everaldo</button>
+          <button onclick="setRdFiltro('resp','João Dias')" id="rdRespJDi" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">João Dias</button>
+        </div>
+      </div>
     </div>
     <div id="dResContent" style="padding:12px"><div class="empty">Carregando...</div></div>
   </div>
 
   <!-- Veículos -->
   <div id="rdPane_vei" style="display:none">
+    <div class="stats s3" style="margin-bottom:8px">
+      <div class="stat"><div class="stn" id="rdoVrSt0" style="color:#1a4a7a;font-size:13px">R$0</div><div class="stl">Total</div></div>
+      <div class="stat"><div class="stn" id="rdoVrSt1" style="color:#e65100">0</div><div class="stl">Registros</div></div>
+      <div class="stat"><div class="stn" id="rdoVrSt2" style="color:#1A6B2A">0</div><div class="stl">Este Mês</div></div>
+    </div>
+    <div class="sec" style="margin-bottom:0;border-radius:0;border-left:none;border-right:none;border-top:none">
+      <div style="padding:10px 12px">
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Categoria</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+          <button onclick="setRdVeiFiltro('tipo','')" id="rdVTAll" class="opbtn" style="background:#1a4a7a;font-size:10px;padding:4px 10px">Todas</button>
+          <button onclick="setRdVeiFiltro('tipo','Abastecimento')" id="rdVTAba" class="opbtn" style="background:#1a4a7a;font-size:10px;padding:4px 10px;opacity:.45">⛽ Abastec.</button>
+          <button onclick="setRdVeiFiltro('tipo','Borracharia')" id="rdVTBor" class="opbtn" style="background:#bf360c;font-size:10px;padding:4px 10px;opacity:.45">🔧 Borracharia</button>
+          <button onclick="setRdVeiFiltro('tipo','Lavagem')" id="rdVTLav" class="opbtn" style="background:#00695c;font-size:10px;padding:4px 10px;opacity:.45">🚿 Lavagem</button>
+          <button onclick="setRdVeiFiltro('tipo','Manutencao')" id="rdVTMan" class="opbtn" style="background:#4a148c;font-size:10px;padding:4px 10px;opacity:.45">🔩 Manutenção</button>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Veículo</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <button onclick="setRdVeiFiltro('vei','')" id="rdVVAll" class="opbtn" style="background:#1a4a7a;font-size:10px;padding:4px 10px">Todos</button>
+          <button onclick="setRdVeiFiltro('vei','Montana 2018')" id="rdVV1" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Montana 2018</button>
+          <button onclick="setRdVeiFiltro('vei','Montana 2020')" id="rdVV2" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Montana 2020</button>
+          <button onclick="setRdVeiFiltro('vei','Saveiro 2019')" id="rdVV3" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Saveiro 2019</button>
+          <button onclick="setRdVeiFiltro('vei','Saveiro 2024')" id="rdVV4" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Saveiro 2024</button>
+          <button onclick="setRdVeiFiltro('vei','Ka 2017')" id="rdVV5" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Ka 2017</button>
+          <button onclick="setRdVeiFiltro('vei','Mobi 2024')" id="rdVV6" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Mobi 2024</button>
+        </div>
+      </div>
+    </div>
     <div id="vResContent" style="padding:12px"><div class="empty">Carregando...</div></div>
   </div>
 
@@ -2589,6 +2606,7 @@ function _renderChkTable(){
   html+='<th style="padding:6px 4px;text-align:center;white-space:nowrap">✓ OK</th>';
   html+='<th style="padding:6px 8px;text-align:left">Problema</th>';
   html+='<th style="padding:6px 8px;text-align:left">Observação</th>';
+  html+='<th style="padding:6px 8px;text-align:left;white-space:nowrap">Batidas / Arranhões / Amassados</th>';
   html+='</tr></thead><tbody>';
 
   var lastSist='';
@@ -2596,7 +2614,7 @@ function _renderChkTable(){
     var idx=_chkItens.indexOf(it); // índice real para os ids
     // Separador de sistema
     if(it.sistema&&it.sistema!==lastSist){
-      html+='<tr style="background:#e8f0fe"><td colspan="6" style="padding:4px 8px;font-weight:700;font-size:10px;color:#1a4a7a;letter-spacing:.5px">'+it.sistema+'</td></tr>';
+      html+='<tr style="background:#e8f0fe"><td colspan="7" style="padding:4px 8px;font-weight:700;font-size:10px;color:#1a4a7a;letter-spacing:.5px">'+it.sistema+'</td></tr>';
       lastSist=it.sistema;
     }
     var rowBg=i%2===0?'#fff':'#f9f9f9';
@@ -2609,6 +2627,7 @@ function _renderChkTable(){
     html+='</td>';
     html+='<td style="padding:4px 6px"><input type="text" id="chkProb_'+idx+'" placeholder="descreva..." style="width:100%;border:1px solid var(--bd);border-radius:5px;padding:4px 6px;font-size:10px;font-family:inherit" oninput="_chkResumo()"></td>';
     html+='<td style="padding:4px 6px"><input type="text" id="chkObs_'+idx+'" placeholder="obs..." style="width:100%;border:1px solid var(--bd);border-radius:5px;padding:4px 6px;font-size:10px;font-family:inherit"></td>';
+    html+='<td style="padding:4px 6px"><input type="text" id="chkDano_'+idx+'" placeholder="local, tipo..." style="width:100%;border:1px solid var(--bd);border-radius:5px;padding:4px 6px;font-size:10px;font-family:inherit"></td>';
     html+='</tr>';
   });
   html+='</tbody></table></div>';
@@ -2661,11 +2680,13 @@ function salvarChecklist(){
     var cb=document.getElementById('chkOk_'+i);
     var pr=document.getElementById('chkProb_'+i);
     var ob=document.getElementById('chkObs_'+i);
+    var dn=document.getElementById('chkDano_'+i);
     return {
       num:it.num, sistema:it.sistema, item:it.item, acao:it.acao,
       ok: cb?cb.checked:false,
       problema: pr?pr.value.trim():'',
-      obs: ob?ob.value.trim():''
+      obs: ob?ob.value.trim():'',
+      dano: dn?dn.value.trim():''
     };
   });
 
@@ -4176,6 +4197,43 @@ function carregarResumoDespesas(){
     })
     .getDespesas();
 }
+// ── Filtros Resumo Despesas (pills) ──────────────────────────
+var _rdFiltCat='', _rdFiltResp='';
+
+function setRdFiltro(campo, val){
+  if(campo==='cat'){
+    _rdFiltCat=val;
+    var cm={'':'rdCatAll','Alimentação':'rdCatAli','Hospedagem e Transporte':'rdCatHos','Itens de Serviço e Peças':'rdCatSrv','Outros':'rdCatOut'};
+    Object.keys(cm).forEach(function(k){var el=document.getElementById(cm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
+    var el=document.getElementById('dResFiltCat');if(el)el.value=val;
+  }
+  if(campo==='resp'){
+    _rdFiltResp=val;
+    var rm={'':'rdRespAll','Carlos':'rdRespCar','Christiano':'rdRespChr','Lucas':'rdRespLuc','Sandro':'rdRespSan','João Acker':'rdRespJAc','Welinton':'rdRespWel','Everaldo':'rdRespEve','João Dias':'rdRespJDi'};
+    Object.keys(rm).forEach(function(k){var el=document.getElementById(rm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
+    var el=document.getElementById('dResFiltComp');if(el)el.value=val;
+  }
+  renderResumoDespesas();
+}
+
+// ── Filtros Resumo Veículos (pills) ──────────────────────────
+var _rdVFiltTipo='', _rdVFiltVei='';
+
+function setRdVeiFiltro(campo, val){
+  if(campo==='tipo'){
+    _rdVFiltTipo=val;
+    var tm={'':'rdVTAll','Abastecimento':'rdVTAba','Borracharia':'rdVTBor','Lavagem':'rdVTLav','Manutencao':'rdVTMan'};
+    Object.keys(tm).forEach(function(k){var el=document.getElementById(tm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
+  }
+  if(campo==='vei'){
+    _rdVFiltVei=val;
+    var vm={'':'rdVVAll','Montana 2018':'rdVV1','Montana 2020':'rdVV2','Saveiro 2019':'rdVV3','Saveiro 2024':'rdVV4','Ka 2017':'rdVV5','Mobi 2024':'rdVV6'};
+    Object.keys(vm).forEach(function(k){var el=document.getElementById(vm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
+  }
+  carregarResumoVei();
+}
+// ─────────────────────────────────────────────────────────────
+
 function renderResumoDespesas(){
   var el=document.getElementById('dResContent');if(!el)return;
   var filtCat=(document.getElementById('dResFiltCat')||{}).value||'';
@@ -4185,6 +4243,18 @@ function renderResumoDespesas(){
     if(filtComp&&d.comprador!==filtComp)return false;
     return true;
   });
+
+  // Stats
+  var stTotal=0, stAPagar=0;
+  rows.forEach(function(d){
+    var v=parseFloat(d.valor)||0;
+    stTotal+=v;
+    if(d.formaPgto==='Juliomaq Pagará'||(d.formaPgto==='Comprador Pagou'&&d.reembolsado!=='Sim'))stAPagar+=v;
+  });
+  var s0=document.getElementById('rdSt0'),s1=document.getElementById('rdSt1'),s2=document.getElementById('rdSt2');
+  if(s0)s0.textContent='R$'+Math.round(stTotal).toLocaleString('pt-BR');
+  if(s1)s1.textContent='R$'+Math.round(stAPagar).toLocaleString('pt-BR');
+  if(s2)s2.textContent=rows.length;
 
   if(!rows.length){el.innerHTML='<div class="empty">Nenhuma despesa encontrada</div>';return;}
 
@@ -4279,11 +4349,19 @@ function carregarResumoVei(){
   google.script.run
     .withSuccessHandler(function(rows){
       var veics={},tipos={},total=0;
-      (rows||[]).forEach(function(v){
+      var filtered=(rows||[]).filter(function(v){return(!_rdVFiltTipo||(v.tipo||'')===_rdVFiltTipo)&&(!_rdVFiltVei||(v.veiculo||'')=== _rdVFiltVei);});
+      var now=new Date(),thisMes=now.getMonth()+1,thisAno=now.getFullYear(),mesCont=0;
+      filtered.forEach(function(v){
         total+=(parseFloat(v.valor)||0);
         veics[v.veiculo]=(veics[v.veiculo]||0)+(parseFloat(v.valor)||0);
         tipos[v.tipo]=(tipos[v.tipo]||0)+1;
+        var dm=String(v.data||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if(dm&&parseInt(dm[2])===thisMes&&parseInt(dm[3])===thisAno)mesCont++;
       });
+      var vs0=document.getElementById('rdoVrSt0'),vs1=document.getElementById('rdoVrSt1'),vs2=document.getElementById('rdoVrSt2');
+      if(vs0)vs0.textContent='R$'+Math.round(total).toLocaleString('pt-BR');
+      if(vs1)vs1.textContent=filtered.length;
+      if(vs2)vs2.textContent=mesCont;
       var html='<div style="background:#e3f2fd;border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-size:11px;color:#1a4a7a;font-weight:700">TOTAL MANUTENÇÕES</div><div style="font-size:20px;font-weight:800;color:#1a4a7a">'+_rFmt(total)+'</div><div style="font-size:10px;color:#999">'+(rows||[]).length+' registros</div></div>';
       html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px">Por Veículo</div>';
       Object.keys(veics).forEach(function(v){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:#fff;border-radius:8px;border-left:4px solid #1a4a7a"><span style="font-size:11px;font-weight:600">'+v+'</span><span style="font-weight:700;color:#1a4a7a">'+_rFmt(veics[v])+'</span></div>';});
@@ -4612,11 +4690,27 @@ function autoFillCobrOS(num){
 var _mktCfg = {
   eventos:  {ids:['evDt','evNome','evLocal','evPublico','evResp','evResult','evObs'],   listId:'evList',
              fields:['data','nome','local','publico','responsavel','resultado','obs']},
-  campanhas:{ids:['campNome','campCanal','campOrc','campStatus','campResp','campObs'],   listId:'campList',
+  campanhas:{ids:['campTipo','campNome','campDtIni','campDtFim','campCanal','campOrc','campStatus','campResp','campObs'],   listId:'campList',
              fields:['nome','canal','orcamento','status','responsavel','obs']},
   leads:    {ids:['leadNome','leadTel','leadInt','leadStatus','leadResp','leadObs'],    listId:'leadList',
              fields:['nome','telefone','interesse','status','responsavel','obs']}
 };
+
+// ── Posts e Campanhas — toggle tipo ──────────────────────────
+function setCampTipo(t){
+  document.getElementById('campTipo').value=t;
+  var isPost=t==='Post';
+  document.getElementById('campDatasBox').style.display=isPost?'none':'block';
+  var btn=document.getElementById('campSalvarBtn');
+  if(btn)btn.textContent=isPost?'💾 Salvar Post':'💾 Salvar Campanha';
+  var lb=document.querySelector('#campNome').previousElementSibling;
+  if(lb)lb.textContent=isPost?'Título / Descrição *':'Nome da Campanha *';
+  ['ctPost','ctCamp'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){if((id==='ctPost')===isPost)el.classList.add('sel');else el.classList.remove('sel');}
+  });
+}
+// ─────────────────────────────────────────────────────────────
 
 function salvarMkt(sec){
   var cfg=_mktCfg[sec];if(!cfg)return;
