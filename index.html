@@ -4656,13 +4656,26 @@ function loadCobr(){
     .getCobrancas();
 }
 
+function _fmtCobrDate(v){
+  if(!v) return '';
+  var s=String(v).trim();
+  // dd/mm/yyyy ou dd/mm/yy
+  var m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+  if(m) return m[1]+'/'+m[2]+'/'+String(m[3]).slice(-2);
+  // string bruta de Date
+  var d=new Date(s);
+  if(!isNaN(d)) return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);
+  return s;
+}
+
 function renderCobr(){
   var el=document.getElementById('cobrList');if(!el)return;
   var hoje=new Date();hoje.setHours(0,0,0,0);
   var lista=_cobranças.filter(function(c){return !_cobrFiltro||c.status===_cobrFiltro;});
-  var total=lista.reduce(function(acc,c){return acc+(parseFloat(c.valor)||0);},0);
+  var totalGeral=_cobranças.reduce(function(a,c){return a+(parseFloat(c.valor)||0);},0);
+  var totalFilt=lista.reduce(function(a,c){return a+(parseFloat(c.valor)||0);},0);
   var totEl=document.getElementById('cobrTotal');
-  if(totEl) totEl.innerHTML='<strong>'+lista.length+' cobranças</strong> &nbsp;|&nbsp; Total: <strong style="color:#c62828">R$ '+total.toFixed(2).replace('.',',')+'</strong>';
+  if(totEl) totEl.innerHTML='<strong>'+lista.length+' cobrança'+(lista.length!==1?'s':'')+'</strong> &nbsp;|&nbsp; Total filtrado: <strong style="color:#c62828">R$ '+totalFilt.toFixed(2).replace('.',',')+'</strong>';
   if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhuma cobrança'+(  _cobrFiltro?' com este filtro':'')+'</div>';return;}
   var statusCor={'Pendente':'#e67e22','Pago':'#1A6B2A','Atrasado':'#c62828'};
   var statusIco={'Pendente':'⏳','Pago':'✅','Atrasado':'🔴'};
@@ -4670,16 +4683,38 @@ function renderCobr(){
   lista.forEach(function(c){
     var cor=statusCor[c.status]||'#666';
     var ico=statusIco[c.status]||'•';
-    var vDate=c.vencimento?new Date(c.vencimento.split('/').reverse().join('-')):null;
+    var vFmt=_fmtCobrDate(c.vencimento);
+    var vDate=null;
+    if(vFmt){var ps=vFmt.split('/');if(ps.length===3)vDate=new Date(parseInt('20'+ps[2]),parseInt(ps[1])-1,parseInt(ps[0]));}
     var atrasada=vDate&&c.status!=='Pago'&&vDate<hoje;
-    html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-    html+='<div style="flex:1"><div style="font-size:13px;font-weight:700">'+c.cliente+'</div>';
-    if(c.os) html+='<div style="font-size:10px;font-weight:700;color:#c62828;background:#fce4e4;display:inline-block;padding:1px 7px;border-radius:8px;margin-bottom:2px">'+c.os+'</div>';
-    html+='<div style="font-size:18px;font-weight:800;color:'+cor+'">R$ '+(parseFloat(c.valor)||0).toFixed(2).replace('.',',')+'</div>';
-    if(c.vencimento) html+='<div style="font-size:11px;color:'+(atrasada?'#c62828':'#999')+'">'+(atrasada?'⚠️ ':'')+'Venc: '+c.vencimento+(c.responsavel?' · '+c.responsavel:'')+'</div>';
-    if(c.obs) html+='<div style="font-size:11px;color:#666;font-style:italic">'+c.obs+'</div></div>';
-    html+='<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'18;padding:3px 8px;border-radius:10px;white-space:nowrap">'+ico+' '+c.status+'</span></div>';
+    if(atrasada) cor='#c62828';
+
+    html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px;border:1px solid #f0f0f0;border-left:4px solid '+cor+'">';
+
+    // Linha 1: cliente + badge status
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+    html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a">'+c.cliente+'</div>';
+    html+='<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'18;padding:3px 8px;border-radius:10px;white-space:nowrap">'+ico+' '+c.status+'</span>';
+    html+='</div>';
+
+    // Linha 2: OS + valor
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+    if(c.os) html+='<span style="font-size:10px;font-weight:700;color:#c62828;background:#fce4e4;padding:1px 7px;border-radius:8px">'+c.os+'</span>';
+    html+='<span style="font-size:20px;font-weight:800;color:'+cor+'">R$ '+(parseFloat(c.valor)||0).toFixed(2).replace('.',',')+'</span>';
+    html+='</div>';
+
+    // Linha 3: vencimento + responsável
+    if(vFmt||c.responsavel){
+      html+='<div style="font-size:11px;color:'+(atrasada?'#c62828':'#888')+';display:flex;align-items:center;gap:6px">';
+      if(vFmt) html+='<span>'+(atrasada?'⚠️ ':'📅 ')+'Venc: <b>'+vFmt+'</b></span>';
+      if(vFmt&&c.responsavel) html+='<span style="color:#ddd">·</span>';
+      if(c.responsavel) html+='<span>👷 '+c.responsavel+'</span>';
+      html+='</div>';
+    }
+
+    // Linha 4: obs
+    if(c.obs) html+='<div style="font-size:11px;color:#888;font-style:italic;margin-top:4px">'+c.obs+'</div>';
+
     html+='</div>';
   });
   el.innerHTML=html;
