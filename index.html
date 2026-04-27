@@ -5593,10 +5593,20 @@ function importarICS(inp){
   var reader=new FileReader();
   reader.onload=function(e){
     var texto=e.target.result;
-    var eventos=_parseICS(texto);
+    var todos=_parseICS(texto);
     inp.value='';
-    if(!eventos.length){toast('Nenhum evento encontrado no arquivo','warn');return;}
-    toast('Encontrados '+eventos.length+' evento(s). Salvando...','ok',3000);
+    if(!todos.length){toast('Nenhum evento encontrado no arquivo','warn');return;}
+    // Filtrar: apenas eventos dos últimos 12 meses até próximos 24 meses
+    var agora=new Date();
+    var limite_ini=new Date(agora.getFullYear()-1,agora.getMonth(),1);
+    var limite_fim=new Date(agora.getFullYear()+2,agora.getMonth(),1);
+    var eventos=todos.filter(function(ev){
+      if(!ev.dataISO)return false;
+      var d=new Date(ev.dataISO+'T00:00:00');
+      return d>=limite_ini&&d<=limite_fim;
+    });
+    if(!eventos.length){toast('Nenhum evento no período (últ. 12 meses + próx. 24 meses). Total no arquivo: '+todos.length,'warn',5000);return;}
+    toast(''+todos.length+' no arquivo → '+eventos.length+' no período. Salvando em lotes...','ok',4000);
     _iniciarProgresso('📁 Importando .ics',[
       {pct:20,label:'Lendo eventos...'},
       {pct:60,label:'Salvando na planilha...'},
@@ -5644,35 +5654,45 @@ function _parseICS(text){
     if(key.indexOf('DTEND')===0&&ev.diaInteiro==='Não')
       ev.horaFim=val.substring(9,11)+':'+val.substring(11,13);
     if(key.indexOf('ORGANIZER')===0){
-      var m=line.match(/CN=([^:;]+)/i);if(m)ev.responsavel=m[1];
+      var m=line.match(/CN=([^:;]+)/i);
+      if(m){var cn=m[1].trim();if(cn.indexOf('@')<0)ev.responsavel=cn;}
     }
   });
   return eventos;
 }
 
 function _salvarICSEventos(eventos,idx,ok,err,cb){
-  if(idx>=eventos.length){cb(ok,err);return;}
-  var ev=eventos[idx];
-  var dados={
-    titulo:ev.titulo||'',
-    cliente:'',
-    data:isoToLocal(ev.dataISO)||ev.dataISO,
-    dataISO:ev.dataISO||'',
-    diaInteiro:ev.diaInteiro||'Sim',
-    horaInicio:ev.horaInicio||'',
-    horaFim:ev.horaFim||'',
-    responsavel:ev.responsavel||'',
-    descricao:ev.descricao||'',
-    criadoEm:new Date().toLocaleString('pt-BR')
-  };
+  // Salva em lotes de 50 para não sobrecarregar o GAS
+  var BATCH=50;
+  var lote=[];
+  var fim=Math.min(idx+BATCH,eventos.length);
+  for(var i=idx;i<fim;i++){
+    var ev=eventos[i];
+    lote.push({
+      titulo:ev.titulo||'',
+      cliente:'',
+      data:isoToLocal(ev.dataISO)||ev.dataISO||'',
+      dataISO:ev.dataISO||'',
+      diaInteiro:ev.diaInteiro||'Sim',
+      horaInicio:ev.horaInicio||'',
+      horaFim:ev.horaFim||'',
+      responsavel:ev.responsavel||'',
+      descricao:ev.descricao||'',
+      criadoEm:new Date().toLocaleString('pt-BR')
+    });
+  }
   google.script.run
     .withSuccessHandler(function(r){
-      _salvarICSEventos(eventos,idx+1,ok+(r&&r.success?1:0),err+(r&&r.success?0:1),cb);
+      var salvos=(r&&r.salvos)||lote.length;
+      var erros=(r&&r.erros)||0;
+      if(fim>=eventos.length){cb(ok+salvos,err+erros);}
+      else{_salvarICSEventos(eventos,fim,ok+salvos,err+erros,cb);}
     })
     .withFailureHandler(function(){
-      _salvarICSEventos(eventos,idx+1,ok,err+1,cb);
+      if(fim>=eventos.length){cb(ok,err+lote.length);}
+      else{_salvarICSEventos(eventos,fim,ok,err+lote.length,cb);}
     })
-    .salvarAgendaEvento(dados);
+    .salvarAgendaEventosBatch(lote);
 }
 // ─────────────────────────────────────────────────────────────
 // ── Importar do Google Calendar ───────────────────────────────
