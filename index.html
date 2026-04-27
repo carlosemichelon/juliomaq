@@ -668,6 +668,9 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <div class="f"><label class="fl">Aguardando</label>
         <input class="fi" id="aAguard" type="text" placeholder="O que estou aguardando...">
       </div>
+      <div class="f"><label class="fl">Pendente (o que falta para finalizar)</label>
+        <input class="fi" id="aPend" type="text" placeholder="Ex: Retorno do cliente, aprovação...">
+      </div>
       <div style="display:flex;gap:8px;padding:0 12px">
         <button onclick="salvarAtiv()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 Salvar</button>
         <button onclick="toggleNovaAtiv()" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer">Cancelar</button>
@@ -1117,6 +1120,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   </div>
 </div>
 <div id="cobrConteudo" style="display:none">
+<div class="dbody">
   <!-- Stats -->
   <div class="stats s3" style="margin-bottom:8px">
     <div class="stat"><div class="stn" id="cbst0" style="color:#c62828">-</div><div class="stl">Total</div></div>
@@ -1163,6 +1167,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="cobrList"><div class="empty">Carregando...</div></div>
   </div>
 </div>
+</div><!-- /dbody -->
 </div><!-- /cobrConteudo -->
 </div><!-- /cobrTab -->
 
@@ -1257,6 +1262,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   </div>
 </div>
 <div id="finConteudo" style="display:none">
+<div class="dbody">
 
   <!-- Stats -->
   <div class="stats s3" style="margin-bottom:8px">
@@ -1324,8 +1330,10 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="finList"><div class="empty">Carregando...</div></div>
   </div>
 
-</div>
-</div>
+
+</div><!-- /dbody -->
+</div><!-- /finConteudo -->
+</div><!-- /finTab -->
 
 <!-- ══ RESUMO DESPESAS (protegido) ═══════════════════════════════════════════ -->
 <div id="rdespTab" style="display:none">
@@ -4422,6 +4430,7 @@ function salvarAtiv(){
     responsavel:(document.getElementById('aResp')||{}).value||'',
     obs:(document.getElementById('aObs')||{}).value||'',
     aguardando:(document.getElementById('aAguard')||{}).value||'',
+    pendente:(document.getElementById('aPend')||{}).value||'',
     criadoEm:new Date().toLocaleString('pt-BR')
   };
   _iniciarProgresso('📋 Atividade Salesforce',[{pct:20,label:'Preparando...'},{pct:60,label:'Salvando...'}]);
@@ -4431,7 +4440,7 @@ function salvarAtiv(){
       if(r&&r.success){
         toast('Atividade salva!','ok');
           _registrarUltimoSalvo('Atividade SF', dados.descricao);
-        ['aDesc','aObs','aAguard'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+        ['aDesc','aObs','aAguard','aPend'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
         var sel=document.getElementById('aStatus');if(sel)sel.value='Pendente';
         var rep=document.getElementById('aResp');if(rep)rep.value='';
         toggleNovaAtiv();
@@ -4466,10 +4475,19 @@ function renderAtiv(){
     html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px;">';
     html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
     html+='<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+a.descricao+'</div>';
-    var _dFmt=a.data?a.data.replace(/(\d{2})\/(\d{2})\/(20)(\d{2})/,'$1/$2/$4'):a.data;
-    if(a.data) html+='<div style="font-size:11px;color:'+(vencida?'#c00':'#999')+'">'+(vencida?'⚠️ ':'')+_dFmt+(a.responsavel?' · '+a.responsavel:'')+'</div>';
+    // Formatar data (aceita dd/mm/yyyy, dd/mm/yy e Date strings)
+    function _fmtAtivD(v){
+      if(!v) return '';
+      var m=String(v).match(/(\d{2})\/(\d{2})\/(20)?(\d{2})$/);
+      if(m) return m[1]+'/'+m[2]+'/'+(m[3]?m[4]:m[4]);
+      var d=new Date(v); if(!isNaN(d)) return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);
+      return v;
+    }
+    var _dFmt=_fmtAtivD(a.data);
+    if(_dFmt) html+='<div style="font-size:11px;color:'+(vencida?'#c00':'#999')+'">'+(vencida?'⚠️ ':'')+_dFmt+(a.responsavel?' · '+a.responsavel:'')+'</div>';
     if(a.obs) html+='<div style="font-size:11px;color:#666;margin-top:2px;font-style:italic">'+a.obs+'</div>';
     if(a.aguardando) html+='<div style="font-size:11px;color:#e65100;margin-top:3px;background:#fff3e0;border-radius:6px;padding:2px 7px;display:inline-block">⏳ '+a.aguardando+'</div>';
+    if(a.pendente) html+='<div style="font-size:11px;color:#bf360c;margin-top:3px;background:#fce4ec;border-radius:6px;padding:2px 7px;display:inline-block">🔲 Pendente: '+a.pendente+'</div>';
     html+='</div>';
     html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
     html+='<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'18;padding:2px 7px;border-radius:10px;white-space:nowrap">'+ico+' '+a.status+'</span>';
@@ -5239,7 +5257,7 @@ function loadAgEventos(){
       var thisMes=hoje.getMonth(),thisAno=hoje.getFullYear();
       var total=rows.length,mes=0,prox=0;
       rows.forEach(function(ev){
-        var d=new Date(ev.dataISO||'');
+        var d=_parseAgDate(ev.dataISO||ev.data||'')||new Date(0);
         if(d>=hoje)prox++;
         if(d.getMonth()===thisMes&&d.getFullYear()===thisAno)mes++;
       });
@@ -5295,11 +5313,18 @@ function renderAgCal(){
   if(lbl) lbl.textContent = meses[mes] + ' ' + ano;
 
   // Montar mapa de eventos por dia ISO (yyyy-mm-dd)
+  // Parser robusto: aceita yyyy-mm-dd e strings brutas de Date
+  function _parseAgDate(v){
+    if(!v) return null;
+    var s=String(v);
+    var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+    var d=new Date(s); return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
   var evMap = {};
   (_agEventos||[]).forEach(function(ev){
-    var key = ev.dataISO || '';
-    if(!key) return;
-    var d = new Date(key + 'T00:00:00');
+    var d = _parseAgDate(ev.dataISO||ev.data||'');
+    if(!d) return;
     if(d.getFullYear()===ano && d.getMonth()===mes){
       var dia = d.getDate();
       if(!evMap[dia]) evMap[dia] = [];
@@ -5352,7 +5377,7 @@ function renderAgCal(){
     // Eventos (máx 2 visíveis)
     var maxShow = 2;
     evs.slice(0, maxShow).forEach(function(ev){
-      var fut = new Date(ev.dataISO+'T00:00:00') >= hoje;
+      var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#1a4a7a' : '#9e9e9e';
       var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ev.horaInicio+' ' : '';
       var label = hora + (ev.titulo||'');
@@ -5390,7 +5415,7 @@ function renderAgEventos(){
   var hoje=new Date();hoje.setHours(0,0,0,0);
   var thisMes=hoje.getMonth(),thisAno=hoje.getFullYear();
   var lista=_agEventos.filter(function(ev){
-    var d=new Date(ev.dataISO||'');
+    var d=_parseAgDate(ev.dataISO||ev.data||'')||new Date(0);
     if(_agFiltro==='proximos') return d>=hoje;
     if(_agFiltro==='mes') return d.getMonth()===thisMes&&d.getFullYear()===thisAno;
     return true;
@@ -5405,7 +5430,8 @@ function renderAgEventos(){
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
     html+='<div style="flex:1">';
     html+='<div style="font-size:13px;font-weight:700;color:'+(passado?'#9e9e9e':'#1a1a1a')+'">'+ev.titulo+'</div>';
-    html+='<div style="font-size:11px;color:#555;margin-top:2px">📅 '+ev.data+(ev.diaInteiro==='Não'?' · '+ev.horaInicio+' – '+ev.horaFim:'')+'</div>';
+    var _evDFmt=(function(v){if(!v)return '';var s=String(v);var m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);if(m)return m[1]+'/'+m[2]+'/'+String(m[3]).slice(-2);var d=new Date(s);if(!isNaN(d))return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);return s;})(ev.dataISO||ev.data);
+    html+='<div style="font-size:11px;color:#555;margin-top:2px">📅 '+_evDFmt+(ev.diaInteiro==='Não'?' · '+ev.horaInicio+' – '+ev.horaFim:'')+'</div>';
     if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
     if(ev.responsavel) html+='<div style="font-size:10px;color:#999">👷 '+ev.responsavel+'</div>';
     if(ev.descricao) html+='<div style="font-size:10px;color:#888;font-style:italic;margin-top:2px">'+ev.descricao+'</div>';
@@ -5419,7 +5445,9 @@ function renderAgEventos(){
 }
 
 function abrirEventoGCal(ev){
-  var dt=(ev.dataISO||'').replace(/-/g,'');
+  var _raw=ev.dataISO||ev.data||'';
+  var _pd=_parseAgDate(_raw);
+  var dt=_pd?String(_pd.getFullYear())+(('0'+(_pd.getMonth()+1)).slice(-2))+(('0'+_pd.getDate()).slice(-2)):'';
   var titulo=ev.titulo+(ev.cliente?' — '+ev.cliente:'');
   var detalhes='Cliente: '+(ev.cliente||'--')+'\nResponsável: '+(ev.responsavel||'--')+'\n'+(ev.descricao||'');
   var url;
