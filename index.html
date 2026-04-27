@@ -1433,17 +1433,13 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 </div>
 
 <!-- MODAL DETALHE EVENTO AGENDA -->
-<div id="agEvModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:flex-end;justify-content:center">
-  <div style="background:#fff;width:100%;max-width:600px;border-radius:16px 16px 0 0;padding:0 0 24px;max-height:85vh;overflow-y:auto">
-    <div style="background:var(--bl);padding:14px 16px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">
+<div id="agEvModal" onclick="if(event.target===this)fecharDetalheEvento()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+    <div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:15px;font-weight:700;color:#fff">📅 Evento</span>
       <button onclick="fecharDetalheEvento()" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit;touch-action:manipulation">✕</button>
     </div>
-    <div id="agEvContent" style="padding:16px 16px 8px"></div>
-    <div style="padding:0 16px;display:flex;gap:8px">
-      <button id="agEvGCalBtn" onclick="" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--bl);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">📅 Abrir no GCal</button>
-      <button onclick="fecharDetalheEvento()" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Fechar</button>
-    </div>
+    <div id="agEvContent" style="padding:16px"></div>
   </div>
 </div>
 
@@ -5427,7 +5423,6 @@ function _abrirEvIdx(i){var ev=(_agEventos||[])[i];if(ev)abrirDetalheEvento(ev);
 function abrirDetalheEvento(ev){
   var modal=document.getElementById('agEvModal');
   var box=document.getElementById('agEvContent');
-  var gcalBtn=document.getElementById('agEvGCalBtn');
   if(!modal||!box) return;
 
   var d=_parseAgDate(ev.dataISO||ev.data||'');
@@ -5453,7 +5448,6 @@ function abrirDetalheEvento(ev){
   if(passado) html+='<div style=\"font-size:11px;color:#9e9e9e;text-align:center;margin-top:4px\">Evento passado</div>';
 
   box.innerHTML=html;
-  if(gcalBtn) gcalBtn.onclick=function(){abrirEventoGCal(ev);fecharDetalheEvento();};
   modal.style.display='flex';
   document.body.style.overflow='hidden';
 }
