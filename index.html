@@ -4558,7 +4558,7 @@ function _vendRender(listId, rows, campos){
 // Concorrência
 function salvarConc(){
   var cli=_gv('cncCli');if(!cli){toast('Informe o cliente','warn');return;}
-  _vendSalvar('conc',{cncDt:'cncDt',cncCli:'cncCli',cncResp:'cncResp',cncMarca:'cncMarca',cncModelo:'cncModelo',cncAno:'cncAno',cncValor:'cncValor',cncObs:'cncObs'},{},loadConc);
+  _vendSalvar('conc',{cncDt:_gv('cncDt'),cncCli:_gv('cncCli'),cncResp:_gv('cncResp'),cncMarca:_gv('cncMarca'),cncModelo:_gv('cncModelo'),cncAno:_gv('cncAno'),cncValor:_gv('cncValor'),cncObs:_gv('cncObs')},{},loadConc);
 }
 function loadConc(){
   var el=document.getElementById('concList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
@@ -4570,7 +4570,7 @@ function loadConc(){
 // Gestão de Clientes
 function salvarParq(){
   var cli=_gv('parqCli');if(!cli){toast('Informe o cliente','warn');return;}
-  _vendSalvar('parq',{parqDt:'parqDt',parqCli:'parqCli',parqContato:'parqContato',parqArea:'parqArea',parqCulturas:'parqCulturas',parqResp:'parqResp',parqMarca:'parqMarca',parqModelo:'parqModelo',parqAno:'parqAno',parqHoras:'parqHoras',parqEstado:'parqEstado',parqObs:'parqObs'},{},loadParq);
+  _vendSalvar('parq',{parqDt:_gv('parqDt'),parqCli:_gv('parqCli'),parqContato:_gv('parqContato'),parqArea:_gv('parqArea'),parqCulturas:_gv('parqCulturas'),parqResp:_gv('parqResp'),parqMarca:_gv('parqMarca'),parqModelo:_gv('parqModelo'),parqAno:_gv('parqAno'),parqHoras:_gv('parqHoras'),parqEstado:_gv('parqEstado'),parqObs:_gv('parqObs')},{},loadParq);
 }
 function loadParq(){
   var el=document.getElementById('parqList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
@@ -4581,7 +4581,7 @@ function loadParq(){
 
 // Usados
 function salvarUsad(){
-  _vendSalvar('usad',{usadDt:'usadDt',usadResp:'usadResp',usadMarca:'usadMarca',usadModelo:'usadModelo',usadAno:'usadAno',usadHoras:'usadHoras',usadPreco:'usadPreco',usadCond:'usadCond',usadObs:'usadObs'},{},loadUsad);
+  _vendSalvar('usad',{usadDt:_gv('usadDt'),usadResp:_gv('usadResp'),usadMarca:_gv('usadMarca'),usadModelo:_gv('usadModelo'),usadAno:_gv('usadAno'),usadHoras:_gv('usadHoras'),usadPreco:_gv('usadPreco'),usadCond:_gv('usadCond'),usadObs:_gv('usadObs')},{},loadUsad);
 }
 function loadUsad(){
   var el=document.getElementById('usadList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
