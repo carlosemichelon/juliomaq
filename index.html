@@ -4787,23 +4787,21 @@ function loadParqueM(){
 var _rcClientesRows = [], _rcParqueRows = [];
 
 function loadResumoClientes(){
-  document.getElementById('rcList').innerHTML = '<div class="empty">Carregando...</div>';
-  document.getElementById('rcParqueList').innerHTML = '<div class="empty">Carregando...</div>';
-  // Carregar clientes
+  var elC=document.getElementById('rcList');
+  var elP=document.getElementById('rcParqueList');
+  if(elC)elC.innerHTML='<div class="empty">Carregando...</div>';
+  if(elP)elP.innerHTML='<div class="empty">Carregando...</div>';
+  // Carregar clientes e parques em paralelo
+  var prontoC=false, prontoP=false;
+  function checar(){ if(prontoC&&prontoP) renderResumoClientes(); }
   google.script.run
-    .withSuccessHandler(function(rows){
-      _rcClientesRows = rows||[];
-      // Carregar parques
-      google.script.run
-        .withSuccessHandler(function(prows){
-          _rcParqueRows = prows||[];
-          renderResumoClientes();
-        })
-        .withFailureHandler(function(){_rcParqueRows=[];renderResumoClientes();})
-        .getParqueMaquinas();
-    })
-    .withFailureHandler(function(){_rcClientesRows=[];renderResumoClientes();})
+    .withSuccessHandler(function(rows){ _rcClientesRows=rows||[]; prontoC=true; checar(); })
+    .withFailureHandler(function(){ _rcClientesRows=[]; prontoC=true; checar(); })
     .getVendas('parq');
+  google.script.run
+    .withSuccessHandler(function(prows){ _rcParqueRows=prows||[]; prontoP=true; checar(); })
+    .withFailureHandler(function(){ _rcParqueRows=[]; prontoP=true; checar(); })
+    .getParqueMaquinas();
 }
 
 function renderResumoClientes(){
@@ -4884,13 +4882,19 @@ function renderResumoClientes(){
 // Gestão de Clientes
 function salvarParq(){
   var cli=_gv('parqCli');if(!cli){toast('Informe o cliente','warn');return;}
-  _vendSalvar('parq',{parqDt:_gv('parqDt'),parqCli:_gv('parqCli'),parqContato:_gv('parqContato'),parqArea:_gv('parqArea'),parqCulturas:_gv('parqCulturas'),parqResp:_gv('parqResp'),parqMarca:_gv('parqMarca'),parqModelo:_gv('parqModelo'),parqAno:_gv('parqAno'),parqHoras:_gv('parqHoras'),parqEstado:_gv('parqEstado'),parqObs:_gv('parqObs')},{},loadParq);
+  _vendSalvar('parq',{parqDt:_gv('parqDt'),parqCli:_gv('parqCli'),parqContato:_gv('parqContato'),parqArea:_gv('parqArea'),parqCulturas:_gv('parqCulturas'),parqResp:_gv('parqResp'),parqAno:_gv('parqAno'),parqHoras:_gv('parqHoras'),parqEstado:_gv('parqEstado'),parqObs:_gv('parqObs')},{},function(){loadParq();toast('Cliente salvo!','ok');});
 }
 function loadParq(){
-  var el=document.getElementById('parqList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
-  google.script.run.withSuccessHandler(function(rows){
-    _vendRender('parqList',rows,[{k:'data',l:'Data'},{k:'cliente',l:'Cliente',big:true},{k:'contato',l:'Contato'},{k:'area',l:'Área (ha)'},{k:'culturas',l:'Culturas'},{k:'marca',l:'Marca'},{k:'modelo',l:'Modelo'},{k:'ano',l:'Ano'},{k:'horas',l:'Horas'},{k:'estado',l:'Estado'},{k:'responsavel',l:'Resp.'},{k:'obs',l:'Obs'}]);
-  }).withFailureHandler(function(){}).getVendas('parq');
+  // parqList foi movido para Resumo Clientes — apenas atualiza os dados internos
+  google.script.run
+    .withSuccessHandler(function(rows){
+      _rcClientesRows = rows||[];
+      // Se a aba Resumo Clientes estiver visível, atualizar
+      var rcTab=document.getElementById('rclientesTab');
+      if(rcTab&&rcTab.style.display!=='none') renderResumoClientes();
+    })
+    .withFailureHandler(function(){})
+    .getVendas('parq');
 }
 
 
