@@ -1318,7 +1318,6 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <div><label class="fl">Tipo *</label>
         <select class="fi" id="finTipo" onchange="setFinTipoCor(this)">
           <option value="Recebimento">💚 Recebimento Cliente</option>
-          <option value="Pagamento Máquina">🔴 Pagamento Máquina</option>
           <option value="Pagamento Fornecedor">🔴 Pagamento Fornecedor</option>
         </select>
       </div>
@@ -1454,6 +1453,17 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 
 </div>
 </div>
+</div>
+
+<!-- MODAL EVENTOS DO DIA -->
+<div id="agDiaModal" onclick="if(event.target===this)fecharDiaModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9001;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+    <div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span id="agDiaModalTitle" style="font-size:15px;font-weight:700;color:#fff">📅 Eventos do dia</span>
+      <button onclick="fecharDiaModal()" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit;touch-action:manipulation">✕</button>
+    </div>
+    <div id="agDiaModalList" style="overflow-y:auto;padding:12px 16px"></div>
+  </div>
 </div>
 
 <!-- MODAL DETALHE EVENTO AGENDA -->
@@ -1738,6 +1748,7 @@ function goTab(t){
   if(t==='conc') loadConc();
   if(t==='parq'){ loadParq(); loadParqueM(); }
   if(t==='usad') loadUsad();
+  if(t==='mkt') loadMkt();
   if(t==='desp'){
     carregarFornecedores();
   }
@@ -5620,7 +5631,7 @@ function renderAgCal(){
     }
 
     // Eventos (máx 2 visíveis)
-    var maxShow = 2;
+    var maxShow = 3;
     evs.slice(0, maxShow).forEach(function(ev){
       var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#1a4a7a' : '#9e9e9e';
@@ -5632,7 +5643,8 @@ function renderAgCal(){
 
     // Overflow
     if(evs.length > maxShow){
-      html += '<div style="font-size:8px;color:#1a4a7a;font-weight:700;text-align:center">+'+(evs.length-maxShow)+' mais</div>';
+      var _diaKey = ano+'-'+(('0'+(mes+1)).slice(-2))+'-'+(('0'+d2).slice(-2));
+      html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="font-size:8px;color:#1a4a7a;font-weight:700;text-align:center;cursor:pointer;background:#eef2ff;border-radius:3px;padding:1px 2px;margin-top:1px">+'+(evs.length-maxShow)+' mais</div>';
     }
 
     html += '</div>';
@@ -5652,6 +5664,44 @@ function renderAgCal(){
 }
 
 // ── Modal detalhe evento Agenda ───────────────────────────────
+// ── Modal eventos do dia ─────────────────────────────────────
+function _abrirDiaModal(diaISO){
+  var modal=document.getElementById('agDiaModal');
+  var list=document.getElementById('agDiaModalList');
+  var title=document.getElementById('agDiaModalTitle');
+  if(!modal||!list) return;
+  var d=_parseAgDate(diaISO);
+  var meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  if(d&&title) title.textContent='📅 '+d.getDate()+' de '+meses[d.getMonth()]+' '+d.getFullYear();
+  var evs=(_agEventos||[]).filter(function(ev){
+    var ed=_parseAgDate(ev.dataISO||ev.data||'');
+    return ed&&ed.getFullYear()===d.getFullYear()&&ed.getMonth()===d.getMonth()&&ed.getDate()===d.getDate();
+  });
+  var hoje=new Date();hoje.setHours(0,0,0,0);
+  var html='';
+  evs.forEach(function(ev,i){
+    var fut=d>=hoje;
+    var cor=fut?'var(--bl)':'#9e9e9e';
+    var hora=(ev.diaInteiro==='Não'&&ev.horaInicio)?ev.horaInicio+(ev.horaFim?' – '+ev.horaFim:''):'Dia inteiro';
+    html+='<div onclick="_abrirEvIdx('+(_agEventos||[]).indexOf(ev)+')" style="border-left:3px solid '+cor+';padding:8px 10px;margin-bottom:8px;border-radius:0 8px 8px 0;background:#f8f9fa;cursor:pointer">';
+    html+='<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+(ev.titulo||'')+'</div>';
+    html+='<div style="font-size:11px;color:#666">🕐 '+hora+(ev.responsavel?' · 👷 '+ev.responsavel:'')+'</div>';
+    if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
+    html+='</div>';
+  });
+  if(!html) html='<div class="empty" style="padding:20px">Sem eventos</div>';
+  list.innerHTML=html;
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+function fecharDiaModal(){
+  var modal=document.getElementById('agDiaModal');
+  if(modal)modal.style.display='none';
+  document.body.style.overflow='';
+}
+// ─────────────────────────────────────────────────────────────
+
 function _abrirEvIdx(i){var ev=(_agEventos||[])[i];if(ev)abrirDetalheEvento(ev);}
 function abrirDetalheEvento(ev){
   var modal=document.getElementById('agEvModal');
