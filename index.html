@@ -5816,7 +5816,7 @@ function salvarEdicaoEvento(){
       }
     })
     .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
-    .editarAgendaEvento(dados);
+    .salvarAgendaEvento(dados); // id presente = edição
 }
 // ─────────────────────────────────────────────────────────────
 
