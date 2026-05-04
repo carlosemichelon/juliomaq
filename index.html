@@ -200,6 +200,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <span class="tab-grp-lbl" style="color:#e65100">Vendas</span>
   <button class="tab" id="tb11" onclick="goTab('conc')"  style="color:#e65100"><span class="tico">🏁</span>Concorrência</button>
   <button class="tab" id="tb12" onclick="goTab('parq')"  style="color:#e65100"><span class="tico">👥</span>Gest. Clientes</button>
+  <button class="tab" id="tb12b" onclick="goTab('rclientes')" style="color:#374151"><span class="tico">📊</span>Resumo Clientes</button>
   <button class="tab" id="tb13" onclick="goTab('usad')"  style="color:#e65100"><span class="tico">🔄</span>Usados</button>
   <button class="tab" id="tb16" onclick="goTab('fin')"   style="color:#2e7d32"><span class="tico">💵</span>Financeiro</button>
 </div>
@@ -1075,10 +1076,37 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="pmList" style="padding:0 12px 8px"></div>
   </div>
 
-  <div class="sec" style="margin-top:8px">
-    <div class="sh" style="background:#e65100">Registros</div>
-    <div id="parqList"><div class="empty">Carregando...</div></div>
+</div>
+</div>
+
+<!-- ══ RESUMO CLIENTES ══════════════════════════════════════════════════════ -->
+<div id="rclientesTab" style="display:none">
+<div class="dbody">
+
+  <!-- Stats -->
+  <div class="stats s3" style="margin-bottom:8px">
+    <div class="stat"><div class="stn" id="rcSt0" style="color:#374151">0</div><div class="stl">Clientes</div></div>
+    <div class="stat"><div class="stn" id="rcSt1" style="color:#e65100">0</div><div class="stl">Parques</div></div>
+    <div class="stat"><div class="stn" id="rcSt2" style="color:#1A6B2A">0</div><div class="stl">Máquinas</div></div>
   </div>
+
+  <!-- Busca -->
+  <div style="padding:0 0 8px">
+    <input class="fi" id="rcBusca" type="text" placeholder="🔍 Buscar cliente..." oninput="renderResumoClientes()" style="margin:0">
+  </div>
+
+  <!-- Registros de clientes -->
+  <div class="sec" style="margin-bottom:8px">
+    <div class="sh" style="background:#e65100"><div class="si" style="background:rgba(255,255,255,.1)">👥</div>Clientes Cadastrados</div>
+    <div id="rcList"><div class="empty">Carregando...</div></div>
+  </div>
+
+  <!-- Parque de Máquinas -->
+  <div class="sec">
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">🚜</div>Parques de Máquinas</div>
+    <div id="rcParqueList"><div class="empty">Carregando...</div></div>
+  </div>
+
 </div>
 </div>
 
@@ -1467,7 +1495,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 </div>
 
 <!-- MODAL DETALHE EVENTO AGENDA -->
-<div id="agEvModal" onclick="if(event.target===this)fecharDetalheEvento()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;padding:16px">
+<div id="agEvModal" onclick="if(event.target===this)fecharDetalheEvento()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9002;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)">
     <div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:15px;font-weight:700;color:#fff">📅 Evento</span>
@@ -1710,7 +1738,7 @@ function _confirmarDriveUrls(){
 // ── Tabs ─────────────────────────────────────────────────────
 function goTab(t){
   var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10','tb11','tb12','tb13','tb14','tb15','tb16','tb17'];
-  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab'];
+  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab','rclientesTab'];
   var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9,conc:10,parq:11,usad:12,cobr:13,mkt:14,fin:15,rdesp:16};
   TBS.forEach(function(id,i){
     var b=document.getElementById(id), p=document.getElementById(PANES[i]);
@@ -1747,6 +1775,7 @@ function goTab(t){
   if(t==='prosp') loadProsp();
   if(t==='conc') loadConc();
   if(t==='parq'){ loadParq(); loadParqueM(); }
+  if(t==='rclientes') loadResumoClientes();
   if(t==='usad') loadUsad();
   if(t==='mkt') loadMkt();
   if(t==='desp'){
@@ -4726,6 +4755,105 @@ function loadParqueM(){
     .getParqueMaquinas();
 }
 // ─────────────────────────────────────────────────────────────
+
+// ══ RESUMO CLIENTES ══════════════════════════════════════════
+var _rcClientesRows = [], _rcParqueRows = [];
+
+function loadResumoClientes(){
+  document.getElementById('rcList').innerHTML = '<div class="empty">Carregando...</div>';
+  document.getElementById('rcParqueList').innerHTML = '<div class="empty">Carregando...</div>';
+  // Carregar clientes
+  google.script.run
+    .withSuccessHandler(function(rows){
+      _rcClientesRows = rows||[];
+      // Carregar parques
+      google.script.run
+        .withSuccessHandler(function(prows){
+          _rcParqueRows = prows||[];
+          renderResumoClientes();
+        })
+        .withFailureHandler(function(){_rcParqueRows=[];renderResumoClientes();})
+        .getParqueMaquinas();
+    })
+    .withFailureHandler(function(){_rcClientesRows=[];renderResumoClientes();})
+    .getVendas('parq');
+}
+
+function renderResumoClientes(){
+  var busca = ((document.getElementById('rcBusca')||{}).value||'').toLowerCase().trim();
+
+  // Stats globais
+  var totalMaquinas = _rcParqueRows.reduce(function(a,r){
+    try{return a+(JSON.parse(r.maquinas||'[]')).length;}catch(e){return a;}
+  },0);
+  var s0=document.getElementById('rcSt0'),s1=document.getElementById('rcSt1'),s2=document.getElementById('rcSt2');
+  if(s0)s0.textContent=_rcClientesRows.length;
+  if(s1)s1.textContent=_rcParqueRows.length;
+  if(s2)s2.textContent=totalMaquinas;
+
+  // Lista clientes
+  var elC=document.getElementById('rcList');
+  var clientes = busca ? _rcClientesRows.filter(function(r){
+    return (r.cliente||'').toLowerCase().indexOf(busca)>=0 ||
+           (r.responsavel||'').toLowerCase().indexOf(busca)>=0 ||
+           (r.culturas||'').toLowerCase().indexOf(busca)>=0;
+  }) : _rcClientesRows;
+
+  if(!clientes.length){
+    elC.innerHTML='<div class="empty" style="padding:16px">Nenhum cliente'+(busca?' encontrado':'')+'</div>';
+  } else {
+    var html='';
+    clientes.forEach(function(r){
+      var parque = _rcParqueRows.find(function(p){return (p.cliente||'').toLowerCase()===(r.cliente||'').toLowerCase();});
+      var nMaq = 0;
+      if(parque){try{nMaq=JSON.parse(parque.maquinas||'[]').length;}catch(e){}}
+      html+='<div style="border-left:3px solid #e65100;padding:10px 12px;margin:6px 12px;border-radius:0 8px 8px 0;background:#fff">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">';
+      html+='<div style="font-size:13px;font-weight:700">'+( r.cliente||'--')+'</div>';
+      if(nMaq) html+='<span style="font-size:10px;font-weight:700;color:#374151;background:#f0f0f0;padding:2px 7px;border-radius:8px">🚜 '+nMaq+' máq.</span>';
+      html+='</div>';
+      var infos=[];
+      if(r.contato) infos.push('📞 '+r.contato);
+      if(r.area) infos.push('🌱 '+r.area+' ha');
+      if(r.culturas) infos.push(r.culturas);
+      if(r.responsavel) infos.push('👷 '+r.responsavel);
+      if(infos.length) html+='<div style="font-size:11px;color:#555;margin-bottom:3px">'+infos.join(' · ')+'</div>';
+      var props=[];
+      if(r.estado) props.push('Estado: '+r.estado);
+      if(r.horas) props.push(r.horas+'h');
+      if(r.obs) props.push(r.obs);
+      if(props.length) html+='<div style="font-size:10px;color:#888;font-style:italic">'+props.join(' · ')+'</div>';
+      if(r.data) html+='<div style="font-size:10px;color:#bbb;margin-top:3px">'+r.data+'</div>';
+      html+='</div>';
+    });
+    elC.innerHTML=html;
+  }
+
+  // Lista parques
+  var elP=document.getElementById('rcParqueList');
+  var parques = busca ? _rcParqueRows.filter(function(r){
+    return (r.cliente||'').toLowerCase().indexOf(busca)>=0;
+  }) : _rcParqueRows;
+
+  if(!parques.length){
+    elP.innerHTML='<div class="empty" style="padding:16px">Nenhum parque'+(busca?' encontrado':'')+'</div>';
+  } else {
+    var html2='';
+    parques.forEach(function(r){
+      var mqs=[];try{mqs=JSON.parse(r.maquinas||'[]');}catch(e){}
+      html2+='<div style="padding:10px 12px;margin:6px 12px;border:1px solid #eee;border-radius:8px;background:#fff">';
+      html2+='<div style="font-size:13px;font-weight:700;margin-bottom:6px">🚜 '+r.cliente+' <span style="font-size:10px;font-weight:400;color:#888">('+mqs.length+' máquina'+(mqs.length!==1?'s':'')+')</span></div>';
+      mqs.forEach(function(m){
+        var det=[m.marca,m.modelo,m.ano,m.horas?(m.horas+'h'):''].filter(Boolean).join(' ');
+        html2+='<div style="font-size:11px;color:#374151;padding:3px 0;border-bottom:1px solid #f5f5f5">'+det+(m.estado?' — <span style="color:#888">'+m.estado+'</span>':'')+(m.obs?' · <i style="color:#aaa">'+m.obs+'</i>':'')+'</div>';
+      });
+      html2+='<div style="font-size:10px;color:#bbb;margin-top:4px">'+r.salvoEm+'</div>';
+      html2+='</div>';
+    });
+    elP.innerHTML=html2;
+  }
+}
+// ─────────────────────────────────────────────────────────────
 // Gestão de Clientes
 function salvarParq(){
   var cli=_gv('parqCli');if(!cli){toast('Informe o cliente','warn');return;}
@@ -5683,7 +5811,7 @@ function _abrirDiaModal(diaISO){
     var fut=d>=hoje;
     var cor=fut?'var(--bl)':'#9e9e9e';
     var hora=(ev.diaInteiro==='Não'&&ev.horaInicio)?ev.horaInicio+(ev.horaFim?' – '+ev.horaFim:''):'Dia inteiro';
-    html+='<div onclick="_abrirEvIdx('+(_agEventos||[]).indexOf(ev)+')" style="border-left:3px solid '+cor+';padding:8px 10px;margin-bottom:8px;border-radius:0 8px 8px 0;background:#f8f9fa;cursor:pointer">';
+    html+='<div onclick="fecharDiaModal();_abrirEvIdx('+(_agEventos||[]).indexOf(ev)+')" style="border-left:3px solid '+cor+';padding:8px 10px;margin-bottom:8px;border-radius:0 8px 8px 0;background:#f8f9fa;cursor:pointer">';
     html+='<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+(ev.titulo||'')+'</div>';
     html+='<div style="font-size:11px;color:#666">🕐 '+hora+(ev.responsavel?' · 👷 '+ev.responsavel:'')+'</div>';
     if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
