@@ -1662,13 +1662,117 @@ function init() {
   });
   // Open Nova OS tab on start
   goTab('form');
-  // Wait for google.script.run
+  // Carregamento inicial — uma chamada para buscar tudo
   function tryInit(){
-    if(typeof google!=='undefined'&&google.script&&google.script.run){ loadOrdens(); loadVei(); }
-    else { setTimeout(tryInit,300); }
+    if(typeof google!=='undefined'&&google.script&&google.script.run){
+      _carregarTudo();
+    } else { setTimeout(tryInit,300); }
   }
   tryInit();
 }
+
+// ══ CACHE GLOBAL — lerTudoPlanilha ═══════════════════════════
+var _cache = {};
+var _cacheCarregado = false;
+
+function _carregarTudo(cb){
+  setConn('','Carregando dados...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      _cache = r || {};
+      _cacheCarregado = true;
+
+      // Popular variáveis globais usadas pelas funções de render
+      if(_cache.ordens)       { ordens = _processarOrdens(_cache.ordens); renderOrdens(); }
+      if(_cache.manutencoes)  { _veiData = _cache.manutencoes; renderVeiList(_veiData); }
+      if(_cache.ferramentas)  { _cacheInjectFerr(_cache.ferramentas); }
+      if(_cache.prospeccoes)  { _cacheInjectProsp(_cache.prospeccoes); }
+      if(_cache.garantias)    { renderGarantias(_cache.garantias); }
+      if(_cache.atividades)   { _atividades = _cache.atividades; renderAtiv(); }
+      if(_cache.despesas)     { despesas = _cache.despesas; _despResRows = _cache.despesas; renderDesps(); }
+      if(_cache.agendaEventos){ _agEventos = _cache.agendaEventos; renderAgEventos(); if(_agView==='cal') renderAgCal(); }
+      if(_cache.cobrancas)    { _cobranças = _cache.cobrancas; renderCobr(); }
+      if(_cache.financeiro)   { _cacheInjectFin(_cache.financeiro); }
+
+      // Números sequenciais
+      if(_cache.proximaOS)    { var el=document.getElementById('ordBadge'); if(el) el.textContent=_cache.proximaOS; }
+      if(_cache.proximaProsp) _nextProspNum = _cache.proximaProsp;
+      if(_cache.proximoOrc)   _nextOrcNum   = _cache.proximoOrc;
+
+      // Resumo despesas
+      if(_cache.despesas)     { _despResRows = _cache.despesas; }
+
+      var meta = _cache._meta || {};
+      setConn('g', 'Conectado — '+( meta.totalColecoes||'?')+' coleções');
+      if(meta.erros && meta.erros.length) console.warn('lerTudoPlanilha erros:', meta.erros);
+      if(cb) cb();
+    })
+    .withFailureHandler(function(e){
+      setConn('r','Erro ao conectar: '+e.message);
+      // Fallback: carregar individualmente
+      loadOrdens(); loadVei();
+    })
+    .lerTudoPlanilha();
+}
+
+// Recarregar uma coleção específica após salvar
+function _recarregarColecao(colecao, cb){
+  var fnMap = {
+    'ordens':      function(){ loadOrdens(); },
+    'manutencoes': function(){ loadVei(); },
+    'ferramentas': function(){ loadFerr(); },
+    'prospeccoes': function(){ loadProsp(); },
+    'garantias':   function(){ loadGarantias(); loadAtividades(); },
+    'atividades':  function(){ loadAtividades(); },
+    'despesas':    function(){ loadDesps(); },
+    'agendaEventos': function(){ loadAgEventos(); },
+    'cobrancas':   function(){ loadCobr(); },
+    'financeiro':  function(){ loadFin(); },
+    'vendas':      function(){ loadConc(); loadParq(); loadUsad(); },
+    'marketing':   function(){ loadMkt(); },
+  };
+  if(fnMap[colecao]) fnMap[colecao]();
+  if(cb) cb();
+}
+
+function _processarOrdens(data){
+  return (data||[]).map(function(o){
+    o.vTotal=parseFloat(o.vTotal)||0; o.vHora=parseFloat(o.vHora)||0;
+    o.vKm=parseFloat(o.vKm)||0; o.horas=parseFloat(o.horas)||0; o.km=parseFloat(o.km)||0;
+    if(o.sigUrl&&(o.sigUrl==='HAS_SIG'||o.sigUrl.indexOf('http')===0)){}
+    else{o.sigUrl='';}
+    if(o.fotos){
+      var flinks=String(o.fotos).replace(/\n/g,',').split(',').map(function(f){return f.trim();}).filter(Boolean);
+      o.fotosArr=flinks;
+    }
+    return o;
+  });
+}
+// ─────────────────────────────────────────────────────────────
+
+// ── Injetores de cache — evitam chamada extra ao backend ─────
+function _cacheInjectFerr(ferrs){
+  ferrs = ferrs||[];
+  var list=document.getElementById('ferrList');
+  if(!ferrs.length){if(list)list.innerHTML='<div class="empty">Nenhuma ferramenta</div>';return;}
+  var grupos={};ferrs.forEach(function(f,i){if(!grupos[f.veiculo])grupos[f.veiculo]=[];grupos[f.veiculo].push({f:f,i:i});});
+  var html='';Object.keys(grupos).forEach(function(vei){var items=grupos[vei];html+='<div class="ocard"><div class="chdr"><span class="cnum">'+vei+'</span><span class="cdt">'+items.length+' item(s)</span></div>';items.forEach(function(x){html+='<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;font-weight:600">'+x.f.ferramenta+' <span style="color:var(--mu);font-size:11px">x'+x.f.qtd+'</span></div><div style="font-size:10px;color:var(--mu)">'+x.f.estado+(x.f.responsavel?' - '+x.f.responsavel:'')+'</div></div><button onclick="delFerr(this)" data-v="'+vei+'" data-f="'+x.f.ferramenta+'" style="background:#c0392b;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:inherit;touch-action:manipulation">X</button></div>';});html+='</div>';});
+  if(list)list.innerHTML=html;
+}
+
+function _cacheInjectProsp(rows){
+  // loadProsp já usa renderMetaBar e renderFunnel — passa os dados diretamente
+  if(rows&&rows.length){ renderMetaBar(rows); renderFunnel(rows); }
+}
+
+function _cacheInjectFin(rows){
+  _finLanc = rows||[];
+  _updateFinAno();
+  _updateFinStats();
+  renderFinChart();
+  renderFin();
+}
+// ─────────────────────────────────────────────────────────────
 
 // ── Connection ───────────────────────────────────────────────
 function setConn(s,t){
