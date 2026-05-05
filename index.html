@@ -5608,7 +5608,7 @@ function toggleReembolso(num, novoStatus){
 // ─────────────────────────────────────────────────────────────
 
 // ══ AGENDA INTERNA ═══════════════════════════════════════════
-var _agEventos=[], _agFiltro='todos';
+var _agEventos=[], _agFiltro='todos', _agEditandoId='';
 
 function toggleAgHora(diaInt){
   var b=document.getElementById('agHoraBox');if(b)b.style.display=diaInt?'none':'block';
@@ -5861,7 +5861,8 @@ function fecharDiaModal(){
 
 // ── Editar evento Agenda ──────────────────────────────────────
 function abrirEditEvento(ev){
-  document.getElementById('agEditId').value = ev.id||'';
+  _agEditandoId = ev.id||'';
+  document.getElementById('agEditId').value = _agEditandoId;
   document.getElementById('agEditTit').value = ev.titulo||'';
   document.getElementById('agEditCli').value = ev.cliente||'';
   document.getElementById('agEditDesc').value = ev.descricao||'';
@@ -5898,7 +5899,8 @@ function toggleAgEditHora(diaInt){
 }
 
 function salvarEdicaoEvento(){
-  var id=document.getElementById('agEditId').value;
+  var id = _agEditandoId || document.getElementById('agEditId').value || '';
+  if(!id){toast('ID do evento não encontrado — edição cancelada','err');return;}
   var tit=(document.getElementById('agEditTit')||{}).value||'';
   var dt=(document.getElementById('agEditDt')||{}).value||'';
   if(!tit.trim()){toast('Informe o título','warn');return;}
