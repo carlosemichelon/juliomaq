@@ -3313,7 +3313,7 @@ function renderHistFiltrado(){
     if(o.fotos&&typeof o.fotos==='string'&&o.fotos.trim()){
       fotosCount=o.fotos.trim().split(',').filter(function(f){return f.trim();}).length||1;
     }
-    var fotosBadge=fotosCount>0?'<span style="background:#e3f2fd;color:#0d47a1;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;margin-left:4px">&#128247; '+fotosCount+'</span>':'<span style="color:#ccc;font-size:9px;margin-left:3px">&#128247;</span>';
+    var fotosBadge=fotosCount>0?'<span data-fotos-num="'+o.num+'" style="background:#e3f2fd;color:#0d47a1;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;margin-left:4px">&#128247; '+fotosCount+'</span>':'<span data-fotos-num="'+o.num+'" style="color:#ccc;font-size:9px;margin-left:3px">&#128247;</span>';
     // Thumbnails de fotos
     var fotosHtml='';
     if(o.fotosArr&&o.fotosArr.length){
@@ -3360,10 +3360,11 @@ function renderHistFiltrado(){
         +'<span style="font-size:9px;font-weight:700;color:#374151">Caso SF:</span>'
         +'<input type="text" class="gar-caso-inp" data-num="'+o.num+'" value="'+(o.salesforce||'')+'" placeholder="N. Caso" style="flex:1;min-width:80px;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit">'
       +'</div>'
-      +'<div class="cacts" style="grid-template-columns:1fr 1fr 1fr">'
+      +'<div class="cacts" style="grid-template-columns:1fr 1fr 1fr 1fr">'
         +'<button class="cact" onclick="printOS(ordens['+oidx+'])"><div class="cai">&#128196;</div><div class="cal or">PDF</div></button>'
         +'<button class="cact" onclick="waOS(ordens['+oidx+'])"><div class="cai">&#128172;</div><div class="cal wa">WA</div></button>'
-        +'<button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')" ><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orçamento</div></button>'
+        +'<button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')" ><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orç.</div></button>'
+        +'<label class="cact" style="cursor:pointer"><div class="cai">&#128247;</div><div class="cal" style="color:#1a4a7a">Fotos</div><input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_adicionarFotosOS(\''+o.num+'\',this)"></label>'
       +'</div>'
       +(o.orcamentoVinculado?'<div id="orcVinc_'+o.num+'" style="padding:6px 12px 8px">'+_renderOrcVincBadge(o)+'</div>':'<div id="orcVinc_'+o.num+'"></div>')
       +'</div>';
@@ -3374,7 +3375,64 @@ function renderHistFiltrado(){
 // Patch renderHist to use filter version
 var renderHist=renderHistFiltrado;
 
-// ── Orçamento vinculado à OS ──────────────────────────────────
+// ── Adicionar fotos a OS já salva ────────────────────────────
+function _adicionarFotosOS(numOS, input){
+  var files = Array.from(input.files);
+  input.value = '';
+  if(!files.length) return;
+  var total = files.length, ok = 0, fail = 0;
+  toast('Enviando '+total+' foto'+(total>1?'s':'')+'...','ok',10000);
+
+  function comprimirEEnviar(file, cb){
+    var isHeic = file.type==='image/heic'||file.type==='image/heif'||
+      file.name.toLowerCase().endsWith('.heic')||file.name.toLowerCase().endsWith('.heif');
+    var r = new FileReader();
+    r.onload = function(e){
+      if(isHeic){
+        cb(e.target.result.split(',')[1], file.type||'image/heic', file.name);
+        return;
+      }
+      var img = new Image();
+      img.onload = function(){
+        var MAX=1200, w=img.width, h=img.height;
+        if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+        if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+        var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        cb(cv.toDataURL('image/jpeg',0.8).split(',')[1], 'image/jpeg', file.name);
+      };
+      img.onerror = function(){ cb(e.target.result.split(',')[1], file.type||'image/jpeg', file.name); };
+      img.src = e.target.result;
+    };
+    r.readAsDataURL(file);
+  }
+
+  var fila = files.slice();
+  function next(){
+    if(!fila.length){
+      toast(ok+' foto'+(ok>1?'s':'')+' adicionada'+(ok>1?'s':'')+' à '+numOS+(fail>0?' ('+fail+' erro'+(fail>1?'s':'')+')':''),'ok',4000);
+      // Atualiza badge de fotos no card sem reload
+      var badge = document.querySelector('[data-fotos-num="'+numOS+'"]');
+      if(badge){
+        var cur = parseInt(badge.textContent.replace(/\D/g,''))||0;
+        badge.textContent = '📷 '+(cur+ok);
+      }
+      return;
+    }
+    var file = fila.shift();
+    comprimirEEnviar(file, function(b64, mime, nome){
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(r&&r.success) ok++; else fail++;
+          next();
+        })
+        .withFailureHandler(function(){ fail++; next(); })
+        .salvarMidia({numOS:numOS, nome:nome, tipo:mime, dados:b64});
+    });
+  }
+  next();
+}
+// ─────────────────────────────────────────────────────────────
 function _renderOrcVincBadge(o){
   var num=o.orcamentoVinculado||'';
   if(!num) return '';
