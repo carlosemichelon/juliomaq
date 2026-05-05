@@ -5822,9 +5822,10 @@ function renderAgCal(){
       var evBg = fut ? '#E85A0C' : '#1A6B2A';
       var temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
       var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ev.horaInicio+' ' : '';
-      var label = (temOS?'🔗':'')+hora + (ev.titulo||'');
+      var label = hora + (ev.titulo||'');
       var _evIdx=(_agEventos||[]).indexOf(ev);
-      html += '<div onclick="_abrirEvIdx('+_evIdx+')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_escHtml(label)+'</div>';
+      var _osBadge=temOS?'<span style="font-size:8px;background:rgba(255,255,255,.3);border-radius:3px;padding:0 3px;margin-right:2px;font-weight:800">OS</span>':'';
+      html += '<div onclick="_abrirEvIdx('+_evIdx+')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_osBadge+_escHtml(label)+'</div>';
     });
 
     // Overflow
@@ -5870,7 +5871,8 @@ function _abrirDiaModal(diaISO){
     var cor=fut?'var(--bl)':'#9e9e9e';
     var hora=(ev.diaInteiro==='Não'&&ev.horaInicio)?ev.horaInicio+(ev.horaFim?' – '+ev.horaFim:''):'Dia inteiro';
     html+='<div onclick="_abrirEvIdx('+(_agEventos||[]).indexOf(ev)+')" style="border-left:3px solid '+cor+';padding:8px 10px;margin-bottom:8px;border-radius:0 8px 8px 0;background:#f8f9fa;cursor:pointer">';
-    html+='<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+(ev.titulo||'')+'</div>';
+    var _temOSDia=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
+    html+='<div style="font-size:13px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px">'+(ev.titulo||'')+(_temOSDia?'<span style="font-size:9px;background:var(--bl);color:#fff;border-radius:6px;padding:1px 6px;font-weight:700;white-space:nowrap;flex-shrink:0">🔗 OS</span>':'')+'</div>';
     html+='<div style="font-size:11px;color:#666">🕐 '+hora+(ev.responsavel?' · 👷 '+ev.responsavel:'')+'</div>';
     if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
     html+='</div>';
@@ -6103,7 +6105,10 @@ function _renderOSList(rows, container, eventoId, ev){
     if(o.descricao) html+='<div style="font-size:10px;color:#666;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</div>';
     html+='<div style="font-size:13px;font-weight:700;color:var(--gr);margin-top:3px">R$ '+(parseFloat(o.vTotal)||0).toFixed(2).replace('.',',')+'</div>';
     html+='</div>';
-    html+='<button onclick="_desvincularOS(\''+o.num+'\',\''+eventoId+'\')" style="background:#fce4e4;border:none;color:#c62828;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;flex-shrink:0">✕ Desvincular</button>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
+    html+='<button onclick="_verOSNoResumo(\''+o.num+'\')" style="background:#e8f0fe;border:none;color:#1a4a7a;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">📋 Ver OS</button>';
+    html+='<button onclick="_desvincularOS(\''+o.num+'\',\''+eventoId+'\')" style="background:#fce4e4;border:none;color:#c62828;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✕ Desvincular</button>';
+    html+='</div>';
     html+='</div>';
   });
   container.innerHTML=html;
@@ -6176,6 +6181,31 @@ function _vincularOS(numOS){
     })
     .withFailureHandler(function(e){ toast('Erro: '+e.message,'err'); })
     .vincularOSEvento(numOS, eventoId);
+}
+
+function _verOSNoResumo(numOS){
+  // Fecha modais da agenda
+  fecharDetalheEvento();
+  fecharEditEvento();
+  document.body.style.overflow='';
+  // Vai para Resumo OS
+  goTab('hist');
+  // Aguarda render e rola até a OS
+  setTimeout(function(){
+    var cards=document.querySelectorAll('.ocard .cnum');
+    for(var i=0;i<cards.length;i++){
+      if(cards[i].textContent.trim()===numOS){
+        cards[i].closest('.ocard').scrollIntoView({behavior:'smooth',block:'center'});
+        // Destaca brevemente
+        var card=cards[i].closest('.ocard');
+        var orig=card.style.boxShadow||'';
+        card.style.boxShadow='0 0 0 3px var(--bl)';
+        card.style.transition='box-shadow .4s';
+        setTimeout(function(){card.style.boxShadow=orig;},2000);
+        break;
+      }
+    }
+  },600);
 }
 
 function _desvincularOS(numOS, eventoId){
