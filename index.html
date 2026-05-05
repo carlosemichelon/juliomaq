@@ -5973,6 +5973,26 @@ function abrirDetalheEvento(ev){
   document.body.style.overflow='hidden';
 }
 
+function apagarEventoAgenda(ev){
+  if(!confirm('Apagar o evento "' + (ev.titulo||'este evento') + '"?')) return;
+  fecharDetalheEvento();
+  toast('Apagando evento...','info');
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        _agEventos=(_agEventos||[]).filter(function(e){return e.id!==ev.id;});
+        renderAgEventos();
+        if(_agView==='cal') renderAgCal();
+        toast('Evento apagado!','ok');
+      } else {
+        toast('Erro ao apagar: '+(r&&r.error||'desconhecido'),'err');
+      }
+    })
+    .withFailureHandler(function(e){
+      toast('Erro ao apagar: '+e.message,'err');
+    })
+    .apagarAgendaEvento(ev.id);
+}
 function fecharDetalheEvento(){
   var modal=document.getElementById('agEvModal');
   if(modal)modal.style.display='none';
