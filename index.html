@@ -199,7 +199,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <span class="tab-grp-sep"></span>
   <span class="tab-grp-lbl" style="color:#e65100">Vendas</span>
   <button class="tab" id="tb11" onclick="goTab('conc')"  style="color:#e65100"><span class="tico">🏁</span>Concorrência</button>
-  <button class="tab" id="tb12" onclick="goTab('parq')"  style="color:#e65100"><span class="tico">👥</span>Gest. Clientes</button>
+  <button class="tab" id="tb12" onclick="goTab('parq')"  style="color:#e65100"><span class="tico">👥</span>Cadastro</button>
+  <button class="tab" id="tb18" onclick="goTab('rcli')"  style="color:#1a4a7a"><span class="tico">📊</span>Resumo Clientes</button>
   <button class="tab" id="tb13" onclick="goTab('usad')"  style="color:#e65100"><span class="tico">🔄</span>Usados</button>
   <button class="tab" id="tb16" onclick="goTab('fin')"   style="color:#2e7d32"><span class="tico">💵</span>Financeiro</button>
 </div>
@@ -1465,6 +1466,27 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 </div>
 </div>
 
+<!-- ══ RESUMO CLIENTES ════════════════════════════════════════════ -->
+<div id="rcliTab" style="display:none">
+<div class="dbody">
+
+  <!-- Busca -->
+  <div style="margin-bottom:10px">
+    <input id="rcliSearch" type="text" placeholder="🔍 Buscar cliente..." oninput="renderResumoCli()"
+      style="width:100%;border:1px solid var(--bd);border-radius:10px;padding:9px 14px;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none">
+  </div>
+
+  <!-- Stats gerais -->
+  <div class="stats s3" style="margin-bottom:10px">
+    <div class="stat"><div class="stn" id="rcliSt0" style="color:var(--bl)">-</div><div class="stl">Clientes</div></div>
+    <div class="stat"><div class="stn" id="rcliSt1" style="color:var(--gr)">-</div><div class="stl">Total OS</div></div>
+    <div class="stat"><div class="stn" id="rcliSt2" style="color:var(--or)">-</div><div class="stl">Orç. Enviados</div></div>
+  </div>
+
+  <div id="rcliList"><div class="empty">Carregando...</div></div>
+</div>
+</div>
+
 <!-- MODAL EVENTOS DO DIA -->
 <div id="agDiaModal" onclick="if(event.target===this)fecharDiaModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9001;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25)">
@@ -1880,9 +1902,9 @@ function _confirmarDriveUrls(){
 
 // ── Tabs ─────────────────────────────────────────────────────
 function goTab(t){
-  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10','tb11','tb12','tb13','tb14','tb15','tb16','tb17'];
-  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab'];
-  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9,conc:10,parq:11,usad:12,cobr:13,mkt:14,fin:15,rdesp:16};
+  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10','tb11','tb12','tb13','tb14','tb15','tb16','tb17','tb18'];
+  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab','rcliTab'];
+  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9,conc:10,parq:11,usad:12,cobr:13,mkt:14,fin:15,rdesp:16,rcli:17};
   TBS.forEach(function(id,i){
     var b=document.getElementById(id), p=document.getElementById(PANES[i]);
     if(b) b.className='tab'; if(p) p.style.display='none';
@@ -1913,6 +1935,7 @@ function goTab(t){
     var ol=document.getElementById('osList');if(ol)ol.innerHTML='<div class="empty">Carregando...</div>';loadOrdens();
   }
   if(t==='gar'){ loadGarantias(); loadAtividades(); }
+  if(t==='rcli') loadResumoCli();
   if(t==='vei')  loadVei();
   if(t==='ferr') loadFerr();
   if(t==='prosp') loadProsp();
@@ -5210,6 +5233,203 @@ function loadUsad(){
     _vendRender('usadList',rows,[{k:'data',l:'Data'},{k:'marca',l:'Marca',big:true},{k:'modelo',l:'Modelo',big:true},{k:'ano',l:'Ano'},{k:'horas',l:'Horas'},{k:'preco',l:'Preço'},{k:'condicao',l:'Condição'},{k:'responsavel',l:'Resp.'},{k:'obs',l:'Obs'}]);
   }).withFailureHandler(function(){}).getVendas('usad');
 }
+
+// ══ RESUMO CLIENTES ══════════════════════════════════════════
+var _rcliData = {}; // {nomeCliente: {os:[], prosps:[], orcs:[], cadastro:{}}}
+var _rcliCarregado = false;
+
+function loadResumoCli(){
+  var list = document.getElementById('rcliList');
+  if(list) list.innerHTML = '<div class="empty">Carregando...</div>';
+  _rcliData = {};
+  _rcliCarregado = false;
+  var pendentes = 3;
+  function check(){ if(--pendentes===0){ _rcliCarregado=true; renderResumoCli(); } }
+
+  // 1. OS (já em memória se carregadas)
+  if(ordens && ordens.length){
+    ordens.forEach(function(o){
+      var cli = (o.cliente||'').trim(); if(!cli) return;
+      if(!_rcliData[cli]) _rcliData[cli]={os:[],prosps:[],orcs:[],cadastro:null};
+      _rcliData[cli].os.push(o);
+    });
+    check();
+  } else {
+    google.script.run
+      .withSuccessHandler(function(rows){
+        (rows||[]).forEach(function(o){
+          var cli=(o.cliente||'').trim();if(!cli)return;
+          if(!_rcliData[cli])_rcliData[cli]={os:[],prosps:[],orcs:[],cadastro:null};
+          _rcliData[cli].os.push(o);
+        });
+        check();
+      })
+      .withFailureHandler(function(){ check(); })
+      .getOrdens();
+  }
+
+  // 2. Prospecções
+  google.script.run
+    .withSuccessHandler(function(rows){
+      (rows||[]).forEach(function(p){
+        var cli=(p.cliente||'').trim();if(!cli)return;
+        if(!_rcliData[cli])_rcliData[cli]={os:[],prosps:[],orcs:[],cadastro:null};
+        _rcliData[cli].prosps.push(p);
+      });
+      check();
+    })
+    .withFailureHandler(function(){ check(); })
+    .getProspeccoes();
+
+  // 3. Orçamentos (Sheets + local)
+  google.script.run
+    .withSuccessHandler(function(sheetsOrcs){
+      var localOrcs=[];try{localOrcs=JSON.parse(localStorage.getItem('jm_orcamentos')||'[]');}catch(e){}
+      var merged={};
+      (sheetsOrcs||[]).forEach(function(o){merged[o.num]=o;});
+      localOrcs.forEach(function(o){if(o.num)merged[o.num]=Object.assign({},merged[o.num]||{},o);});
+      Object.values(merged).forEach(function(o){
+        var cli=(o.cli||o.Cliente||'').trim();if(!cli)return;
+        if(!_rcliData[cli])_rcliData[cli]={os:[],prosps:[],orcs:[],cadastro:null};
+        _rcliData[cli].orcs.push(o);
+      });
+      check();
+    })
+    .withFailureHandler(function(){ check(); })
+    .getOrcamentos();
+}
+
+function renderResumoCli(){
+  var list = document.getElementById('rcliList'); if(!list) return;
+  var busca = ((document.getElementById('rcliSearch')||{}).value||'').toLowerCase().trim();
+
+  var clientes = Object.keys(_rcliData).filter(function(c){
+    return !busca || c.toLowerCase().indexOf(busca) >= 0;
+  }).sort();
+
+  // Stats
+  var totalOS = 0;
+  Object.values(_rcliData).forEach(function(d){ totalOS += d.os.length; });
+  var totalOrcEnv = 0;
+  Object.values(_rcliData).forEach(function(d){
+    totalOrcEnv += d.prosps.filter(function(p){ return p.status==='Em andamento'||p.etapa==='Proposta Enviada'; }).length;
+  });
+  var s0=document.getElementById('rcliSt0');if(s0)s0.textContent=Object.keys(_rcliData).length;
+  var s1=document.getElementById('rcliSt1');if(s1)s1.textContent=totalOS;
+  var s2=document.getElementById('rcliSt2');if(s2)s2.textContent=totalOrcEnv;
+
+  if(!clientes.length){
+    list.innerHTML='<div class="empty" style="padding:30px">'+(busca?'Nenhum cliente encontrado':'Nenhum cliente ainda')+'</div>';
+    return;
+  }
+
+  var html='';
+  clientes.forEach(function(cli){
+    var d = _rcliData[cli];
+    var totalOSCli = d.os.length;
+    var faturado = d.os.reduce(function(a,o){return a+(parseFloat(o.vTotal)||0);},0);
+    var ultimaOS = d.os.slice().sort(function(a,b){
+      return (b.data||'').localeCompare(a.data||'');
+    })[0];
+
+    var orcEnv = d.prosps.filter(function(p){return p.etapa==='Proposta Enviada';}).length;
+    var orcFech = d.prosps.filter(function(p){return p.status==='Ganho';}).length;
+    var orcTotal = d.orcs.length;
+
+    var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
+    var tipoMais = (function(){
+      var cnt={};d.os.forEach(function(o){cnt[o.tipo]=(cnt[o.tipo]||0)+1;});
+      return Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0]||'';
+    })();
+    var corCard = tipoCor[tipoMais]||'var(--bl)';
+
+    var id = 'rcli_'+cli.replace(/[^a-z0-9]/gi,'_');
+
+    html += '<div class="ocard" style="margin-bottom:8px">';
+    // Header clicável
+    html += '<div onclick="_toggleRcliCard(\''+id+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none">';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:14px;font-weight:700;color:#1a1a1a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+cli+'</div>';
+    html += '<div style="font-size:11px;color:var(--mu);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">';
+    html += '<span>📋 '+totalOSCli+' OS</span>';
+    if(faturado>0) html += '<span style="color:var(--gr);font-weight:600">'+fmt(faturado)+'</span>';
+    if(orcTotal>0) html += '<span>📎 '+orcTotal+' orç.</span>';
+    html += '</div></div>';
+    html += '<span id="'+id+'_arr" style="font-size:16px;color:var(--mu);transition:transform .2s;flex-shrink:0;margin-left:8px">›</span>';
+    html += '</div>';
+
+    // Conteúdo expandível
+    html += '<div id="'+id+'" style="display:none;border-top:1px solid var(--bd)">';
+
+    // Grid métricas
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #f5f5f5">';
+    html += '<div class="mc"><div class="ml">OS</div><div class="mv">'+totalOSCli+'</div></div>';
+    html += '<div class="mc"><div class="ml">Faturado</div><div class="mv gr" style="font-size:11px">'+fmt(faturado)+'</div></div>';
+    html += '<div class="mc"><div class="ml">Proposta Env.</div><div class="mv" style="color:var(--or)">'+orcEnv+'</div></div>';
+    html += '<div class="mc"><div class="ml">Orç. Fechado</div><div class="mv" style="color:var(--gr)">'+orcFech+'</div></div>';
+    html += '</div>';
+
+    // Última OS
+    if(ultimaOS){
+      html += '<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5">';
+      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Última OS</div>';
+      html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+      html += '<span style="font-size:11px;font-weight:700;color:'+( tipoCor[ultimaOS.tipo]||'#374151')+'">'+(ultimaOS.num||'')+'</span>';
+      html += '<span style="font-size:10px;color:var(--mu)">'+(ultimaOS.data||'')+'</span>';
+      if(ultimaOS.tipo) html += '<span style="font-size:9px;background:'+(tipoCor[ultimaOS.tipo]||'#374151')+';color:#fff;padding:1px 6px;border-radius:8px">'+ultimaOS.tipo+'</span>';
+      html += '</div>';
+      if(ultimaOS.descricao) html += '<div style="font-size:11px;color:#666;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+ultimaOS.descricao+'</div>';
+      html += '</div>';
+    }
+
+    // Orçamentos
+    if(d.orcs.length){
+      html += '<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5">';
+      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Orçamentos ('+d.orcs.length+')</div>';
+      d.orcs.slice(0,3).forEach(function(o){
+        var tot=parseFloat(o.total||0);
+        html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">';
+        html += '<span style="font-weight:600;color:var(--or)">'+(o.num||'')+'</span>';
+        html += '<span style="color:#888">'+(o.data||'')+'</span>';
+        if(tot>0) html += '<span style="font-weight:700;color:var(--gr)">'+fmt(tot)+'</span>';
+        html += '</div>';
+      });
+      if(d.orcs.length>3) html += '<div style="font-size:10px;color:var(--mu)">+' +(d.orcs.length-3)+' mais...</div>';
+      html += '</div>';
+    }
+
+    // Prospecções
+    if(d.prosps.length){
+      var scor={'Ganho':'#1A6B2A','Perdido':'#666','Em andamento':'#e67e22','Novo':'#1a4a7a'};
+      html += '<div style="padding:8px 14px">';
+      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Prospecções ('+d.prosps.length+')</div>';
+      d.prosps.slice(0,3).forEach(function(p){
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
+        html += '<span style="font-size:9px;font-weight:700;background:'+(scor[p.status]||'#666')+';color:#fff;padding:1px 6px;border-radius:8px">'+p.status+'</span>';
+        html += '<span style="font-size:11px;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#555">'+(p.servico||p.etapa||'')+'</span>';
+        if(p.valor&&parseFloat(p.valor)>0) html += '<span style="font-size:11px;font-weight:700;color:var(--gr)">'+fmt(parseFloat(p.valor))+'</span>';
+        html += '</div>';
+      });
+      if(d.prosps.length>3) html += '<div style="font-size:10px;color:var(--mu)">+'+(d.prosps.length-3)+' mais...</div>';
+      html += '</div>';
+    }
+
+    html += '</div>'; // fim expandível
+    html += '</div>'; // fim ocard
+  });
+
+  list.innerHTML = html;
+}
+
+function _toggleRcliCard(id){
+  var el = document.getElementById(id);
+  var arr = document.getElementById(id+'_arr');
+  if(!el) return;
+  var open = el.style.display === 'none';
+  el.style.display = open ? 'block' : 'none';
+  if(arr) arr.style.transform = open ? 'rotate(90deg)' : '';
+}
+// ═════════════════════════════════════════════════════════════
 
 // Init dates
 try{document.getElementById('cncDt').valueAsDate=new Date();}catch(e){}
