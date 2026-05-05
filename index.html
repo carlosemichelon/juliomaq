@@ -2173,7 +2173,7 @@ function printOS(o){
   html+='<div style="padding:4px 8px;min-width:80px;font-size:8px"><div style="color:#888;text-transform:uppercase;font-size:6.5px">Local</div><div style="font-weight:600">'+(o.local||'--')+'</div><div style="color:#888;text-transform:uppercase;font-size:6.5px;margin-top:3px">Data</div><div style="font-weight:600">'+(o.data||'--')+'</div></div>';
   html+='</div>';
   html+='<div style="text-align:center;font-size:6.5px;color:#333;border-top:1px solid #ccc;padding-top:2px">'+(o.num||'')+' | Juliomaq | '+new Date().toLocaleString('pt-BR')+' | Total: '+fmt(vT)+'</div>';
-  html+='</body></html>';
+  html+='\n</body></html>';
   win.document.write(html);win.document.close();
   if(isIOS()){toast('iOS: no Safari, toque em Compartilhar → Imprimir','ok',6000);}
   else{setTimeout(function(){try{win.focus();win.print();}catch(ex){}},500);}
