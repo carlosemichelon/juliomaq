@@ -1503,6 +1503,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
       </div>
       <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="agEditDesc" style="height:60px"></textarea></div>
+      <div id="agEditOSBox" style="padding:0 4px 8px"></div>
     </div>
     <div style="padding:0 16px 16px;display:flex;gap:8px">
       <button onclick="salvarEdicaoEvento()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--bl);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>
@@ -1689,7 +1690,7 @@ function _carregarTudo(cb){
       _cacheCarregado = true;
 
       // Popular variáveis globais usadas pelas funções de render
-      if(_cache.ordens)       { ordens = _processarOrdens(_cache.ordens); renderOrdens(); }
+      if(_cache.ordens)       { ordens = _processarOrdens(_cache.ordens); _buildEvOSMap(); renderOrdens(); }
       if(_cache.manutencoes)  { _veiData = _cache.manutencoes; renderVeiList(_veiData); }
       if(_cache.ferramentas)  { _cacheInjectFerr(_cache.ferramentas); }
       if(_cache.prospeccoes)  { _cacheInjectProsp(_cache.prospeccoes); }
@@ -1754,6 +1755,15 @@ function _processarOrdens(data){
     return o;
   });
 }
+function _buildEvOSMap(){
+  _evOSMap={};
+  (ordens||[]).forEach(function(o){
+    var evId=o.eventoAgendaId||'';
+    if(!evId) return;
+    if(!_evOSMap[evId]) _evOSMap[evId]=[];
+    if(_evOSMap[evId].indexOf(o.num)<0) _evOSMap[evId].push(o.num);
+  });
+}
 // ─────────────────────────────────────────────────────────────
 
 // ── Injetores de cache — evitam chamada extra ao backend ─────
@@ -1807,6 +1817,7 @@ function loadOrdens(){
         return o;
       });
       setConn('g','Google Sheets — '+ordens.length+' OS');
+      _buildEvOSMap();
       var sl=document.getElementById('shLnk'); if(sl) sl.style.display='inline';
       document.getElementById('ordBadge').textContent='OS-'+pad(ordens.length+1);
       var h=document.getElementById('histTab');
@@ -2085,7 +2096,23 @@ function salvar(){
         document.getElementById('banner').style.display='block';
         window.scrollTo(0,0);
         if(midias.length) uploadMidias(res.num);
-        loadOrdens(); toast(res.num+' salvo!','ok');
+        // Auto-vincular ao evento da agenda se criado a partir de um evento
+        if(_agCriandoOSParaEvento&&_agCriandoOSParaEvento.id){
+          var _evId=_agCriandoOSParaEvento.id;
+          google.script.run
+            .withSuccessHandler(function(r){
+              if(r&&r.success){
+                ordens.forEach(function(o){if(o.num===res.num) o.eventoAgendaId=_evId;});
+                _buildEvOSMap(); renderAgCal();
+                toast(res.num+' salvo e vinculado ao evento!','ok',4000);
+              }
+            })
+            .vincularOSEvento(res.num, _evId);
+          _agCriandoOSParaEvento=null;
+        } else {
+          toast(res.num+' salvo!','ok');
+        }
+        loadOrdens();
         setTimeout(loadAssinaturas,2000);
       } else toast('Erro: '+(res?res.error:'?'),'err');
     })
@@ -5609,6 +5636,8 @@ function toggleReembolso(num, novoStatus){
 
 // ══ AGENDA INTERNA ═══════════════════════════════════════════
 var _agEventos=[], _agFiltro='todos', _agEditandoId='';
+var _evOSMap={};         // {eventoId: [numOS, ...]}
+var _agCriandoOSParaEvento=null; // evento ativo ao clicar "Criar OS"
 
 function toggleAgHora(diaInt){
   var b=document.getElementById('agHoraBox');if(b)b.style.display=diaInt?'none':'block';
@@ -5791,8 +5820,9 @@ function renderAgCal(){
     evs.slice(0, maxShow).forEach(function(ev){
       var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#E85A0C' : '#1A6B2A';
+      var temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
       var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ev.horaInicio+' ' : '';
-      var label = hora + (ev.titulo||'');
+      var label = (temOS?'🔗':'')+hora + (ev.titulo||'');
       var _evIdx=(_agEventos||[]).indexOf(ev);
       html += '<div onclick="_abrirEvIdx('+_evIdx+')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_escHtml(label)+'</div>';
     });
@@ -5883,6 +5913,8 @@ function abrirEditEvento(ev){
     document.getElementById('agEditHrIn').value = ev.horaInicio||'';
     document.getElementById('agEditHrFim').value = ev.horaFim||'';
   }
+  var editOSBox=document.getElementById('agEditOSBox');
+  if(editOSBox) _renderOSVinculadasEdit(ev, editOSBox);
   var modal=document.getElementById('agEditModal');
   if(modal){window.scrollTo(0,0);modal.style.display='flex';document.body.style.overflow='hidden';}
 }
@@ -5964,6 +5996,8 @@ function abrirDetalheEvento(ev){
   if(passado) html+='<div style=\"font-size:11px;color:#9e9e9e;text-align:center;margin-top:4px\">Evento passado</div>';
 
   box.innerHTML=html;
+  // Seção OS vinculadas — carregada após montar o modal
+  _renderOSVinculadasDetalhe(ev, box);
   var gcalBtn=document.getElementById('agEvGCalBtn');
   if(gcalBtn) gcalBtn.onclick=function(){abrirEventoGCal(ev);};
   var editBtn=document.getElementById('agEvEditBtn');
@@ -6000,6 +6034,211 @@ function fecharDetalheEvento(){
   if(modal)modal.style.display='none';
   document.body.style.overflow='';
 }
+
+// ── OS vinculadas — renderizar seção no modal detalhe ─────────
+function _renderOSVinculadasDetalhe(ev, box){
+  var sec=document.createElement('div');
+  sec.id='agEvOSSection';
+  sec.style.cssText='margin-top:12px;border-top:1px solid #f0f0f0;padding-top:10px';
+  sec.innerHTML='<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">OS Vinculadas</div>'+
+    '<div id="agEvOSLista" style="margin-bottom:8px"><div style="font-size:11px;color:#aaa">Carregando...</div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button onclick="_abrirSeletorOS(\''+ev.id+'\')" style="background:var(--bl);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">🔗 Vincular OS</button>'+
+      '<button onclick="criarOSParaEvento()" style="background:var(--gr);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">➕ Criar OS</button>'+
+    '</div>';
+  box.appendChild(sec);
+  // Armazena ev no elemento para uso posterior
+  sec._ev = ev;
+  // Carrega OS vinculadas
+  _carregarOSVinculadas(ev.id, document.getElementById('agEvOSLista'), ev);
+}
+
+function _renderOSVinculadasEdit(ev, box){
+  box.innerHTML='<div style="border-top:1px solid #f0f0f0;padding-top:10px;margin-top:4px">'+
+    '<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">OS Vinculadas</div>'+
+    '<div id="agEditOSLista" style="margin-bottom:8px"><div style="font-size:11px;color:#aaa">Carregando...</div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button onclick="_abrirSeletorOS(\''+ev.id+'\')" style="background:var(--bl);color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">🔗 Vincular OS</button>'+
+      '<button onclick="criarOSParaEvento()" style="background:var(--gr);color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">➕ Criar OS</button>'+
+    '</div></div>';
+  _carregarOSVinculadas(ev.id, document.getElementById('agEditOSLista'), ev);
+}
+
+function _carregarOSVinculadas(eventoId, container, ev){
+  if(!container) return;
+  // Primeiro tenta do cache local
+  var local = (ordens||[]).filter(function(o){ return o.eventoAgendaId===eventoId; });
+  if(local.length){
+    _renderOSList(local, container, eventoId, ev);
+    return;
+  }
+  // Busca no backend
+  google.script.run
+    .withSuccessHandler(function(rows){
+      if(!rows||!rows.length){
+        container.innerHTML='<div style="font-size:11px;color:#aaa;font-style:italic">Nenhuma OS vinculada</div>';
+        return;
+      }
+      _renderOSList(rows, container, eventoId, ev);
+    })
+    .withFailureHandler(function(){
+      container.innerHTML='<div style="font-size:11px;color:#c00">Erro ao carregar</div>';
+    })
+    .getOSVinculadasEvento(eventoId);
+}
+
+function _renderOSList(rows, container, eventoId, ev){
+  if(!rows||!rows.length){
+    container.innerHTML='<div style="font-size:11px;color:#aaa;font-style:italic">Nenhuma OS vinculada</div>';
+    return;
+  }
+  var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
+  var html='';
+  rows.forEach(function(o){
+    var cor=tipoCor[o.tipo]||'#374151';
+    html+='<div style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 8px 8px 0;padding:7px 10px;margin-bottom:6px;background:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="font-size:12px;font-weight:700;color:'+cor+'">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+o.data+'</span></div>';
+    html+='<div style="font-size:12px;font-weight:600;color:#222;margin-top:1px">'+o.cliente+'</div>';
+    if(o.descricao) html+='<div style="font-size:10px;color:#666;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</div>';
+    html+='<div style="font-size:13px;font-weight:700;color:var(--gr);margin-top:3px">R$ '+(parseFloat(o.vTotal)||0).toFixed(2).replace('.',',')+'</div>';
+    html+='</div>';
+    html+='<button onclick="_desvincularOS(\''+o.num+'\',\''+eventoId+'\')" style="background:#fce4e4;border:none;color:#c62828;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;flex-shrink:0">✕ Desvincular</button>';
+    html+='</div>';
+  });
+  container.innerHTML=html;
+}
+
+// ── Seletor de OS em aberto ───────────────────────────────────
+var _seletorOSEventoId='';
+function _abrirSeletorOS(eventoId){
+  _seletorOSEventoId=eventoId;
+  var existing=document.getElementById('agOSSeletorModal');
+  if(existing) document.body.removeChild(existing);
+  var modal=document.createElement('div');
+  modal.id='agOSSeletorModal';
+  modal.style.cssText='display:flex;position:fixed;inset:0;z-index:9030;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML='<div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25)">'+
+    '<div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
+      '<span style="font-size:15px;font-weight:700;color:#fff">🔗 Vincular OS ao Evento</span>'+
+      '<button onclick="document.body.removeChild(document.getElementById(\'agOSSeletorModal\'))" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit">✕</button>'+
+    '</div>'+
+    '<div id="agOSSeletorLista" style="overflow-y:auto;padding:12px 16px;flex:1"><div class="empty">Carregando OS em aberto...</div></div>'+
+  '</div>';
+  document.body.appendChild(modal);
+  document.body.style.overflow='hidden';
+  // Carrega OS em aberto
+  google.script.run
+    .withSuccessHandler(function(rows){
+      var lista=document.getElementById('agOSSeletorLista');if(!lista)return;
+      // Filtra as que já estão vinculadas a esse evento
+      var jaVinculadas=(ordens||[]).filter(function(o){return o.eventoAgendaId===eventoId;}).map(function(o){return o.num;});
+      var disponiveis=(rows||[]).filter(function(o){return jaVinculadas.indexOf(o.num)<0;});
+      if(!disponiveis.length){lista.innerHTML='<div class="empty" style="padding:20px">Nenhuma OS em aberto disponível para vincular</div>';return;}
+      var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
+      var html='<div style="font-size:11px;color:#888;margin-bottom:10px">Selecione a OS para vincular a este evento:</div>';
+      disponiveis.forEach(function(o){
+        var cor=tipoCor[o.tipo]||'#374151';
+        html+='<div onclick="_vincularOS(\''+o.num+'\')" style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff;transition:background .15s" onmouseover="this.style.background=\'#f0f4ff\'" onmouseout="this.style.background=\'#fff\'">';
+        html+='<div style="font-size:12px;font-weight:700;color:'+cor+'">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+o.data+'</span></div>';
+        html+='<div style="font-size:13px;font-weight:600;color:#222;margin-top:2px">'+o.cliente+'</div>';
+        if(o.descricao) html+='<div style="font-size:10px;color:#666;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</div>';
+        html+='<div style="font-size:12px;font-weight:700;color:var(--gr);margin-top:3px">R$ '+(parseFloat(o.vTotal)||0).toFixed(2).replace('.',',')+'</div>';
+        html+='</div>';
+      });
+      lista.innerHTML=html;
+    })
+    .withFailureHandler(function(e){
+      var lista=document.getElementById('agOSSeletorLista');
+      if(lista)lista.innerHTML='<div class="empty">Erro ao carregar: '+e.message+'</div>';
+    })
+    .getOrdensEmAberto();
+}
+
+function _vincularOS(numOS){
+  var eventoId=_seletorOSEventoId;
+  if(!eventoId||!numOS) return;
+  var modal=document.getElementById('agOSSeletorModal');
+  if(modal) document.body.removeChild(modal);
+  document.body.style.overflow='hidden'; // mantém modal detalhe/edição bloqueado
+  toast('Vinculando OS...','ok',2000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        // Atualiza cache local
+        ordens.forEach(function(o){if(o.num===numOS) o.eventoAgendaId=eventoId;});
+        _buildEvOSMap();
+        renderAgCal();
+        toast(numOS+' vinculada ao evento!','ok');
+        // Recarrega seção OS nos modais abertos
+        _recarregarOSSectionAberta(eventoId);
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){ toast('Erro: '+e.message,'err'); })
+    .vincularOSEvento(numOS, eventoId);
+}
+
+function _desvincularOS(numOS, eventoId){
+  if(!confirm('Desvincular '+numOS+' deste evento?')) return;
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        ordens.forEach(function(o){if(o.num===numOS) o.eventoAgendaId='';});
+        _buildEvOSMap();
+        renderAgCal();
+        toast(numOS+' desvinculada!','ok');
+        _recarregarOSSectionAberta(eventoId);
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){ toast('Erro: '+e.message,'err'); })
+    .desvincularOSEvento(numOS);
+}
+
+function _recarregarOSSectionAberta(eventoId){
+  // Encontra o evento pelo id
+  var ev=(_agEventos||[]).find(function(e){return e.id===eventoId;});
+  if(!ev) return;
+  var listaDetalhe=document.getElementById('agEvOSLista');
+  if(listaDetalhe) _carregarOSVinculadas(eventoId, listaDetalhe, ev);
+  var listaEdit=document.getElementById('agEditOSLista');
+  if(listaEdit) _carregarOSVinculadas(eventoId, listaEdit, ev);
+}
+
+// ── Criar OS a partir de um evento da agenda ─────────────────
+function criarOSParaEvento(){
+  // Identifica o evento ativo (detalhe ou edição)
+  var evId = _agEditandoId;
+  var ev = null;
+  if(evId) ev=(_agEventos||[]).find(function(e){return e.id===evId;});
+  if(!ev){
+    // Tenta pegar do modal de detalhe via _seletorOSEventoId ou outro indicador
+    var sec=document.getElementById('agEvOSSection');
+    if(sec&&sec._ev) ev=sec._ev;
+  }
+  _agCriandoOSParaEvento = ev;
+  // Fecha modais da agenda
+  fecharDetalheEvento();
+  fecharEditEvento();
+  // Vai para Nova OS e pré-preenche
+  goTab('form');
+  if(ev){
+    setTimeout(function(){
+      var fCli=document.getElementById('fCli');
+      if(fCli&&ev.cliente) fCli.value=ev.cliente;
+      var fDt=document.getElementById('fDt');
+      if(fDt&&ev.dataISO) fDt.value=ev.dataISO;
+      var fDesc=document.getElementById('fDesc');
+      if(fDesc&&ev.descricao) fDesc.value=ev.descricao;
+      // Responsável: tenta selecionar técnico pelo nome do evento
+      var fTec=document.getElementById('fTec');
+      if(ev.responsavel){
+        var tecBtn=document.getElementById('tec_'+ev.responsavel);
+        if(tecBtn){togTec(ev.responsavel);}
+      }
+      toast('Campos pré-preenchidos com dados do evento','ok',3000);
+    }, 200);
+  }
+}
 // ─────────────────────────────────────────────────────────────
 
 function _escHtml(s){
@@ -6026,7 +6265,8 @@ function renderAgEventos(){
     html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px">';
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
     html+='<div style="flex:1">';
-    html+='<div style="font-size:13px;font-weight:700;color:'+(passado?'#9e9e9e':'#1a1a1a')+'">'+ev.titulo+'</div>';
+    var _temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
+    html+='<div style="font-size:13px;font-weight:700;color:'+(passado?'#9e9e9e':'#1a1a1a')+'">'+(  _temOS?'🔗 ':'')+ev.titulo+'</div>';
     var _evDFmt=(function(v){if(!v)return '';var s=String(v);var m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);if(m)return m[1]+'/'+m[2]+'/'+String(m[3]).slice(-2);var d=new Date(s);if(!isNaN(d))return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);return s;})(ev.dataISO||ev.data);
     html+='<div style="font-size:11px;color:#555;margin-top:2px">📅 '+_evDFmt+(ev.diaInteiro==='Não'?' · '+ev.horaInicio+' – '+ev.horaFim:'')+'</div>';
     if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
