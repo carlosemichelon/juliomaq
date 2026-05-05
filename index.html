@@ -201,6 +201,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <button class="tab" id="tb11" onclick="goTab('conc')"  style="color:#e65100"><span class="tico">🏁</span>Concorrência</button>
   <button class="tab" id="tb12" onclick="goTab('parq')"  style="color:#e65100"><span class="tico">👥</span>Cadastro</button>
   <button class="tab" id="tb18" onclick="goTab('rcli')"  style="color:#1a4a7a"><span class="tico">📊</span>Resumo Clientes</button>
+  <button class="tab" id="tb19" onclick="goTab('vend')"  style="color:#e65100"><span class="tico">🤝</span>Vendas</button>
   <button class="tab" id="tb13" onclick="goTab('usad')"  style="color:#e65100"><span class="tico">🔄</span>Usados</button>
   <button class="tab" id="tb16" onclick="goTab('fin')"   style="color:#2e7d32"><span class="tico">💵</span>Financeiro</button>
 </div>
@@ -549,7 +550,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <div id="orcTab" style="display:none">
 <div class="body">
   <div class="sec">
-    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">&#128196;</div>Orcamento / Contrato</div>
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">📄</div>Orçamento / Contrato<span id="orcNumHeader" style="margin-left:auto;font-size:10px;background:rgba(232,90,12,.3);padding:2px 8px;border-radius:10px;font-weight:700"></span></div>
     <div class="f"><label class="fl">Cliente</label><input class="fi" id="oCli" type="text" placeholder="Nome do cliente..."></div>
     <div class="f"><label class="fl">Equipamento</label><input class="fi" id="oEquip" type="text" placeholder="Ex: Plantadeira SHM 13..."></div>
     <div class="f"><label class="fl">Descricao do Servico</label><textarea class="fi" id="oDesc" style="height:42px" placeholder="Servico a realizar..."></textarea></div>
@@ -1487,6 +1488,173 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 </div>
 </div>
 
+<!-- ══ VENDAS ══════════════════════════════════════════════════ -->
+<div id="vendTab" style="display:none">
+<div class="body">
+
+  <div class="sec">
+    <div class="sh" style="background:#e65100"><div class="si" style="background:rgba(255,255,255,.1)">🤝</div>Nova Venda<span id="vendNumHeader" style="margin-left:auto;font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:10px;font-weight:700"></span></div>
+
+    <div class="f"><label class="fl">Data do Pedido</label><input class="fi" id="vendDt" type="date"></div>
+    <div class="f"><label class="fl">Cliente *</label><input class="fi" id="vendCli" type="text" placeholder="Nome do cliente..."></div>
+    <div class="f"><label class="fl">Vendedor *</label>
+      <select class="fi" id="vendVend">
+        <option value="">Selecione</option>
+        <option>Sandro</option><option>João Acker</option><option>Welinton</option>
+      </select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px">
+      <div class="f"><label class="fl">Marca</label><input class="fi" id="vendMarca" type="text" placeholder="Ex: Stara"></div>
+      <div class="f"><label class="fl">Modelo</label><input class="fi" id="vendModelo" type="text" placeholder="Ex: Fenix"></div>
+      <div class="f"><label class="fl">Ano</label><input class="fi" id="vendAno" type="number" placeholder="2024"></div>
+    </div>
+
+    <div class="f"><label class="fl">Valor Total da Venda (R$)</label><input class="fi" id="vendValor" type="number" step="0.01" placeholder="0,00" oninput="vendCalcTotal()"></div>
+    <div class="f"><label class="fl">Obs</label><textarea class="fi" id="vendObs" style="height:50px" placeholder="Observações..."></textarea></div>
+  </div>
+
+  <!-- Parcelas -->
+  <div class="sec">
+    <div class="sh" style="background:#374151;display:flex;align-items:center;justify-content:space-between">
+      <span><div class="si" style="background:rgba(255,255,255,.1);display:inline-flex;margin-right:6px">📅</div>Parcelas de Recebimento</span>
+      <button onclick="vendAddParcela()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">➕ Parcela</button>
+    </div>
+    <div style="padding:6px 12px 4px;font-size:10px;color:var(--mu)">Adicione as datas e valores de cada parcela + comissão do vendedor.</div>
+    <div id="vendParcelasBox"></div>
+    <div style="padding:6px 14px;display:flex;justify-content:space-between;font-size:11px;background:#f9f9f9;border-top:1px solid var(--bd)">
+      <span>Total parcelas: <b id="vendTotParc">R$ 0,00</b></span>
+      <span>Total comissão: <b id="vendTotComis">R$ 0,00</b></span>
+    </div>
+  </div>
+
+  <!-- Usados no Negócio -->
+  <div class="sec">
+    <div class="sh" style="background:#374151;display:flex;align-items:center;justify-content:space-between">
+      <span><div class="si" style="background:rgba(255,255,255,.1);display:inline-flex;margin-right:6px">🔄</div>Usados no Negócio (Troca)</span>
+      <button onclick="vendAddUsado()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">➕ Usado</button>
+    </div>
+    <div style="padding:6px 12px 4px;font-size:10px;color:var(--mu)">Máquinas que entram como troca. O valor avaliado será descontado do total da venda.</div>
+    <div id="vendUsadosBox"></div>
+    <div style="padding:6px 14px;display:flex;justify-content:space-between;font-size:11px;background:#f9f9f9;border-top:1px solid var(--bd)">
+      <span>Total desconto usados: <b id="vendTotUsados" style="color:#c62828">R$ 0,00</b></span>
+      <span>Valor líquido: <b id="vendValorLiq" style="color:var(--gr)">R$ 0,00</b></span>
+    </div>
+  </div>
+
+  <!-- Forma de Pagamento -->
+  <div class="sec">
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">💳</div>Forma de Pagamento</div>
+    <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+
+      <!-- Recurso Próprio -->
+      <div id="fpRecursoWrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#374151">
+          <input type="checkbox" id="fpRecursoChk" onchange="vendToggleFP('recurso',this.checked)" style="width:18px;height:18px;accent-color:#374151;cursor:pointer">
+          💵 Recurso Próprio
+        </label>
+        <div id="fpRecursoFields" style="display:none;padding:8px 10px;background:#f9f9f9;border-radius:8px;margin-top:6px">
+          <div class="f" style="padding:0;margin-bottom:6px"><label class="fl">Valor (R$)</label><input class="fi" id="fpRecursoVal" type="number" step="0.01" placeholder="0,00"></div>
+        </div>
+      </div>
+
+      <!-- Financiamento -->
+      <div id="fpFinanciamentoWrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#1a4a7a">
+          <input type="checkbox" id="fpFinanciamentoChk" onchange="vendToggleFP('financiamento',this.checked)" style="width:18px;height:18px;accent-color:#1a4a7a;cursor:pointer">
+          🏦 Financiamento
+        </label>
+        <div id="fpFinanciamentoFields" style="display:none;padding:8px 10px;background:#e3f0ff;border-radius:8px;margin-top:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><label class="fl">Banco</label><input class="fi" id="fpFinBanco" type="text" placeholder="Ex: Banco do Brasil"></div>
+            <div><label class="fl">Nº Contrato</label><input class="fi" id="fpFinContrato" type="text" placeholder="Ex: 000123"></div>
+            <div><label class="fl">Valor Financiado (R$)</label><input class="fi" id="fpFinValor" type="number" step="0.01" placeholder="0,00"></div>
+            <div><label class="fl">Nº Parcelas</label><input class="fi" id="fpFinParcelas" type="number" min="1" placeholder="Ex: 36"></div>
+            <div><label class="fl">Valor Parcela (R$)</label><input class="fi" id="fpFinValParcela" type="number" step="0.01" placeholder="0,00"></div>
+            <div><label class="fl">Entrada (R$)</label><input class="fi" id="fpFinEntrada" type="number" step="0.01" placeholder="0,00"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consórcio -->
+      <div id="fpConsorcioWrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#4a148c">
+          <input type="checkbox" id="fpConsorcioChk" onchange="vendToggleFP('consorcio',this.checked)" style="width:18px;height:18px;accent-color:#4a148c;cursor:pointer">
+          📋 Consórcio
+        </label>
+        <div id="fpConsorcioFields" style="display:none;padding:8px 10px;background:#f3e5f5;border-radius:8px;margin-top:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><label class="fl">Administradora</label><input class="fi" id="fpConsAdm" type="text" placeholder="Ex: CNHA"></div>
+            <div><label class="fl">Grupo/Cota</label><input class="fi" id="fpConsGrupo" type="text" placeholder="Ex: 0012/0034"></div>
+            <div><label class="fl">Valor Carta (R$)</label><input class="fi" id="fpConsValor" type="number" step="0.01" placeholder="0,00"></div>
+            <div><label class="fl">Nº Parcelas</label><input class="fi" id="fpConsParcelas" type="number" min="1" placeholder="Ex: 60"></div>
+            <div><label class="fl">Valor Parcela (R$)</label><input class="fi" id="fpConsValParcela" type="number" step="0.01" placeholder="0,00"></div>
+            <div><label class="fl">Obs</label><input class="fi" id="fpConsObs" type="text" placeholder="..."></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Assinaturas -->
+  <div class="sec">
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">✍️</div>Assinaturas</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px">
+      <!-- Gestor -->
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">Gestor</div>
+        <div id="vendSigGestorArea">
+          <button type="button" onclick="openSig('vendGestor')" style="width:100%;min-height:70px;border:2px dashed #e65100;border-radius:10px;background:#fff8f5;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:manipulation">
+            <span style="font-size:22px">✍️</span><span style="font-size:11px;color:#e65100;font-weight:600">Assinar</span>
+          </button>
+        </div>
+        <div id="vendSigGestorDone" style="display:none;border:2px solid #e65100;border-radius:10px;background:#fff8f5;padding:6px;text-align:center">
+          <img id="vendSigGestorImg" style="max-height:60px;max-width:100%;object-fit:contain">
+          <div style="font-size:10px;font-weight:700;color:#e65100;margin-top:4px">✅ GESTOR</div>
+          <button type="button" onclick="openSig('vendGestor')" style="font-size:10px;color:#e65100;background:none;border:1px solid #e65100;border-radius:5px;padding:1px 8px;cursor:pointer;margin-top:2px">Refazer</button>
+        </div>
+      </div>
+      <!-- Vendedor -->
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">Vendedor</div>
+        <div id="vendSigVendArea">
+          <button type="button" onclick="openSig('vendVendedor')" style="width:100%;min-height:70px;border:2px dashed #374151;border-radius:10px;background:#f9f9f9;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:manipulation">
+            <span style="font-size:22px">✍️</span><span style="font-size:11px;color:#374151;font-weight:600">Assinar</span>
+          </button>
+        </div>
+        <div id="vendSigVendDone" style="display:none;border:2px solid #374151;border-radius:10px;background:#f5f5f5;padding:6px;text-align:center">
+          <img id="vendSigVendImg" style="max-height:60px;max-width:100%;object-fit:contain">
+          <div style="font-size:10px;font-weight:700;color:#374151;margin-top:4px">✅ VENDEDOR</div>
+          <button type="button" onclick="openSig('vendVendedor')" style="font-size:10px;color:#374151;background:none;border:1px solid #374151;border-radius:5px;padding:1px 8px;cursor:pointer;margin-top:2px">Refazer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fotos/Anexos -->
+  <div class="sec">
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">📷</div>Fotos e Documentos do Pedido</div>
+    <div style="padding:9px 14px">
+      <label style="display:inline-flex;align-items:center;gap:8px;background:#e65100;color:#fff;padding:9px 14px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700">📷 Selecionar
+        <input id="vendFotoInp" type="file" accept="image/*,.heic,.heif,.pdf" multiple style="display:none" onchange="vendAddFotos(this)">
+      </label>
+      <div id="vendFotosPrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <button class="btn" style="background:#e65100" onclick="salvarVenda()">💾 Salvar Venda</button>
+
+  <!-- Histórico -->
+  <div style="margin-top:16px">
+    <div class="dhr"><span>Vendas Registradas</span>
+      <button onclick="loadVendas()" class="opbtn" style="background:#374151;font-size:10px">🔄 Atualizar</button>
+    </div>
+    <div id="vendList"><div class="empty">Carregando...</div></div>
+  </div>
+</div>
+</div>
+
 <!-- MODAL EVENTOS DO DIA -->
 <div id="agDiaModal" onclick="if(event.target===this)fecharDiaModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9001;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25)">
@@ -1902,9 +2070,9 @@ function _confirmarDriveUrls(){
 
 // ── Tabs ─────────────────────────────────────────────────────
 function goTab(t){
-  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10','tb11','tb12','tb13','tb14','tb15','tb16','tb17','tb18'];
-  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab','rcliTab'];
-  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9,conc:10,parq:11,usad:12,cobr:13,mkt:14,fin:15,rdesp:16,rcli:17};
+  var TBS =['tb1','tb2','tb3','tb4','tb5','tb6','tb7','tb8','tb9','tb10','tb11','tb12','tb13','tb14','tb15','tb16','tb17','tb18','tb19'];
+  var PANES=['formTab','agendaTab','histTab','prospTab','orcTab','veiTab','ferrTab','garTab','chkTab','despTab','concTab','parqTab','usadTab','cobrTab','mktTab','finTab','rdespTab','rcliTab','vendTab'];
+  var MAP ={form:0,agenda:1,hist:2,prosp:3,orc:4,vei:5,ferr:6,gar:7,chk:8,desp:9,conc:10,parq:11,usad:12,cobr:13,mkt:14,fin:15,rdesp:16,rcli:17,vend:18};
   TBS.forEach(function(id,i){
     var b=document.getElementById(id), p=document.getElementById(PANES[i]);
     if(b) b.className='tab'; if(p) p.style.display='none';
@@ -1912,7 +2080,7 @@ function goTab(t){
   var i=MAP[t]; if(i===undefined) return;
   var b=document.getElementById(TBS[i]), p=document.getElementById(PANES[i]);
   if(b) b.className='tab on'; if(p) p.style.display='block';
-  if(t==='orc'){renderOrcSalvos();}
+  if(t==='orc'){renderOrcSalvos();var nh=document.getElementById('orcNumHeader');if(nh)nh.textContent=peekNextOrcNum();}
   if(t==='chk'){
     var chkDt=document.getElementById('chkDt');
     if(chkDt&&!chkDt.value){try{chkDt.valueAsDate=new Date();}catch(e){}}
@@ -1936,6 +2104,7 @@ function goTab(t){
   }
   if(t==='gar'){ loadGarantias(); loadAtividades(); }
   if(t==='rcli') loadResumoCli();
+  if(t==='vend') loadVendas();
   if(t==='vei')  loadVei();
   if(t==='ferr') loadFerr();
   if(t==='prosp') loadProsp();
@@ -2735,6 +2904,12 @@ function getNextOrcNum(){
     return 'ORC-'+String(n).padStart(4,'0');
   }catch(e){return 'ORC-'+String(Date.now()).slice(-6);}
 }
+function peekNextOrcNum(){
+  try{
+    var n=parseInt(localStorage.getItem('jm_orc_seq')||'0')+1;
+    return 'ORC-'+String(n).padStart(4,'0');
+  }catch(e){return 'ORC-????';}
+}
 function printOrc(){
   var cli=g('oCli'),equip=g('oEquip'),desc=g('oDesc'),obs=g('oObs');
   var h=parseFloat(g('oHoras'))||0,t=parseFloat(g('oTaxa'))||220;
@@ -3141,8 +3316,8 @@ var sigCtx=sigCv.getContext('2d');
 
 function openSig(target){
   sigTarget=target;
-  var titles={tec:'Assinatura do Tecnico', desp:'Assinatura do Comprador'};
-  var colors={tec:'#1a4a7a', desp:'#6a1b9a'};
+  var titles={tec:'Assinatura do Tecnico', desp:'Assinatura do Comprador', vendGestor:'Assinatura do Gestor', vendVendedor:'Assinatura do Vendedor'};
+  var colors={tec:'#1a4a7a', desp:'#6a1b9a', vendGestor:'#e65100', vendVendedor:'#374151'};
   document.getElementById('sigTit').textContent = titles[target] || 'Assinatura do Cliente';
   var modal=document.getElementById('sigModal');
   modal.style.background = colors[target] || '#1A6B2A';
@@ -3195,6 +3370,18 @@ function confirmSig(){
     if(btn) btn.style.display='none';
     var done=document.getElementById('dSigDoneArea');
     if(done) done.style.display='block';
+  }
+  else if(sigTarget==='vendGestor'){
+    _vendSigGestor=data;
+    var gi=document.getElementById('vendSigGestorImg');if(gi)gi.src=data;
+    var ga=document.getElementById('vendSigGestorArea');if(ga)ga.style.display='none';
+    var gd=document.getElementById('vendSigGestorDone');if(gd)gd.style.display='block';
+  }
+  else if(sigTarget==='vendVendedor'){
+    _vendSigVendedor=data;
+    var vi=document.getElementById('vendSigVendImg');if(vi)vi.src=data;
+    var va=document.getElementById('vendSigVendArea');if(va)va.style.display='none';
+    var vd=document.getElementById('vendSigVendDone');if(vd)vd.style.display='block';
   }
   else{sigData=data;document.getElementById('sigImg').src=data;document.getElementById('sigTap').style.display='none';document.getElementById('sigDn').style.display='flex';document.getElementById('sigWrap').classList.add('on');}
   closeSig();toast('Assinatura capturada','ok');
@@ -3596,7 +3783,7 @@ function salvarOrcLocal(num, orc){
     var orcs=LS_orc();
     orcs.push(orc);
     SS_orc(orcs);
-    renderOrcSalvos();
+    renderOrcSalvos();var _nh=document.getElementById('orcNumHeader');if(_nh)_nh.textContent=peekNextOrcNum();
   }catch(e){}
 }
 
@@ -3625,7 +3812,7 @@ function salvarOrc() {
   orcs.push(orc);
   SS_orc(orcs);
   toast(num+' salvo!','ok');
-  renderOrcSalvos();
+  renderOrcSalvos();var _nh=document.getElementById('orcNumHeader');if(_nh)_nh.textContent=peekNextOrcNum();
 }
 
 function carregarOrc(num) {
@@ -3646,7 +3833,7 @@ function excluirOrc(num) {
   showConfirm('Excluir este orcamento do cache local?', function(){
     var orcs = LS_orc().filter(function(o){return o.num!==num&&o.id!==num;});
     SS_orc(orcs);
-    renderOrcSalvos();
+    renderOrcSalvos();var _nh=document.getElementById('orcNumHeader');if(_nh)_nh.textContent=peekNextOrcNum();
     toast('Removido do cache local!','ok');
   });
 }
@@ -3831,7 +4018,7 @@ function salvarOrcSheets(){
     .withSuccessHandler(function(r){
       _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
-        var orcs=LS_orc();orcs.push(orc);SS_orc(orcs);renderOrcSalvos();
+        var orcs=LS_orc();orcs.push(orc);SS_orc(orcs);renderOrcSalvos();var _nh=document.getElementById('orcNumHeader');if(_nh)_nh.textContent=peekNextOrcNum();
         toast('Orçamento '+r.num+' salvo na planilha!','ok');
       } else toast('Erro: '+(r?r.error:'?'),'err');
     })
@@ -5030,15 +5217,46 @@ function _vendSalvar(tab,dados,listId,loadFn){
     .withFailureHandler(function(e){hideLoad();toast('Erro: '+e.message,'err');})
     .salvarVendas(tab, dados);
 }
+function _fmtVendDate(v){
+  if(!v) return '';
+  var s=String(v);
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+  var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return m[3]+'/'+m[2]+'/'+m[1];
+  var d=new Date(s);
+  if(!isNaN(d)) return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+d.getFullYear();
+  return s;
+}
+
 function _vendRender(listId, rows, campos){
   var el=document.getElementById(listId);if(!el)return;
   if(!rows||!rows.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhum registro</div>';return;}
   var html='';
   rows.slice().reverse().forEach(function(r){
-    html+='<div style="border:1px solid var(--bd);border-radius:8px;margin:6px 12px;padding:10px 12px;background:var(--wh)">';
-    campos.forEach(function(c){
-      if(r[c.k]) html+='<div style="font-size:'+(c.big?'13px;font-weight:600':'11px;color:var(--mu)')+'">'+c.l+': '+r[c.k]+'</div>';
-    });
+    var clienteKey=campos.find(function(c){return c.big;});
+    var clienteVal=clienteKey?r[clienteKey.k]:'';
+    var dataVal=_fmtVendDate(r.data||r.Data||'');
+    var respVal=r.responsavel||r.Responsavel||'';
+    html+='<div class="ocard" style="margin:6px 12px">';
+    html+='<div class="chdr">';
+    if(dataVal) html+='<span class="cdt">📅 '+dataVal+'</span>';
+    if(respVal) html+='<span style="font-size:10px;background:#f0f0f0;color:#555;padding:2px 7px;border-radius:8px;font-weight:600">👷 '+respVal+'</span>';
+    html+='</div>';
+    if(clienteVal) html+='<div class="cnm">'+clienteVal+'</div>';
+    var skip=['data','Data','responsavel','Responsavel','obs','Obs'];
+    if(clienteKey) skip.push(clienteKey.k);
+    var grid=campos.filter(function(c){return skip.indexOf(c.k)<0&&r[c.k];});
+    if(grid.length){
+      var cols=grid.length<=2?'1fr 1fr':(grid.length<=4?'1fr 1fr':'1fr 1fr 1fr');
+      html+='<div class="cmet" style="grid-template-columns:'+cols+'">';
+      grid.forEach(function(c){
+        var val=(c.k==='valor'||c.k==='preco')&&parseFloat(r[c.k])>0?fmt(parseFloat(r[c.k])):r[c.k];
+        html+='<div class="mc"><div class="ml">'+c.l+'</div><div class="mv" style="font-size:12px">'+val+'</div></div>';
+      });
+      html+='</div>';
+    }
+    var obsVal=r.obs||r.Obs||'';
+    if(obsVal) html+='<div class="cdesc"><div class="cdlbl">Obs</div><div class="cdtxt">'+obsVal+'</div></div>';
     html+='</div>';
   });
   el.innerHTML=html;
@@ -5431,10 +5649,494 @@ function _toggleRcliCard(id){
 }
 // ═════════════════════════════════════════════════════════════
 
+// ══ VENDAS ═══════════════════════════════════════════════════
+var _vendParcelas = [];
+var _vendUsados = [];  // [{marca,modelo,ano,horas,serie,valorAvaliado,pintura,embuchamento,visual,fotos:[]}]
+var _vendFotos = [];
+var _vendSigGestor = null;
+var _vendSigVendedor = null;
+var _vendNumAtual = '';
+
+function _peekVendNum(){
+  try{var n=parseInt(localStorage.getItem('jm_vend_seq')||'0')+1;return 'VD-'+String(n).padStart(4,'0');}catch(e){return 'VD-0001';}
+}
+function _consumeVendNum(){
+  try{var n=parseInt(localStorage.getItem('jm_vend_seq')||'0')+1;localStorage.setItem('jm_vend_seq',String(n));return 'VD-'+String(n).padStart(4,'0');}catch(e){return 'VD-'+Date.now();}
+}
+
+// ── Usados no Negócio ─────────────────────────────────────────
+function vendAddUsado(){
+  _vendUsados.push({marca:'',modelo:'',ano:'',horas:'',serie:'',valorAvaliado:0,estadoGeral:'Bom',pintura:'',embuchamento:'',visual:'',fotos:[]});
+  _renderVendUsados();
+}
+function vendRemUsado(i){
+  _vendUsados.splice(i,1);
+  _renderVendUsados();
+  vendCalcTotal();
+}
+function _vendSetUsado(i,campo,val){
+  if(_vendUsados[i]){_vendUsados[i][campo]=val;}
+  if(campo==='valorAvaliado') vendCalcTotal();
+}
+
+function _renderVendUsados(){
+  var box=document.getElementById('vendUsadosBox');if(!box)return;
+  if(!_vendUsados.length){box.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--mu)">Nenhum usado. Clique em ➕ Usado para adicionar.</div>';vendCalcTotal();return;}
+  var html='';
+  _vendUsados.forEach(function(u,i){
+    var bg=i%2===0?'#fff':'#f9f9f9';
+    html+='<div style="padding:10px 12px;background:'+bg+';border-bottom:1px solid var(--bd)">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    html+='<span style="font-size:11px;font-weight:700;color:#e65100">🔄 Usado '+(i+1)+'</span>';
+    html+='<button onclick="vendRemUsado('+i+')" style="background:#fce4e4;border:none;color:#c62828;border-radius:5px;padding:1px 8px;font-size:10px;cursor:pointer;font-family:inherit">✕ Remover</button>';
+    html+='</div>';
+    // Identificação
+    html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px">Identificação</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Marca</label><input type="text" value="'+_escHtml(u.marca||'')+'" oninput="_vendSetUsado('+i+',\'marca\',this.value)" placeholder="Ex: Stara" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Modelo</label><input type="text" value="'+_escHtml(u.modelo||'')+'" oninput="_vendSetUsado('+i+',\'modelo\',this.value)" placeholder="Ex: Fenix 4.0" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Ano</label><input type="number" value="'+(u.ano||'')+'" oninput="_vendSetUsado('+i+',\'ano\',this.value)" placeholder="2020" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Horas</label><input type="number" value="'+(u.horas||'')+'" oninput="_vendSetUsado('+i+',\'horas\',this.value)" placeholder="Ex: 1200" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Série/Chassi</label><input type="text" value="'+_escHtml(u.serie||'')+'" oninput="_vendSetUsado('+i+',\'serie\',this.value)" placeholder="..." style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:#c62828;font-weight:700;display:block;margin-bottom:2px">Valor Avaliado (R$)</label><input type="number" step="0.01" value="'+(u.valorAvaliado||'')+'" oninput="_vendSetUsado('+i+',\'valorAvaliado\',parseFloat(this.value)||0)" placeholder="0,00" style="width:100%;border:1px solid #ffcc80;border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='</div>';
+    // Laudo de Avaliação
+    html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px;margin-top:4px">📋 Laudo de Avaliação</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">';
+    html+='<div><label style="font-size:9px;color:#374151;font-weight:700;display:block;margin-bottom:2px">🎨 Pintura</label><textarea oninput="_vendSetUsado('+i+',\'pintura\',this.value)" rows="2" placeholder="Estado da pintura, desgaste, arranhados, oxidação..." style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box;resize:none">'+_escHtml(u.pintura||'')+'</textarea></div>';
+    html+='<div><label style="font-size:9px;color:#374151;font-weight:700;display:block;margin-bottom:2px">🔧 Embuchamento</label><textarea oninput="_vendSetUsado('+i+',\'embuchamento\',this.value)" rows="2" placeholder="Estado das buchas, articulações, folgas, desgaste..." style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box;resize:none">'+_escHtml(u.embuchamento||'')+'</textarea></div>';
+    html+='<div><label style="font-size:9px;color:#374151;font-weight:700;display:block;margin-bottom:2px">👁️ Visual Geral</label><textarea oninput="_vendSetUsado('+i+',\'visual\',this.value)" rows="2" placeholder="Condição geral, conservação, observações visuais..." style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box;resize:none">'+_escHtml(u.visual||'')+'</textarea></div>';
+    html+='</div>';
+    // Fotos do Usado
+    html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">Fotos do Usado</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="usadoPrev_'+i+'">';
+    (u.fotos||[]).forEach(function(f,fi){
+      html+='<div style="position:relative;width:64px;height:64px"><img src="data:image/jpeg;base64,'+f.b64+'" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--bd)"><button onclick="_vendRemFotoUsado('+i+','+fi+')" style="position:absolute;top:1px;right:1px;width:16px;height:16px;border-radius:50%;background:#c62828;color:#fff;border:none;font-size:9px;cursor:pointer;padding:0">✕</button></div>';
+    });
+    html+='</div>';
+    html+='<label style="display:inline-flex;align-items:center;gap:6px;background:#374151;color:#fff;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:10px;font-weight:700">📷 Fotos<input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_vendAddFotoUsado('+i+',this)"></label>';
+    html+='</div>';
+  });
+  box.innerHTML=html;
+  vendCalcTotal();
+}
+
+function _vendAddFotoUsado(idx, inp){
+  Array.from(inp.files).forEach(function(file){
+    var r=new FileReader();
+    r.onload=function(e){
+      var b64=e.target.result.split(',')[1];
+      if(!_vendUsados[idx].fotos)_vendUsados[idx].fotos=[];
+      _vendUsados[idx].fotos.push({b64:b64,mime:file.type||'image/jpeg',nome:file.name});
+      _renderVendUsados();
+    };
+    r.readAsDataURL(file);
+  });
+  inp.value='';
+}
+function _vendRemFotoUsado(idx,fi){
+  if(_vendUsados[idx]&&_vendUsados[idx].fotos)_vendUsados[idx].fotos.splice(fi,1);
+  _renderVendUsados();
+}
+
+// ── Forma de Pagamento ────────────────────────────────────────
+function vendToggleFP(tipo, on){
+  var fields=document.getElementById('fp'+tipo.charAt(0).toUpperCase()+tipo.slice(1)+'Fields');
+  if(fields)fields.style.display=on?'block':'none';
+}
+
+function _getFormaPagamento(){
+  var fp={};
+  if(document.getElementById('fpRecursoChk')&&document.getElementById('fpRecursoChk').checked){
+    fp.recurso={valor:parseFloat(document.getElementById('fpRecursoVal').value)||0};
+  }
+  if(document.getElementById('fpFinanciamentoChk')&&document.getElementById('fpFinanciamentoChk').checked){
+    fp.financiamento={
+      banco:document.getElementById('fpFinBanco').value||'',
+      contrato:document.getElementById('fpFinContrato').value||'',
+      valorFinanciado:parseFloat(document.getElementById('fpFinValor').value)||0,
+      parcelas:parseInt(document.getElementById('fpFinParcelas').value)||0,
+      valorParcela:parseFloat(document.getElementById('fpFinValParcela').value)||0,
+      entrada:parseFloat(document.getElementById('fpFinEntrada').value)||0
+    };
+  }
+  if(document.getElementById('fpConsorcioChk')&&document.getElementById('fpConsorcioChk').checked){
+    fp.consorcio={
+      administradora:document.getElementById('fpConsAdm').value||'',
+      grupoCota:document.getElementById('fpConsGrupo').value||'',
+      valorCarta:parseFloat(document.getElementById('fpConsValor').value)||0,
+      parcelas:parseInt(document.getElementById('fpConsParcelas').value)||0,
+      valorParcela:parseFloat(document.getElementById('fpConsValParcela').value)||0,
+      obs:document.getElementById('fpConsObs').value||''
+    };
+  }
+  return fp;
+}
+
+// ─────────────────────────────────────────────────────────────
+function vendAddParcela(){
+  _vendParcelas.push({data:'',valor:0,comissao:0,recebida:false});
+  _renderVendParcelas();
+}
+function vendRemParcela(i){
+  _vendParcelas.splice(i,1);
+  _renderVendParcelas();
+}
+function _vendSetParcela(i,campo,val){
+  if(_vendParcelas[i]) _vendParcelas[i][campo]=val;
+  vendCalcTotal();
+}
+function _renderVendParcelas(){
+  var box=document.getElementById('vendParcelasBox');if(!box)return;
+  if(!_vendParcelas.length){box.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--mu)">Nenhuma parcela. Clique em ➕ Parcela para adicionar.</div>';vendCalcTotal();return;}
+  var html='';
+  _vendParcelas.forEach(function(p,i){
+    var bg=i%2===0?'#fff':'#f9f9f9';
+    html+='<div style="padding:8px 12px;background:'+bg+';border-bottom:1px solid var(--bd)">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    html+='<span style="font-size:10px;font-weight:700;color:#374151">Parcela '+(i+1)+'</span>';
+    html+='<button onclick="vendRemParcela('+i+')" style="background:#fce4e4;border:none;color:#c62828;border-radius:5px;padding:1px 7px;font-size:10px;cursor:pointer;font-family:inherit">✕</button>';
+    html+='</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Data Recebimento</label>';
+    html+='<input type="date" value="'+(p.data||'')+'" onchange="_vendSetParcela('+i+',\'data\',this.value)" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:var(--mu);font-weight:700;display:block;margin-bottom:2px">Valor (R$)</label>';
+    html+='<input type="number" step="0.01" value="'+(p.valor||'')+'" oninput="_vendSetParcela('+i+',\'valor\',parseFloat(this.value)||0)" style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='<div><label style="font-size:9px;color:#e65100;font-weight:700;display:block;margin-bottom:2px">Comissão (R$)</label>';
+    html+='<input type="number" step="0.01" value="'+(p.comissao||'')+'" oninput="_vendSetParcela('+i+',\'comissao\',parseFloat(this.value)||0)" style="width:100%;border:1px solid #ffcc80;border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box"></div>';
+    html+='</div></div>';
+  });
+  box.innerHTML=html;
+  vendCalcTotal();
+}
+function vendCalcTotal(){
+  var totParc=0,totComis=0;
+  _vendParcelas.forEach(function(p){totParc+=parseFloat(p.valor)||0;totComis+=parseFloat(p.comissao)||0;});
+  var tp=document.getElementById('vendTotParc');if(tp)tp.textContent=fmt(totParc);
+  var tc=document.getElementById('vendTotComis');if(tc)tc.textContent=fmt(totComis);
+  // Usados
+  var totUsados=0;
+  _vendUsados.forEach(function(u){totUsados+=parseFloat(u.valorAvaliado)||0;});
+  var tu=document.getElementById('vendTotUsados');if(tu)tu.textContent=fmt(totUsados);
+  var valorVenda=parseFloat((document.getElementById('vendValor')||{}).value)||0;
+  var liq=Math.max(0,valorVenda-totUsados);
+  var vl=document.getElementById('vendValorLiq');if(vl)vl.textContent=fmt(liq);
+}
+
+function vendAddFotos(inp){
+  Array.from(inp.files).forEach(function(file){
+    var r=new FileReader();
+    r.onload=function(e){
+      _vendFotos.push({b64:e.target.result.split(',')[1],mime:file.type||'image/jpeg',nome:file.name});
+      _renderVendFotosPrev();
+    };
+    r.readAsDataURL(file);
+  });
+  inp.value='';
+}
+function _renderVendFotosPrev(){
+  var box=document.getElementById('vendFotosPrev');if(!box)return;
+  box.innerHTML=_vendFotos.map(function(f,i){
+    var src=f.mime.indexOf('image')>=0?('data:'+f.mime+';base64,'+f.b64):'';
+    return '<div style="position:relative;width:72px;height:72px">'+(src?'<img src="'+src+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)">':'<div style="width:72px;height:72px;border-radius:8px;border:1px solid var(--bd);background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>')+'<button onclick="vendRemFoto('+i+')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#c62828;color:#fff;border:none;font-size:10px;cursor:pointer;padding:0">✕</button></div>';
+  }).join('');
+}
+function vendRemFoto(i){_vendFotos.splice(i,1);_renderVendFotosPrev();}
+
+function salvarVenda(){
+  var cli=g('vendCli'),vend=g('vendVend'),dt=g('vendDt');
+  if(!cli||!vend||!dt){toast('Preencha: Cliente, Vendedor e Data','warn');return;}
+  _iniciarProgresso('🤝 Venda',[{pct:15,label:'Preparando...'},{pct:45,label:'Salvando na planilha...'},{pct:80,label:'Enviando fotos...'}]);
+  var totUsados=_vendUsados.reduce(function(a,u){return a+(parseFloat(u.valorAvaliado)||0);},0);
+  var valorVenda=parseFloat(g('vendValor'))||0;
+  var valorLiquido=Math.max(0,valorVenda-totUsados);
+  // Usados sem fotos para o JSON (fotos vão via upload separado)
+  var usadosSemFotos=_vendUsados.map(function(u){return Object.assign({},u,{fotos:[]});});
+  var dados={
+    data:isoToLocal(dt)||dt,
+    cliente:cli.trim(),
+    vendedor:vend,
+    marca:g('vendMarca'),
+    modelo:g('vendModelo'),
+    ano:g('vendAno'),
+    valorTotal:valorVenda.toString(),
+    parcelas:JSON.stringify(_vendParcelas),
+    obs:g('vendObs'),
+    usados:JSON.stringify(usadosSemFotos),
+    formaPagamento:JSON.stringify(_getFormaPagamento()),
+    valorLiquido:valorLiquido.toString()
+  };
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        _vendNumAtual=r.num;
+        toast(r.num+' salva!','ok');
+        // Upload fotos
+        var fotos=_vendFotos.slice();
+        var fi=0;
+        function nextFoto(){
+          if(fi>=fotos.length){ _finalizarSalvarVenda(r.num); return; }
+          var f=fotos[fi];fi++;
+          google.script.run
+            .withSuccessHandler(function(){nextFoto();})
+            .withFailureHandler(function(){nextFoto();})
+            .salvarMidiaVenda({numVenda:r.num,dados:f.b64,tipo:f.mime,nome:f.nome});
+        }
+        nextFoto();
+      } else {_concluirProgresso(false,'');toast('Erro: '+(r&&r.error||'?'),'err');}
+    })
+    .withFailureHandler(function(e){_concluirProgresso(false,'');toast('Erro: '+e.message,'err');})
+    .salvarVenda(dados);
+}
+
+function _finalizarSalvarVenda(num){
+  // 1. Upload fotos dos usados
+  var fotoQueue=[];
+  _vendUsados.forEach(function(u){
+    (u.fotos||[]).forEach(function(f){
+      fotoQueue.push({numVenda:num,dados:f.b64,tipo:f.mime,nome:f.nome});
+    });
+  });
+  var fqi=0;
+  function nextFotoUsado(){
+    if(fqi>=fotoQueue.length){ salvarUsadosNaSheet(num); return; }
+    var f=fotoQueue[fqi];fqi++;
+    google.script.run
+      .withSuccessHandler(function(){nextFotoUsado();})
+      .withFailureHandler(function(){nextFotoUsado();})
+      .salvarMidiaVenda(f);
+  }
+  nextFotoUsado();
+}
+
+function salvarUsadosNaSheet(num){
+  // 2. Salvar usados na aba Usados
+  var usadosSemFotos=_vendUsados.map(function(u){return Object.assign({},u,{fotos:[]});});
+  if(usadosSemFotos.length){
+    google.script.run
+      .withSuccessHandler(function(){_finalizarAssinaturas(num);})
+      .withFailureHandler(function(){_finalizarAssinaturas(num);})
+      .salvarUsadosVenda(usadosSemFotos, num);
+  } else {
+    _finalizarAssinaturas(num);
+  }
+}
+
+function _finalizarAssinaturas(num){
+  // 3. Upload assinaturas
+  var sigs=[];
+  if(_vendSigGestor) sigs.push({tipo:'gestor',b64:_vendSigGestor.split(',')[1]});
+  if(_vendSigVendedor) sigs.push({tipo:'vendedor',b64:_vendSigVendedor.split(',')[1]});
+  var si=0;
+  function nextSig(){
+    if(si>=sigs.length){ _concluirProgresso(true,'Venda '+num+' salva!'); _resetVendForm(); loadVendas(); return; }
+    var sg=sigs[si];si++;
+    google.script.run
+      .withSuccessHandler(function(){nextSig();})
+      .withFailureHandler(function(){nextSig();})
+      .salvarAssinaturaVenda(num,sg.tipo,sg.b64);
+  }
+  nextSig();
+}
+
+function _resetVendForm(){
+  ['vendCli','vendVend','vendMarca','vendModelo','vendAno','vendValor','vendObs'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  try{document.getElementById('vendDt').valueAsDate=new Date();}catch(e){}
+  _vendParcelas=[];_vendFotos=[];_vendUsados=[];_vendSigGestor=null;_vendSigVendedor=null;
+  _renderVendParcelas();_renderVendFotosPrev();_renderVendUsados();
+  // Reset forma de pagamento
+  ['fpRecursoChk','fpFinanciamentoChk','fpConsorcioChk'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
+  ['fpRecursoFields','fpFinanciamentoFields','fpConsorcioFields'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['fpRecursoVal','fpFinBanco','fpFinContrato','fpFinValor','fpFinParcelas','fpFinValParcela','fpFinEntrada','fpConsAdm','fpConsGrupo','fpConsValor','fpConsParcelas','fpConsValParcela','fpConsObs'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var ga=document.getElementById('vendSigGestorArea');if(ga)ga.style.display='block';
+  var gd=document.getElementById('vendSigGestorDone');if(gd)gd.style.display='none';
+  var va=document.getElementById('vendSigVendArea');if(va)va.style.display='block';
+  var vd=document.getElementById('vendSigVendDone');if(vd)vd.style.display='none';
+  var nh=document.getElementById('vendNumHeader');if(nh)nh.textContent=_peekVendNum();
+}
+
+function loadVendas(){
+  var el=document.getElementById('vendList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
+  var nh=document.getElementById('vendNumHeader');if(nh)nh.textContent=_peekVendNum();
+  google.script.run
+    .withSuccessHandler(function(rows){_renderVendList(rows||[]);})
+    .withFailureHandler(function(){var el=document.getElementById('vendList');if(el)el.innerHTML='<div class="empty">Erro ao carregar</div>';})
+    .getVendas2();
+}
+
+function _renderVendList(rows){
+  var el=document.getElementById('vendList');if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty" style="padding:20px">Nenhuma venda registrada</div>';return;}
+  var html='';
+  rows.forEach(function(v){
+    var id='vd_'+v.num.replace('-','_');
+    var totParcelas=v.parcelas.reduce(function(a,p){return a+(parseFloat(p.valor)||0);},0);
+    var pagas=v.parcelas.filter(function(p){return p.recebida;}).length;
+    var pendentes=v.parcelas.length-pagas;
+    var pct=v.parcelas.length?Math.round(pagas/v.parcelas.length*100):0;
+
+    html+='<div class="ocard" style="margin-bottom:8px">';
+    // Header
+    html+='<div onclick="_toggleVendCard(\''+id+'\')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
+    html+='<span style="font-size:11px;font-weight:700;color:#e65100">'+v.num+'</span>';
+    html+='<span style="font-size:10px;color:var(--mu)">'+v.data+'</span>';
+    if(pagas===v.parcelas.length&&v.parcelas.length>0) html+='<span style="font-size:9px;background:#e8f5e9;color:#1A6B2A;padding:1px 6px;border-radius:8px;font-weight:700">✅ Quitado</span>';
+    else if(pendentes>0) html+='<span style="font-size:9px;background:#fff3e0;color:#e67e22;padding:1px 6px;border-radius:8px;font-weight:700">⏳ '+pendentes+' pendente'+(pendentes>1?'s':'')+'</span>';
+    html+='</div>';
+    html+='<div style="font-size:13px;font-weight:700">'+v.cliente+'</div>';
+    html+='<div style="font-size:11px;color:var(--mu);margin-top:1px">'+[v.marca,v.modelo,v.ano].filter(Boolean).join(' ')+(v.vendedor?' · 👷 '+v.vendedor:'')+'</div>';
+    html+='</div>';
+    html+='<div style="text-align:right;flex-shrink:0;margin-left:8px">';
+    html+='<div style="font-size:14px;font-weight:800;color:#e65100">'+fmt(v.valorTotal)+'</div>';
+    if(v.parcelas.length) html+='<div style="font-size:10px;color:var(--mu)">'+pagas+'/'+v.parcelas.length+' pagas</div>';
+    html+='</div>';
+    html+='<span id="'+id+'_arr" style="font-size:16px;color:var(--mu);transition:transform .2s;flex-shrink:0;margin-left:6px">›</span>';
+    html+='</div>';
+
+    // Barra de progresso
+    if(v.parcelas.length){
+      html+='<div style="margin:0 14px 8px;background:#eee;border-radius:20px;height:6px;overflow:hidden">';
+      html+='<div style="width:'+pct+'%;height:100%;background:#1A6B2A;border-radius:20px"></div></div>';
+    }
+
+    // Conteúdo expansível
+    html+='<div id="'+id+'" style="display:none;border-top:1px solid var(--bd)">';
+
+    // Parcelas
+    if(v.parcelas.length){
+      html+='<div style="padding:8px 14px">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px">Parcelas</div>';
+      v.parcelas.forEach(function(p,i){
+        var pago=p.recebida;
+        var dtFmt=_fmtVendDate(p.data||'');
+        html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:'+(pago?'#f0fff4':'#fff8f0')+';border:1px solid '+(pago?'#a5d6a7':'#ffcc80')+'">';
+        html+='<span style="font-size:11px;font-weight:700;color:#555;flex-shrink:0">'+( i+1)+'ª</span>';
+        html+='<span style="font-size:11px;flex:1;color:#333">📅 '+(dtFmt||'sem data')+'</span>';
+        html+='<span style="font-size:12px;font-weight:700;color:'+(pago?'#1A6B2A':'#e65100')+'">'+fmt(parseFloat(p.valor)||0)+'</span>';
+        if(parseFloat(p.comissao)>0) html+='<span style="font-size:10px;color:#888">comis. '+fmt(parseFloat(p.comissao))+'</span>';
+        if(!pago){
+          html+='<button onclick="_marcarParcelaRecebida(\''+v.num+'\','+i+','+( parseFloat(p.comissao)||0)+',this)" style="background:#1A6B2A;color:#fff;border:none;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;flex-shrink:0">✅ Recebida</button>';
+        } else {
+          html+='<span style="font-size:9px;font-weight:700;color:#1A6B2A;background:#e8f5e9;padding:2px 7px;border-radius:8px">PAGA '+(p.dataRecebimento||'')+'</span>';
+        }
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+
+    // Usados no negócio
+    if(v.usados&&v.usados.length){
+      var totUDesc=v.usados.reduce(function(a,u){return a+(parseFloat(u.valorAvaliado)||0);},0);
+      html+='<div style="padding:8px 14px;border-top:1px solid #f5f5f5">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">🔄 Usados no Negócio ('+v.usados.length+')</div>';
+      v.usados.forEach(function(u){
+        html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;margin-bottom:3px;background:#fff8f0;border-radius:6px;border:1px solid #ffe0b2">';
+        html+='<span style="font-size:11px;font-weight:600">'+[u.marca,u.modelo,u.ano].filter(Boolean).join(' ')+(u.horas?' · '+u.horas+'h':'')+'</span>';
+        html+='<span style="font-size:11px;font-weight:700;color:#c62828">-'+fmt(parseFloat(u.valorAvaliado)||0)+'</span>';
+        html+='</div>';
+      });
+      html+='<div style="text-align:right;font-size:11px;font-weight:700;color:#c62828;margin-top:4px">Desconto total: -'+fmt(totUDesc)+'</div>';
+      if(v.valorLiquido>0) html+='<div style="text-align:right;font-size:12px;font-weight:700;color:var(--gr)">Valor líquido: '+fmt(v.valorLiquido)+'</div>';
+      html+='</div>';
+    }
+
+    // Forma de pagamento
+    var fp=v.formaPagamento||{};
+    if(fp.recurso||fp.financiamento||fp.consorcio){
+      html+='<div style="padding:8px 14px;border-top:1px solid #f5f5f5">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">💳 Forma de Pagamento</div>';
+      html+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+      if(fp.recurso) html+='<span style="font-size:10px;background:#e8f5e9;color:#1A6B2A;padding:3px 9px;border-radius:8px;font-weight:700">💵 Recurso Próprio: '+fmt(fp.recurso.valor||0)+'</span>';
+      if(fp.financiamento) html+='<span style="font-size:10px;background:#e3f0ff;color:#1a4a7a;padding:3px 9px;border-radius:8px;font-weight:700">🏦 Financ. '+(fp.financiamento.banco||'')+': '+fmt(fp.financiamento.valorFinanciado||0)+'</span>';
+      if(fp.consorcio) html+='<span style="font-size:10px;background:#f3e5f5;color:#4a148c;padding:3px 9px;border-radius:8px;font-weight:700">📋 Consórcio '+(fp.consorcio.administradora||'')+': '+fmt(fp.consorcio.valorCarta||0)+'</span>';
+      html+='</div></div>';
+    }
+
+    // Assinaturas
+    if(v.sigGestor||v.sigVendedor){
+      html+='<div style="padding:6px 14px;border-top:1px solid #f5f5f5;display:flex;gap:10px">';
+      if(v.sigGestor) html+='<div style="text-align:center"><div style="font-size:9px;color:var(--mu);margin-bottom:2px">Gestor</div><img src="'+v.sigGestor+'" style="max-height:40px;border:1px solid var(--bd);border-radius:4px"></div>';
+      if(v.sigVendedor) html+='<div style="text-align:center"><div style="font-size:9px;color:var(--mu);margin-bottom:2px">Vendedor</div><img src="'+v.sigVendedor+'" style="max-height:40px;border:1px solid var(--bd);border-radius:4px"></div>';
+      html+='</div>';
+    }
+
+    // Ações adicionais (fotos e assinaturas posteriores)
+    html+='<div style="padding:8px 14px;border-top:1px solid #f5f5f5;display:flex;gap:6px;flex-wrap:wrap">';
+    html+='<label style="background:#e65100;color:#fff;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">📷 Fotos<input type="file" accept="image/*,.heic,.heif,.pdf" multiple style="display:none" onchange="_addFotoVendaSalva(\''+v.num+'\',this)"></label>';
+    if(!v.sigGestor) html+='<button onclick="_assinarVendaSalva(\''+v.num+'\',\'gestor\')" style="background:#374151;color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✍️ Gestor</button>';
+    if(!v.sigVendedor) html+='<button onclick="_assinarVendaSalva(\''+v.num+'\',\'vendedor\')" style="background:#374151;color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✍️ Vendedor</button>';
+    html+='</div>';
+
+    html+='</div>'; // fim expansível
+    html+='</div>'; // fim ocard
+  });
+  el.innerHTML=html;
+}
+
+function _toggleVendCard(id){
+  var el=document.getElementById(id);var arr=document.getElementById(id+'_arr');
+  if(!el)return;
+  var open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(arr)arr.style.transform=open?'rotate(90deg)':'';
+}
+
+function _marcarParcelaRecebida(numVenda, idx, comissao, btn){
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){toast('Parcela '+(idx+1)+' marcada como recebida! Lançado no Financeiro.','ok',4000);loadVendas();}
+      else{toast('Erro: '+(r&&r.error||'?'),'err');if(btn){btn.disabled=false;btn.textContent='✅ Recebida';}}
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');if(btn){btn.disabled=false;btn.textContent='✅ Recebida';};})
+    .marcarParcelaRecebida(numVenda, idx, comissao);
+}
+
+function _addFotoVendaSalva(numVenda, inp){
+  var files=Array.from(inp.files);inp.value='';
+  if(!files.length)return;
+  toast('Enviando '+files.length+' foto'+(files.length>1?'s':'')+'...','ok',8000);
+  var fi=0,ok=0;
+  function next(){
+    if(fi>=files.length){toast(ok+' foto'+(ok>1?'s':'')+' adicionada'+(ok>1?'s':'')+' à '+numVenda,'ok',3000);return;}
+    var file=files[fi];fi++;
+    var r=new FileReader();
+    r.onload=function(e){
+      var b64=e.target.result.split(',')[1];
+      google.script.run
+        .withSuccessHandler(function(res){if(res&&res.success)ok++;next();})
+        .withFailureHandler(function(){next();})
+        .salvarMidiaVenda({numVenda:numVenda,dados:b64,tipo:file.type||'image/jpeg',nome:file.name});
+    };
+    r.readAsDataURL(file);
+  }
+  next();
+}
+
+function _assinarVendaSalva(numVenda, tipo){
+  _vendNumAtual=numVenda;
+  openSig('vend'+tipo.charAt(0).toUpperCase()+tipo.slice(1));
+  // Override confirmSig to save immediately
+  window._vendSalvarSigApos=function(data){
+    google.script.run
+      .withSuccessHandler(function(r){
+        if(r&&r.success){toast('Assinatura salva!','ok');loadVendas();}
+        else toast('Erro ao salvar assinatura','err');
+      })
+      .salvarAssinaturaVenda(numVenda, tipo, data.split(',')[1]);
+    window._vendSalvarSigApos=null;
+  };
+}
+// ═════════════════════════════════════════════════════════════
+
 // Init dates
 try{document.getElementById('cncDt').valueAsDate=new Date();}catch(e){}
 try{document.getElementById('parqDt').valueAsDate=new Date();}catch(e){}
 try{document.getElementById('usadDt').valueAsDate=new Date();}catch(e){}
+try{document.getElementById('vendDt').valueAsDate=new Date();}catch(e){}
+try{_renderVendParcelas();_renderVendUsados();var nh=document.getElementById('vendNumHeader');if(nh)nh.textContent=_peekVendNum();}catch(e){}
 // ═════════════════════════════════════════════════════════════
 
 // ══ COBRANÇAS ════════════════════════════════════════════════
@@ -5910,17 +6612,31 @@ function renderFin(){
   lista.forEach(function(l){
     var ent=l.tipo==='Recebimento';
     var cor=ent?'#1A6B2A':'#c62828';
-    var ico=ent?'💚':'🔴';
-    html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:5px 12px;border-radius:0 8px 8px 0;padding:8px 12px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-    html+='<div style="flex:1"><div style="font-size:12px;font-weight:600">'+l.descricao+'</div>';
-    html+='<div style="font-size:10px;color:#999">'+l.data+(l.tipo?' · '+l.tipo:'')+(l.responsavel?' · '+l.responsavel:'')+'</div>';
-    if(l.obs) html+='<div style="font-size:10px;color:#888;font-style:italic">'+l.obs+'</div>';
+    var bgCard=ent?'#f0fff4':'#fff5f5';
+    var pago=l.status==='Pago';
+    var dtFmt=_fmtVendDate(l.data||'');
+    var tipoBadge=ent
+      ?'<span style="font-size:9px;background:#1A6B2A;color:#fff;padding:2px 7px;border-radius:8px;font-weight:700">💚 Recebimento</span>'
+      :'<span style="font-size:9px;background:#c62828;color:#fff;padding:2px 7px;border-radius:8px;font-weight:700">🔴 Saída</span>';
+    var statusBadge=pago
+      ?'<span style="font-size:9px;background:#e8f5e9;color:#1A6B2A;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid #a5d6a7">✅ Pago</span>'
+      :'<span style="font-size:9px;background:#fff8e1;color:#e67e22;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid #ffe082">⏳ Pendente</span>';
+    html+='<div style="border-left:4px solid '+cor+';background:'+bgCard+';margin:6px 12px;border-radius:0 10px 10px 0;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+    // Linha 1: badges + valor
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    html+='<div style="display:flex;gap:5px;flex-wrap:wrap">'+tipoBadge+statusBadge+'</div>';
+    html+='<div style="font-size:17px;font-weight:800;color:'+cor+';letter-spacing:-.3px">'+(ent?'+':'-')+' R$ '+(parseFloat(l.valor)||0).toFixed(2).replace('.',',')+'</div>';
     html+='</div>';
-    html+='<div style="text-align:right;flex-shrink:0;margin-left:8px">';
-    html+='<div style="font-size:15px;font-weight:800;color:'+cor+'">'+(ent?'+':'-')+' R$ '+(parseFloat(l.valor)||0).toFixed(2).replace('.',',')+'</div>';
-    html+='<div style="font-size:9px;font-weight:700;color:'+(l.status==='Pago'?'#1A6B2A':'#e67e22')+'">'+(l.status==='Pago'?'PAGO':'PENDENTE')+'</div>';
-    html+='</div></div></div>';
+    // Linha 2: descrição
+    html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px">'+l.descricao+'</div>';
+    // Linha 3: data + responsável
+    html+='<div style="display:flex;gap:10px;font-size:10px;color:#888;flex-wrap:wrap">';
+    if(dtFmt) html+='<span>📅 '+dtFmt+'</span>';
+    if(l.responsavel) html+='<span>👷 '+l.responsavel+'</span>';
+    html+='</div>';
+    // Obs
+    if(l.obs) html+='<div style="font-size:11px;color:#666;font-style:italic;margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,.06)">'+l.obs+'</div>';
+    html+='</div>';
   });
   el.innerHTML=html;
 }
