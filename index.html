@@ -1418,6 +1418,12 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
           <button onclick="setRdFiltro('resp','Everaldo')" id="rdRespEve" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Everaldo</button>
           <button onclick="setRdFiltro('resp','João Dias')" id="rdRespJDi" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">João Dias</button>
         </div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 6px">Por Período</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="rdFiltMes" onchange="setRdFiltro('mes',this.value)" style="flex:1;min-width:140px;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--wh)"><option value="">Todos os meses</option></select>
+          <button onclick="setRdFiltroMesAtual()" class="opbtn" style="background:#6a1b9a;font-size:10px;padding:4px 10px;white-space:nowrap">📅 Mês Atual</button>
+          <button onclick="setRdFiltro('mes','')" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;white-space:nowrap">✕ Limpar</button>
+        </div>
       </div>
     </div>
     <div id="dResContent" style="padding:12px"><div class="empty">Carregando...</div></div>
@@ -2243,7 +2249,9 @@ function renderHist(){
       +'<span class="csno" style="'+(o.sigUrl!=='HAS_SIG'?'display:none':'')+'">Carregando...</span>'
       :'<span class="csno">Sem assinatura</span>')+
     '</div>'+
-    '<div class="cacts"><button class="cact" onclick="printOS(ordens['+i+'])"><div class="cai">&#128196;</div><div class="cal or">PDF</div></button><button class="cact" onclick="waOS(ordens['+i+'])"><div class="cai">&#128172;</div><div class="cal wa">WhatsApp</div></button></div></div>';
+    '<div class="cacts" style="grid-template-columns:1fr 1fr 1fr"><button class="cact" onclick="printOS(ordens['+i+'])"><div class="cai">&#128196;</div><div class="cal or">PDF</div></button><button class="cact" onclick="waOS(ordens['+i+'])"><div class="cai">&#128172;</div><div class="cal wa">WhatsApp</div></button><button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')" ><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orçamento</div></button></div>'+
+    (o.orcamentoVinculado?'<div id="orcVinc_'+o.num+'" style="padding:6px 12px 8px">'+_renderOrcVincBadge(o)+'</div>':'<div id="orcVinc_'+o.num+'"></div>')+
+    '</div>';
   }
   if(list) list.innerHTML=html;
 }
@@ -3352,16 +3360,128 @@ function renderHistFiltrado(){
         +'<span style="font-size:9px;font-weight:700;color:#374151">Caso SF:</span>'
         +'<input type="text" class="gar-caso-inp" data-num="'+o.num+'" value="'+(o.salesforce||'')+'" placeholder="N. Caso" style="flex:1;min-width:80px;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit">'
       +'</div>'
-      +'<div class="cacts">'
+      +'<div class="cacts" style="grid-template-columns:1fr 1fr 1fr">'
         +'<button class="cact" onclick="printOS(ordens['+oidx+'])"><div class="cai">&#128196;</div><div class="cal or">PDF</div></button>'
         +'<button class="cact" onclick="waOS(ordens['+oidx+'])"><div class="cai">&#128172;</div><div class="cal wa">WA</div></button>'
-      +'</div></div>';
+        +'<button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')" ><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orçamento</div></button>'
+      +'</div>'
+      +(o.orcamentoVinculado?'<div id="orcVinc_'+o.num+'" style="padding:6px 12px 8px">'+_renderOrcVincBadge(o)+'</div>':'<div id="orcVinc_'+o.num+'"></div>')
+      +'</div>';
     html+=card;
   }
   if(list)list.innerHTML=html;
 }
 // Patch renderHist to use filter version
 var renderHist=renderHistFiltrado;
+
+// ── Orçamento vinculado à OS ──────────────────────────────────
+function _renderOrcVincBadge(o){
+  var num=o.orcamentoVinculado||'';
+  if(!num) return '';
+  // Busca dados do orçamento no cache local
+  var orcLocal=null;
+  try{var orcs=JSON.parse(localStorage.getItem('jm_orcamentos')||'[]');for(var i=0;i<orcs.length;i++){if(orcs[i].num===num){orcLocal=orcs[i];break;}}}catch(e){}
+  var descricao=orcLocal?(' · '+fmt(orcLocal.total||0)):'';
+  return '<div style="display:flex;align-items:center;gap:6px;background:#fff8f0;border:1px solid #ffcc80;border-radius:8px;padding:6px 10px">'+
+    '<span style="font-size:11px;font-weight:700;color:var(--or)">📎 '+num+'</span>'+
+    (descricao?'<span style="font-size:10px;color:#888">'+descricao+'</span>':'')+
+    '<button onclick="_desvincularOrc(\''+o.num+'\')" style="margin-left:auto;background:#fce4e4;border:none;color:#c62828;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✕</button>'+
+  '</div>';
+}
+
+function _abrirSeletorOrc(numOS){
+  var existing=document.getElementById('orcSeletorModal');
+  if(existing) document.body.removeChild(existing);
+  var modal=document.createElement('div');
+  modal.id='orcSeletorModal';
+  modal.style.cssText='display:flex;position:fixed;inset:0;z-index:9030;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML='<div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25)">'+
+    '<div style="background:var(--or);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
+      '<span style="font-size:15px;font-weight:700;color:#fff">📎 Vincular Orçamento à '+numOS+'</span>'+
+      '<button onclick="document.body.removeChild(document.getElementById(\'orcSeletorModal\'))" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit">✕</button>'+
+    '</div>'+
+    '<div id="orcSeletorLista" style="overflow-y:auto;padding:12px 16px;flex:1"><div class="empty">Carregando orçamentos...</div></div>'+
+  '</div>';
+  document.body.appendChild(modal);
+  // Carrega orçamentos do Sheets + localStorage
+  google.script.run
+    .withSuccessHandler(function(sheetsOrcs){
+      var lista=document.getElementById('orcSeletorLista');if(!lista)return;
+      // Mescla Sheets + local
+      var localOrcs=[];try{localOrcs=JSON.parse(localStorage.getItem('jm_orcamentos')||'[]');}catch(e){}
+      var merged={};
+      (sheetsOrcs||[]).forEach(function(o){merged[o.num]=o;});
+      localOrcs.forEach(function(o){if(o.num)merged[o.num]=Object.assign({},merged[o.num]||{},o);});
+      var all=Object.keys(merged).sort().reverse().map(function(k){return merged[k];});
+      if(!all.length){lista.innerHTML='<div class="empty" style="padding:20px">Nenhum orçamento salvo</div>';return;}
+      var html='<div style="font-size:11px;color:#888;margin-bottom:10px">Selecione o orçamento para vincular à '+numOS+':</div>';
+      all.forEach(function(o){
+        var tot=parseFloat(o.total||o.Total||0);
+        html+='<div onclick="_vincularOrc(\''+numOS+'\',\''+o.num+'\')" style="border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff" onmouseover="this.style.background=\'#fff8f0\'" onmouseout="this.style.background=\'#fff\'">';
+        html+='<div style="font-size:12px;font-weight:700;color:var(--or)">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+(o.data||'')+'</span></div>';
+        html+='<div style="font-size:13px;font-weight:600;color:#222;margin-top:2px">'+(o.cli||o.Cliente||'--')+'</div>';
+        if(o.equip||o.Equipamento) html+='<div style="font-size:10px;color:#666;margin-top:1px">'+(o.equip||o.Equipamento||'')+'</div>';
+        if(tot>0) html+='<div style="font-size:13px;font-weight:700;color:var(--gr);margin-top:3px">'+fmt(tot)+'</div>';
+        html+='</div>';
+      });
+      lista.innerHTML=html;
+    })
+    .withFailureHandler(function(){
+      // Fallback: só local
+      var lista=document.getElementById('orcSeletorLista');if(!lista)return;
+      var localOrcs=[];try{localOrcs=JSON.parse(localStorage.getItem('jm_orcamentos')||'[]');}catch(e){}
+      if(!localOrcs.length){lista.innerHTML='<div class="empty">Nenhum orçamento local</div>';return;}
+      var html='';
+      localOrcs.slice().reverse().forEach(function(o){
+        html+='<div onclick="_vincularOrc(\''+numOS+'\',\''+o.num+'\')" style="border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff">';
+        html+='<div style="font-size:12px;font-weight:700;color:var(--or)">'+o.num+'</div>';
+        html+='<div style="font-size:13px;font-weight:600;color:#222">'+o.cli+'</div>';
+        html+='<div style="font-size:13px;font-weight:700;color:var(--gr)">'+fmt(o.total||0)+'</div>';
+        html+='</div>';
+      });
+      lista.innerHTML=html;
+    })
+    .getOrcamentos();
+}
+
+function _vincularOrc(numOS, numOrc){
+  var modal=document.getElementById('orcSeletorModal');
+  if(modal) document.body.removeChild(modal);
+  toast('Vinculando orçamento...','ok',2000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        // Atualiza cache local
+        ordens.forEach(function(o){if(o.num===numOS) o.orcamentoVinculado=numOrc;});
+        toast(numOrc+' vinculado à '+numOS+'!','ok');
+        // Atualiza o badge no card sem re-render
+        var box=document.getElementById('orcVinc_'+numOS);
+        if(box){
+          var oObj=ordens.find(function(o){return o.num===numOS;})||{num:numOS,orcamentoVinculado:numOrc};
+          box.style.padding='6px 12px 8px';
+          box.innerHTML=_renderOrcVincBadge(oObj);
+        }
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){ toast('Erro: '+e.message,'err'); })
+    .vincularOrcamentoOS(numOS, numOrc);
+}
+
+function _desvincularOrc(numOS){
+  if(!confirm('Desvincular orçamento da '+numOS+'?')) return;
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        ordens.forEach(function(o){if(o.num===numOS) o.orcamentoVinculado='';});
+        toast('Orçamento desvinculado!','ok');
+        var box=document.getElementById('orcVinc_'+numOS);
+        if(box){box.style.padding='';box.innerHTML='';}
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){ toast('Erro: '+e.message,'err'); })
+    .desvincularOrcamentoOS(numOS);
+}
+// ─────────────────────────────────────────────────────────────
 
 // ── Event delegation for Garantia inline controls ─────────────
 document.addEventListener('click', function(e){
@@ -4452,7 +4572,7 @@ function carregarResumoDespesas(){
     .getDespesas();
 }
 // ── Filtros Resumo Despesas (pills) ──────────────────────────
-var _rdFiltCat='', _rdFiltResp='';
+var _rdFiltCat='', _rdFiltResp='', _rdFiltMes='';
 
 function setRdFiltro(campo, val){
   if(campo==='cat'){
@@ -4467,7 +4587,17 @@ function setRdFiltro(campo, val){
     Object.keys(rm).forEach(function(k){var el=document.getElementById(rm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
     var el=document.getElementById('dResFiltComp');if(el)el.value=val;
   }
+  if(campo==='mes'){
+    _rdFiltMes=val;
+    var sel=document.getElementById('rdFiltMes');if(sel)sel.value=val;
+  }
   renderResumoDespesas();
+}
+
+function setRdFiltroMesAtual(){
+  var now=new Date();
+  var ym=now.getFullYear()+'-'+(('0'+(now.getMonth()+1)).slice(-2));
+  setRdFiltro('mes',ym);
 }
 
 // ── Filtros Resumo Veículos (pills) ──────────────────────────
@@ -4492,9 +4622,24 @@ function renderResumoDespesas(){
   var el=document.getElementById('dResContent');if(!el)return;
   var filtCat=(document.getElementById('dResFiltCat')||{}).value||'';
   var filtComp=(document.getElementById('dResFiltComp')||{}).value||'';
+
+  // Popular dropdown de meses
+  var sel=document.getElementById('rdFiltMes');
+  if(sel){
+    var meses={};
+    (_despResRows||[]).forEach(function(d){if(d.data){var m=_osMes(d.data);if(m)meses[m]=true;}});
+    var curMes=sel.value||_rdFiltMes||'';
+    var opts='<option value="">Todos os meses</option>';
+    Object.keys(meses).sort().reverse().forEach(function(m){
+      opts+='<option value="'+m+'"'+(m===curMes?' selected':'')+'>'+_osMesLabel(m)+'</option>';
+    });
+    sel.innerHTML=opts;
+  }
+
   var rows=_despResRows.filter(function(d){
     if(filtCat&&d.categoria!==filtCat)return false;
     if(filtComp&&d.comprador!==filtComp)return false;
+    if(_rdFiltMes&&_osMes(d.data)!==_rdFiltMes)return false;
     return true;
   });
 
@@ -4521,31 +4666,59 @@ function renderResumoDespesas(){
   });
   var cc={'Alimentação':'#b71c1c','Hospedagem e Transporte':'#1a4a7a','Itens de Serviço e Peças':'#4a148c','Outros':'#37474f'};
 
+  var catIco={'Alimentação':'🍽️','Hospedagem e Transporte':'🏨','Itens de Serviço e Peças':'🔧','Outros':'📦'};
+  var catBg={'Alimentação':'#fff0f0','Hospedagem e Transporte':'#e3f0ff','Itens de Serviço e Peças':'#f3e5f5','Outros':'#f4f4f4'};
+
   var html='';
-  // Total
-  html+='<div style="background:#f3e5f5;border-radius:10px;padding:10px 12px;margin-bottom:8px">';
-  html+='<div style="font-size:11px;color:#6a1b9a;font-weight:700">TOTAL</div>';
-  html+='<div style="font-size:20px;font-weight:800;color:#4a148c">'+_rFmt(total)+'</div>';
-  html+='<div style="font-size:10px;color:#999">'+rows.length+' despesas</div></div>';
+  // ── Resumo Box ────────────────────────────────────────────
+  html+='<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
+  html+='<div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">📊</div>Resumo por Categoria</div>';
 
-  // Por categoria
-  if(!filtCat){
-    html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px">Por Categoria</div>';
-    Object.keys(cats).forEach(function(c){
+  // Linha total + período
+  var periodoLabel=_rdFiltMes?(' — '+_osMesLabel(_rdFiltMes)):'';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f5f5f5">';
+  html+='<div style="padding:8px 14px;border-right:1px solid #f5f5f5"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">Total'+periodoLabel+'</div><div style="font-size:16px;font-weight:700;color:#4a148c">'+_rFmt(total)+'</div></div>';
+  html+='<div style="padding:8px 14px"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">Despesas</div><div style="font-size:16px;font-weight:700;color:var(--gr)">'+rows.length+'</div></div>';
+  html+='</div>';
+
+  // Cards por categoria (grid)
+  if(!filtCat&&Object.keys(cats).length){
+    html+='<div style="padding:8px 12px">';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+    Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).forEach(function(c){
       var cor=cc[c]||'#37474f';
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-bottom:4px;background:#fff;border-radius:8px;border-left:4px solid '+cor+'">';
-      html+='<span style="font-size:11px;font-weight:600">'+c+'</span><span style="font-weight:700;color:'+cor+'">'+_rFmt(cats[c])+'</span></div>';
+      var bg=catBg[c]||'#f9f9f9';
+      var ico=catIco[c]||'📦';
+      var pct=total>0?Math.round(cats[c]/total*100):0;
+      html+='<div style="background:'+bg+';border-radius:10px;padding:9px 10px;border:1px solid rgba(0,0,0,.06)">';
+      html+='<div style="font-size:18px;margin-bottom:3px">'+ico+'</div>';
+      html+='<div style="font-size:10px;font-weight:700;color:'+cor+'">'+c+'</div>';
+      html+='<div style="font-size:13px;font-weight:800;color:'+cor+';margin-top:2px">'+_rFmt(cats[c])+'</div>';
+      html+='<div style="font-size:9px;color:#999;margin-top:1px">'+pct+'% do total</div>';
+      html+='</div>';
     });
+    html+='</div></div>';
   }
 
-  // Por comprador
-  if(!filtComp){
-    html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin:8px 0 5px">Por Comprador</div>';
+  // Por comprador (linha horizontal)
+  if(!filtComp&&Object.keys(compradores).length){
+    html+='<div style="border-top:1px solid #f5f5f5;padding:8px 12px">';
+    html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Comprador</div>';
     Object.keys(compradores).sort(function(a,b){return compradores[b]-compradores[a];}).forEach(function(c){
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-bottom:4px;background:#fff;border-radius:8px;border-left:4px solid #6a1b9a">';
-      html+='<span style="font-size:11px;font-weight:600">'+c+'</span><span style="font-weight:700;color:#6a1b9a">'+_rFmt(compradores[c])+'</span></div>';
+      var pct=total>0?Math.round(compradores[c]/total*100):0;
+      var barW=Math.max(pct,2);
+      html+='<div style="margin-bottom:6px">';
+      html+='<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">';
+      html+='<span style="font-weight:600;color:#374151">'+c+'</span><span style="font-weight:700;color:#6a1b9a">'+_rFmt(compradores[c])+'</span>';
+      html+='</div>';
+      html+='<div style="background:#ede7f6;border-radius:20px;height:8px;overflow:hidden">';
+      html+='<div style="width:'+barW+'%;height:100%;background:#6a1b9a;border-radius:20px"></div>';
+      html+='</div></div>';
     });
+    html+='</div>';
   }
+
+  html+='</div>'; // fim resumoBox
 
   // Lista detalhada
   html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin:10px 0 6px">Detalhes</div>';
