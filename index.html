@@ -5260,6 +5260,36 @@ function carregarResumoVei(){
         html+='</div>';
       }
       html+='</div>'; // fim resumoBox
+
+      // ── Lista de registros individuais ────────────────────────
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin:8px 0 6px">Registros ('+filtered.length+')</div>';
+      filtered.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');}).forEach(function(v){
+        var t=v.tipo||'Outro';
+        var cor=tipoTxtCor[t]||'#374151';
+        var bg=tipoCor[t]||'#f5f5f5';
+        var ico=tipoIco[t]||'🔧';
+        var dtFmt=_fmtVendDate(v.data||'');
+        html+='<div style="border:1px solid var(--bd);border-left:4px solid '+cor+';border-radius:0 8px 8px 0;background:#fff;padding:8px 10px;margin-bottom:6px">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+        html+='<div style="flex:1;min-width:0">';
+        html+='<div style="font-size:12px;font-weight:700">'+ico+' '+(v.veiculo||'')+'</div>';
+        if(v.descricao) html+='<div style="font-size:11px;color:#555;margin-top:1px">'+v.descricao+'</div>';
+        html+='<div style="font-size:10px;color:#999;margin-top:2px">'+dtFmt+(v.tecnico?' · 👷 '+v.tecnico:'')+'</div>';
+        html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">';
+        html+='<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:'+bg+';color:'+cor+';font-weight:700">'+ico+' '+t+'</span>';
+        if(v.hodometro) html+='<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:#f5f5f5;color:#555;font-weight:600">🔢 '+v.hodometro+' km</span>';
+        html+='</div>';
+        html+='</div>';
+        html+='<div style="font-size:14px;font-weight:800;color:'+cor+';flex-shrink:0;margin-left:8px">'+_rFmt(parseFloat(v.valor)||0)+'</div>';
+        html+='</div>';
+        // Foto se houver
+        if(v.sigUrl&&v.sigUrl.indexOf('http')===0){
+          var fid=v.sigUrl.match(/[-\w]{25,}/);
+          if(fid) html+='<div style="margin-top:6px"><a href="'+v.sigUrl+'" target="_blank"><img src="https://drive.google.com/thumbnail?id='+fid[0]+'&sz=w300" style="max-height:80px;max-width:100%;border-radius:6px;border:1px solid var(--bd);display:block" onerror="this.style.display=\'none\'"></a></div>';
+        }
+        html+='</div>';
+      });
+
       document.getElementById('vResContent').innerHTML=html;
     })
     .withFailureHandler(function(){document.getElementById('vResContent').innerHTML='<div class="empty">Erro ao carregar</div>';})
@@ -7516,7 +7546,10 @@ function _renderOSVinculadasEdit(ev, box){
 function _carregarOSVinculadas(eventoId, container, ev){
   if(!container) return;
   // Primeiro tenta do cache local
-  var local = (ordens||[]).filter(function(o){ return o.eventoAgendaId===eventoId; });
+  var local = (ordens||[]).filter(function(o){
+    if(!o.eventoAgendaId) return false;
+    return String(o.eventoAgendaId).split(',').map(function(s){return s.trim();}).indexOf(eventoId)>=0;
+  });
   if(local.length){
     _renderOSList(local, container, eventoId, ev);
     return;
@@ -7708,7 +7741,14 @@ function _vincularOS(numOS){
     .withSuccessHandler(function(r){
       if(r&&r.success){
         // Atualiza cache local
-        ordens.forEach(function(o){if(o.num===numOS) o.eventoAgendaId=eventoId;});
+        ordens.forEach(function(o){
+          if(o.num===numOS){
+            var cur=o.eventoAgendaId||'';
+            var ids=cur?cur.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
+            if(ids.indexOf(eventoId)<0) ids.push(eventoId);
+            o.eventoAgendaId=ids.join(',');
+          }
+        });
         _buildEvOSMap();
         renderAgCal();
         toast(numOS+' vinculada ao evento!','ok');
@@ -7724,9 +7764,25 @@ function _verOSNoResumo(numOS){
   fecharDetalheEvento();
   fecharEditEvento();
   document.body.style.overflow='';
+  // Limpa todos os filtros para garantir que a OS aparece na lista
+  filtroTipo=''; filtroTec=''; filtroMes=''; filtroCliente='';
+  var cli=document.getElementById('osFiltroCliente');if(cli)cli.value='';
+  var mes=document.getElementById('osFiltroMes');if(mes)mes.value='';
+  // Reset visual botoes tipo e tec
+  ['fTipAll','ftAll'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el&&el.style){el.style.opacity='1';}
+  });
+  ['fTipGar','fTipCli','fTipCor','fTipCon','ftChr','ftLuc','ftCar'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.opacity='0.45';
+  });
   goTab('hist');
+  // Forca re-render com filtros limpos
+  setTimeout(function(){
+    if(typeof renderHistFiltrado==='function') renderHistFiltrado();
+  },100);
   function _tentarRolar(tentativa){
-    var todos=document.querySelectorAll('#osList .cnum, #osList .chdr span, #osList [class*="cnum"]');
+    var todos=document.querySelectorAll('#osList .cnum, #osList .chdr span');
     for(var i=0;i<todos.length;i++){
       if(todos[i].textContent.trim()===numOS){
         var card=todos[i].closest('.ocard');
@@ -7736,6 +7792,7 @@ function _verOSNoResumo(numOS){
           card.style.transition='box-shadow .3s';
           card.style.boxShadow='0 0 0 3px var(--bl)';
           setTimeout(function(){card.style.boxShadow=orig;},2500);
+          toast('OS '+numOS+' encontrada','ok',2000);
           return;
         }
       }
@@ -7743,14 +7800,20 @@ function _verOSNoResumo(numOS){
     if(tentativa<20) setTimeout(function(){_tentarRolar(tentativa+1);},500);
     else toast('OS '+numOS+' nao encontrada na lista','warn');
   }
-  setTimeout(function(){_tentarRolar(0);},400);
+  setTimeout(function(){_tentarRolar(0);},600);
 }
 function _desvincularOS(numOS, eventoId){
   if(!confirm('Desvincular '+numOS+' deste evento?')) return;
   google.script.run
     .withSuccessHandler(function(r){
       if(r&&r.success){
-        ordens.forEach(function(o){if(o.num===numOS) o.eventoAgendaId='';});
+        ordens.forEach(function(o){
+          if(o.num===numOS){
+            var cur=o.eventoAgendaId||'';
+            var ids=cur.split(',').map(function(s){return s.trim();}).filter(function(s){return s&&s!==eventoId;});
+            o.eventoAgendaId=ids.join(',');
+          }
+        });
         _buildEvOSMap();
         renderAgCal();
         toast(numOS+' desvinculada!','ok');
