@@ -2567,17 +2567,17 @@ function printOS(o){
   html+='<div class="g2" style="flex:1">';
   // Assinatura
   html+='<div class="sec" style="display:flex;flex-direction:column"><div class="sh">Assinatura do Cliente</div>';
-  html+='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:100px">';
-  if(sig){html+='<img src="'+sig+'" style="max-height:90px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:4px;padding:4px">';}
-  else{html+='<div style="border:2px dashed #ccc;border-radius:6px;padding:16px 32px;color:#bbb;font-size:13px;text-align:center">Sem assinatura</div>';}
+  html+='<div style="display:flex;align-items:center;justify-content:center;padding:6px;min-height:36px">';
+  if(sig){html+='<img src="'+sig+'" style="max-height:30px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">';}
+  else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:4px 20px;color:#bbb;font-size:11px;text-align:center">Sem assinatura</div>';}
   html+='</div></div>';
   // Fotos
   var fArr=(o.fotosArr&&o.fotosArr.length)?o.fotosArr:[];
-  html+='<div class="sec" style="display:flex;flex-direction:column"><div class="sh">Fotos ('+fArr.length+')</div>';
-  html+='<div style="padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;flex:1">';
+  html+='<div class="sec" style="display:flex;flex-direction:column;flex:1"><div class="sh">Fotos ('+fArr.length+')</div>';
+  html+='<div style="padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;flex:1">';
   if(fArr.length){
-    fArr.slice(0,6).forEach(function(url){
-      html+='<img src="'+url+'" style="width:70px;height:70px;object-fit:cover;border-radius:4px;border:1px solid #ddd">';
+    fArr.slice(0,9).forEach(function(url){
+      html+='<img src="'+url+'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid #ddd">';
     });
   } else {
     html+='<div style="color:#bbb;font-size:12px;padding:16px">Nenhuma foto</div>';
