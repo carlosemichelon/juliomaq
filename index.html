@@ -67,8 +67,10 @@ textarea.fi{resize:none;height:56px}select.fi{cursor:pointer}
 .tgrid{display:grid;gap:7px;padding:4px 0}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
 button.topt{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 5px;border-radius:9px;border:2px solid var(--bd);background:var(--wh);cursor:pointer;width:100%;font-family:inherit;touch-action:manipulation;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
 button.topt.on{border-color:var(--gr);background:var(--lgr)}
+button.topt.sel{border-color:var(--bl);background:#e8f0fe}
 .tico{font-size:20px;line-height:1}.tlbl{font-size:12px;font-weight:700;color:var(--mu)}.tsub{font-size:10px;color:#aaa}
 button.topt.on .tlbl{color:var(--gr)}
+button.topt.sel .tlbl{color:var(--bl)}
 .vrow{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f5f5f5;gap:8px}
 .vrow:last-child{border:none}.vlbl{font-size:13px;color:var(--mu)}
 .vtag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:#fff3e0;color:#bf360c;display:inline-block;margin-top:2px}
@@ -932,7 +934,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div class="f"><label class="fl">Data</label><input class="fi" id="dDt" type="date"></div>
     <div class="f"><label class="fl">Comprador</label>
-      <select class="fi" id="dComp">
+      <select class="fi" id="dComp" onchange="if(this.value==='Juliomaq'){var fp=document.getElementById('dPgto');if(fp)fp.value='Juliomaq Pagou';}">
         <option value="">Selecione</option>
         <option>Carlos</option><option>Lucas</option><option>Christiano</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>João Dias</option><option>Everaldo</option><option>Juliomaq</option>
       </select>
@@ -1741,6 +1743,51 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       </div>
     </div>
     <div id="agEvContent" style="padding:16px"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL EDITAR DESPESA ══════════════════════════════════ -->
+<div id="despEditModal" style="display:none;position:fixed;inset:0;z-index:9020;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center;padding:0">
+  <div style="background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,.2)">
+    <div style="background:#374151;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:16px 16px 0 0">
+      <span style="font-size:15px;font-weight:700;color:#fff">✏️ Editar Despesa <span id="despEditNumLabel" style="font-size:12px;opacity:.8"></span></span>
+      <button onclick="fecharEditDespesa()" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit;touch-action:manipulation">✕</button>
+    </div>
+    <div style="overflow-y:auto;padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" id="despEditNum">
+      <div class="f"><label class="fl">Fornecedor / Local</label><input class="fi" id="despEditForn" type="text" placeholder="Nome do fornecedor..."></div>
+      <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="despEditDesc" style="height:55px" placeholder="Descrição da despesa..."></textarea></div>
+      <div class="f"><label class="fl">Data</label><input class="fi" id="despEditDt" type="date"></div>
+      <div class="f"><label class="fl">Comprador</label>
+        <select class="fi" id="despEditComp" onchange="if(this.value==='Juliomaq'){document.getElementById('despEditPgto').value='Juliomaq Pagou';}">
+          <option value="">Selecione</option>
+          <option>Carlos</option><option>Lucas</option><option>Christiano</option><option>Sandro</option>
+          <option>João Acker</option><option>Welinton</option><option>João Dias</option><option>Everaldo</option><option>Juliomaq</option>
+        </select>
+      </div>
+      <div class="f"><label class="fl">Categoria</label>
+        <select class="fi" id="despEditCat">
+          <option value="">Selecione</option>
+          <option>Alimentação</option><option>Hospedagem e Transporte</option><option>Itens de Serviço e Peças</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="f"><label class="fl">Valor (R$)</label><input class="fi" id="despEditValor" type="number" step="0.01" placeholder="0,00"></div>
+      <div class="f"><label class="fl">Forma de Pagamento</label>
+        <select class="fi" id="despEditPgto">
+          <option value="">Selecione</option>
+          <option>Comprador Pagou</option><option>Juliomaq Pagou</option>
+        </select>
+      </div>
+      <div class="f"><label class="fl">Reembolsado?</label>
+        <select class="fi" id="despEditReemb">
+          <option value="">Não</option><option value="Sim">Sim</option>
+        </select>
+      </div>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd);flex-shrink:0">
+      <button onclick="salvarEditDespesa()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#374151;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar Alterações</button>
+      <button onclick="fecharEditDespesa()" style="padding:11px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -3319,6 +3366,13 @@ function uploadMidias(numOS){
       r.readAsDataURL(file);
       return;
     }
+    // Se arquivo < 500KB, envia sem comprimir
+    if(file.size < 500*1024){
+      var r0=new FileReader();
+      r0.onload=function(e){cb(e.target.result.split(',')[1], file.type||'image/jpeg');};
+      r0.readAsDataURL(file);
+      return;
+    }
     // Comprime para JPEG 80% max 1200px
     var r=new FileReader();
     r.onload=function(e){
@@ -3333,7 +3387,6 @@ function uploadMidias(numOS){
         cb(jpeg.split(',')[1],'image/jpeg');
       };
       img.onerror=function(){
-        // Fallback: envia raw se canvas falhar
         cb(e.target.result.split(',')[1], file.type||'image/jpeg');
       };
       img.src=e.target.result;
@@ -3664,6 +3717,11 @@ function _adicionarFotosOS(numOS, input){
     r.onload = function(e){
       if(isHeic){
         cb(e.target.result.split(',')[1], file.type||'image/heic', file.name);
+        return;
+      }
+      // Se arquivo < 500KB, envia sem comprimir
+      if(file.size < 500*1024){
+        cb(e.target.result.split(',')[1], file.type||'image/jpeg', file.name);
         return;
       }
       var img = new Image();
@@ -5088,7 +5146,10 @@ function renderResumoDespesas(){
     if(temSig)  html+='<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:#f3e5f5;color:#6a1b9a;font-weight:700">✍️ Assinado</span>';
     html+='</div>';
     html+='</div>';
-    html+='<div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-size:14px;font-weight:800;color:'+cor+'">'+_rFmt(d.valor)+'</div></div>';
+    html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:8px">';
+    html+='<div style="font-size:14px;font-weight:800;color:'+cor+'">'+_rFmt(d.valor)+'</div>';
+    html+='<button onclick="abrirEditDespesa(\''+d.num+'\')" style="font-size:10px;background:#f5f5f5;border:1px solid var(--bd);color:#374151;border-radius:7px;padding:3px 9px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✏️ Editar</button>';
+    html+='</div>';
     html+='</div>';
     // Foto miniatura
     if(temFoto) html+='<div style="margin-top:6px"><a href="'+d.fotoUrl+'" target="_blank"><img src="'+driveThumb(d.fotoUrl,'w300')+'" style="max-height:100px;max-width:100%;border-radius:6px;border:1px solid var(--bd);display:block" onerror="this.src=\''+d.fotoUrl+'\';this.onerror=function(){this.style.display=\'none\';}"></a></div>';
@@ -6928,13 +6989,79 @@ function toggleReembolso(num, novoStatus){
     .withSuccessHandler(function(r){
       if(r&&r.success){
         toast(novoStatus==='Sim'?'💸 Marcado como reembolsado!':'↩️ Reembolso desmarcado','ok',2500);
-        // Atualizar local sem recarregar tudo
         _despResRows.forEach(function(d){if(d.num===num)d.reembolsado=novoStatus;});
         renderResumoDespesas();
       } else { toast('Erro ao atualizar','err'); }
     })
     .withFailureHandler(function(){toast('Erro ao atualizar','err');})
     .marcarReembolso(num, novoStatus);
+}
+
+// ── Editar Despesa ────────────────────────────────────────────
+function abrirEditDespesa(num){
+  var d=(_despResRows||[]).find(function(x){return x.num===num;});
+  if(!d){toast('Despesa não encontrada','err');return;}
+  document.getElementById('despEditNum').value=num;
+  document.getElementById('despEditNumLabel').textContent=num;
+  document.getElementById('despEditForn').value=d.fornecedor||'';
+  document.getElementById('despEditDesc').value=d.descricao||'';
+  // Data: normaliza para yyyy-mm-dd
+  var dtVal='';
+  if(d.data){
+    var dm=String(d.data).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if(dm) dtVal=dm[3]+'-'+dm[2]+'-'+dm[1];
+    else{var dd2=new Date(d.data);if(!isNaN(dd2))dtVal=dd2.toISOString().slice(0,10);}
+  }
+  document.getElementById('despEditDt').value=dtVal;
+  document.getElementById('despEditComp').value=d.comprador||'';
+  document.getElementById('despEditCat').value=d.categoria||'';
+  document.getElementById('despEditValor').value=d.valor||'';
+  document.getElementById('despEditPgto').value=d.formaPgto||'';
+  document.getElementById('despEditReemb').value=d.reembolsado==='Sim'?'Sim':'';
+  var modal=document.getElementById('despEditModal');
+  if(modal){modal.style.display='flex';document.body.style.overflow='hidden';}
+}
+
+function fecharEditDespesa(){
+  var modal=document.getElementById('despEditModal');
+  if(modal)modal.style.display='none';
+  document.body.style.overflow='';
+}
+
+function salvarEditDespesa(){
+  var num=document.getElementById('despEditNum').value;
+  if(!num){toast('Número da despesa não encontrado','err');return;}
+  var dados={
+    num:num,
+    fornecedor:document.getElementById('despEditForn').value||'',
+    descricao:document.getElementById('despEditDesc').value||'',
+    data:document.getElementById('despEditDt').value||'',
+    comprador:document.getElementById('despEditComp').value||'',
+    categoria:document.getElementById('despEditCat').value||'',
+    valor:parseFloat(document.getElementById('despEditValor').value)||0,
+    formaPgto:document.getElementById('despEditPgto').value||'',
+    reembolsado:document.getElementById('despEditReemb').value||''
+  };
+  toast('Salvando...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        // Atualiza cache local
+        _despResRows.forEach(function(d){
+          if(d.num===num){
+            d.fornecedor=dados.fornecedor;d.descricao=dados.descricao;
+            d.data=dados.data;d.comprador=dados.comprador;
+            d.categoria=dados.categoria;d.valor=dados.valor;
+            d.formaPgto=dados.formaPgto;d.reembolsado=dados.reembolsado;
+          }
+        });
+        fecharEditDespesa();
+        renderResumoDespesas();
+        toast('Despesa atualizada!','ok');
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .editarDespesa(dados);
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -7436,6 +7563,7 @@ function _renderOSList(rows, container, eventoId, ev){
 
 // ── Seletor de OS em aberto ───────────────────────────────────
 var _seletorOSEventoId='';
+var _seletorOSRows=[];  // cache das OS em aberto para filtrar
 function _abrirSeletorOS(eventoId){
   _seletorOSEventoId=eventoId;
   var existing=document.getElementById('agOSSeletorModal');
@@ -7447,6 +7575,10 @@ function _abrirSeletorOS(eventoId){
     '<div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
       '<span style="font-size:15px;font-weight:700;color:#fff">🔗 Vincular OS ao Evento</span>'+
       '<button onclick="document.body.removeChild(document.getElementById(\'agOSSeletorModal\'))" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit">✕</button>'+
+    '</div>'+
+    '<div style="padding:8px 12px;border-bottom:1px solid #f0f0f0;display:flex;gap:6px;flex-shrink:0">'+
+      '<input id="agOSSeletorBusca" type="text" placeholder="🔍 Buscar cliente..." oninput="_filtrarSeletorOS()" style="flex:1;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none">'+
+      '<select id="agOSSeletorMes" onchange="_filtrarSeletorOS()" style="border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:11px;font-family:inherit;color:var(--tx);background:#fff;min-width:110px"><option value="">Todos os meses</option></select>'+
     '</div>'+
     '<div id="agOSSeletorLista" style="overflow-y:auto;padding:12px 16px;flex:1"><div class="empty">Carregando OS em aberto...</div></div>'+
   '</div>';
@@ -7496,13 +7628,73 @@ function _abrirSeletorOS(eventoId){
         html+='<div style="font-size:12px;font-weight:700;color:var(--gr);margin-top:3px">'+fmt(parseFloat(o.vTotal)||0)+'</div>';
         html+='</div>';
       });
-      lista.innerHTML=html;
+      // Cache rows + popular meses dropdown
+      _seletorOSRows=rows;
+      var selMes=document.getElementById('agOSSeletorMes');
+      if(selMes){
+        var meses={};
+        rows.forEach(function(o){if(o.data){var m=_osMes(o.data);if(m)meses[m]=true;}});
+        var opts='<option value="">Todos os meses</option>';
+        Object.keys(meses).sort().reverse().forEach(function(m){opts+='<option value="'+m+'">'+_osMesLabel(m)+'</option>';});
+        selMes.innerHTML=opts;
+      }
+      _filtrarSeletorOS();
     })
     .withFailureHandler(function(e){
       var lista=document.getElementById('agOSSeletorLista');
       if(lista)lista.innerHTML='<div class="empty">Erro ao carregar: '+e.message+'</div>';
     })
     .getOrdensEmAberto();
+}
+
+function _filtrarSeletorOS(){
+  var lista=document.getElementById('agOSSeletorLista');if(!lista)return;
+  var busca=((document.getElementById('agOSSeletorBusca')||{}).value||'').toLowerCase().trim();
+  var mes=((document.getElementById('agOSSeletorMes')||{}).value||'');
+  var eventoId=_seletorOSEventoId;
+  var rows=(_seletorOSRows||[]).filter(function(o){
+    if(busca&&(o.cliente||'').toLowerCase().indexOf(busca)<0) return false;
+    if(mes&&_osMes(o.data)!==mes) return false;
+    return true;
+  });
+  if(!rows.length){lista.innerHTML='<div class=\"empty\" style=\"padding:20px\">Nenhuma OS encontrada</div>';return;}
+  var osEvMap={};
+  (ordens||[]).forEach(function(o){
+    if(!o.eventoAgendaId)return;
+    var ids=String(o.eventoAgendaId).split(',').map(function(s){return s.trim();}).filter(Boolean);
+    if(ids.length) osEvMap[o.num]=ids;
+  });
+  var evNomeMap={};
+  (_agEventos||[]).forEach(function(ev){evNomeMap[ev.id]=ev.titulo||ev.id;});
+  var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
+  var html='<div style="font-size:11px;color:#888;margin-bottom:10px">'+rows.length+' OS encontrada'+(rows.length>1?'s':'')+'. Toque para vincular.</div>';
+  rows.forEach(function(o){
+    var cor=tipoCor[o.tipo]||'#374151';
+    var evIds=osEvMap[o.num]||[];
+    var jaNesteEvento=evIds.indexOf(eventoId)>=0;
+    var vincBadges='';
+    evIds.forEach(function(eid){
+      var nome=evNomeMap[eid]||(eid===eventoId?'Este evento':'Outro evento');
+      var bg=eid===eventoId?'#1a4a7a':'#e65100';
+      vincBadges+='<span style="font-size:9px;background:'+bg+';color:#fff;padding:1px 6px;border-radius:6px;margin-right:3px;font-weight:700">'+nome.substring(0,24)+(nome.length>24?'...':'')+'</span>';
+    });
+    var bgCard=jaNesteEvento?'#f0f4ff':'#fff';
+    if(!jaNesteEvento){
+      html+='<div onclick="_vincularOS(\''+o.num+'\')" onmouseover="this.style.background=\'#f0f4ff\'" onmouseout="this.style.background=\'#fff\'" style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:'+bgCard+'">';
+    } else {
+      html+='<div style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:default;background:'+bgCard+'">';
+    }
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">';
+    html+='<span style="font-size:12px;font-weight:700;color:'+cor+'">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+o.data+'</span></span>';
+    if(jaNesteEvento) html+='<span style="font-size:9px;background:#1a4a7a;color:#fff;padding:2px 8px;border-radius:8px;font-weight:700">Vinculada</span>';
+    html+='</div>';
+    if(vincBadges) html+='<div style="margin-bottom:5px;display:flex;flex-wrap:wrap;gap:3px">'+vincBadges+'</div>';
+    html+='<div style="font-size:13px;font-weight:600;color:#222">'+o.cliente+'</div>';
+    if(o.descricao) html+='<div style="font-size:10px;color:#666;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</div>';
+    html+='<div style="font-size:12px;font-weight:700;color:var(--gr);margin-top:3px">'+fmt(parseFloat(o.vTotal)||0)+'</div>';
+    html+='</div>';
+  });
+  lista.innerHTML=html;
 }
 
 function _vincularOS(numOS){
