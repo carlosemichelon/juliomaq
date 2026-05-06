@@ -1105,7 +1105,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <div id="usadTab" style="display:none">
 <div class="dbody">
   <div class="sec">
-    <div class="sh" style="background:#e65100"><div class="si" style="background:rgba(255,255,255,.1)">🔄</div>Novo Usado</div>
+    <div class="sh" style="background:#e65100;cursor:pointer;user-select:none" onclick="_toggleUsadForm()">
+      <div class="si" style="background:rgba(255,255,255,.1)">🔄</div>Novo Usado
+      <span id="usadFormArr" style="margin-left:auto;font-size:18px;transition:transform .25s;display:inline-block">›</span>
+    </div>
+    <div id="usadFormBody" style="display:none">
     <div class="f"><label class="fl">Data</label><input class="fi" id="usadDt" type="date"></div>
     <div class="f"><label class="fl">Responsável</label>
       <select class="fi" id="usadResp"><option value="">Selecione</option><option>Sandro</option><option>João Acker</option><option>Welinton</option></select>
@@ -1139,6 +1143,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
 
     <button class="btn" style="margin:8px 12px 12px;background:#e65100" onclick="salvarUsad()">💾 Salvar</button>
+    </div><!-- /usadFormBody -->
   </div>
   <div class="sec" style="margin-top:8px">
     <div class="sh" style="background:#e65100">Registros</div>
@@ -5673,6 +5678,15 @@ function usadRemFoto(i){
 function salvarUsad(){
   _vendSalvar('usad',{usadDt:_gv('usadDt'),usadResp:_gv('usadResp'),usadMarca:_gv('usadMarca'),usadModelo:_gv('usadModelo'),usadAno:_gv('usadAno'),usadHoras:_gv('usadHoras'),usadPreco:_gv('usadPreco'),usadCond:_gv('usadCond'),usadObs:_gv('usadObs'),fotos:JSON.stringify(_usadFotos.map(function(f){return {b64:f.b64,mime:f.mime,name:f.name};}))},{},function(){_usadFotos=[];usadRenderFotosPrev();loadUsad();});
 }
+function _toggleUsadForm(){
+  var body=document.getElementById('usadFormBody');
+  var arr=document.getElementById('usadFormArr');
+  if(!body) return;
+  var open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arr) arr.style.transform=open?'rotate(90deg)':'rotate(0deg)';
+}
+
 function loadUsad(){
   var el=document.getElementById('usadList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
   google.script.run.withSuccessHandler(function(rows){
