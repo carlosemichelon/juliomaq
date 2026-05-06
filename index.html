@@ -181,7 +181,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 
 <div class="tabs" style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--wh);border-bottom:2px solid var(--bd);align-items:stretch">
   <span class="tab-grp-lbl" style="color:var(--gr)">Geral</span>
-  <button class="tab" id="tb2"  onclick="goTab('agenda')" ><span class="tico">📅</span>Agenda</button>
+  <button class="tab on" id="tb2"  onclick="goTab('agenda')" ><span class="tico">📅</span>Agenda</button>
   <button class="tab" id="tb10" onclick="goTab('desp')"   style="color:#7b1fa2"><span class="tico">💰</span>Despesas</button>
   <button class="tab" id="tb6"  onclick="goTab('vei')"   ><span class="tico">🚗</span>Desp. Veículos</button>
   <button class="tab" id="tb9"  onclick="goTab('chk')"   style="color:#1a4a7a"><span class="tico">☑️</span>Checklist Veículos</button>
@@ -189,7 +189,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <button class="tab" id="tb15" onclick="goTab('mkt')" style="color:#6a1b9a"><span class="tico">📣</span>Marketing</button>
   <span class="tab-grp-sep"></span>
   <span class="tab-grp-lbl" style="color:#bf360c">Pós Vendas</span>
-  <button class="tab on" id="tb1"  onclick="goTab('form')" ><span class="tico">➕</span>Nova OS</button>
+  <button class="tab" id="tb1"  onclick="goTab('form')" ><span class="tico">➕</span>Nova OS</button>
   <button class="tab" id="tb3"  onclick="goTab('hist')"  ><span class="tico">📋</span>Resumo OS</button>
   <button class="tab" id="tb8"  onclick="goTab('gar')"   style="color:#bf360c"><span class="tico">☁️</span>Salesforce</button>
   <button class="tab" id="tb7"  onclick="goTab('ferr')"  ><span class="tico">🔧</span>Ferramentas</button>
@@ -2012,8 +2012,8 @@ function init() {
   ['fDt','fDtSig','vmDt','prDt','calDt'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.valueAsDate=today;
   });
-  // Open Nova OS tab on start
-  goTab('form');
+  // Open Agenda tab on start
+  goTab('agenda');
   // Carregamento inicial — uma chamada para buscar tudo
   function tryInit(){
     if(typeof google!=='undefined'&&google.script&&google.script.run){
