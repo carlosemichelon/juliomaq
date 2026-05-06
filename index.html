@@ -7483,30 +7483,30 @@ function _vincularOS(numOS){
 }
 
 function _verOSNoResumo(numOS){
-  // Fecha modais da agenda
   fecharDetalheEvento();
   fecharEditEvento();
   document.body.style.overflow='';
-  // Vai para Resumo OS
   goTab('hist');
-  // Aguarda render e rola até a OS
-  setTimeout(function(){
-    var cards=document.querySelectorAll('.ocard .cnum');
-    for(var i=0;i<cards.length;i++){
-      if(cards[i].textContent.trim()===numOS){
-        cards[i].closest('.ocard').scrollIntoView({behavior:'smooth',block:'center'});
-        // Destaca brevemente
-        var card=cards[i].closest('.ocard');
-        var orig=card.style.boxShadow||'';
-        card.style.boxShadow='0 0 0 3px var(--bl)';
-        card.style.transition='box-shadow .4s';
-        setTimeout(function(){card.style.boxShadow=orig;},2000);
-        break;
+  function _tentarRolar(tentativa){
+    var todos=document.querySelectorAll('#osList .cnum, #osList .chdr span');
+    for(var i=0;i<todos.length;i++){
+      if(todos[i].textContent.trim()===numOS){
+        var card=todos[i].closest('.ocard');
+        if(card){
+          card.scrollIntoView({behavior:'smooth',block:'center'});
+          var orig=card.style.boxShadow||'';
+          card.style.transition='box-shadow .3s';
+          card.style.boxShadow='0 0 0 3px var(--bl)';
+          setTimeout(function(){card.style.boxShadow=orig;},2500);
+          return;
+        }
       }
     }
-  },600);
+    if(tentativa<5) setTimeout(function(){_tentarRolar(tentativa+1);},300);
+    else toast('OS '+numOS+' nao encontrada','warn');
+  }
+  setTimeout(function(){_tentarRolar(0);},400);
 }
-
 function _desvincularOS(numOS, eventoId){
   if(!confirm('Desvincular '+numOS+' deste evento?')) return;
   google.script.run
