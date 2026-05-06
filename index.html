@@ -7726,7 +7726,7 @@ function _verOSNoResumo(numOS){
   document.body.style.overflow='';
   goTab('hist');
   function _tentarRolar(tentativa){
-    var todos=document.querySelectorAll('#osList .cnum, #osList .chdr span');
+    var todos=document.querySelectorAll('#osList .cnum, #osList .chdr span, #osList [class*="cnum"]');
     for(var i=0;i<todos.length;i++){
       if(todos[i].textContent.trim()===numOS){
         var card=todos[i].closest('.ocard');
@@ -7740,8 +7740,8 @@ function _verOSNoResumo(numOS){
         }
       }
     }
-    if(tentativa<5) setTimeout(function(){_tentarRolar(tentativa+1);},300);
-    else toast('OS '+numOS+' nao encontrada','warn');
+    if(tentativa<20) setTimeout(function(){_tentarRolar(tentativa+1);},500);
+    else toast('OS '+numOS+' nao encontrada na lista','warn');
   }
   setTimeout(function(){_tentarRolar(0);},400);
 }
