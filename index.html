@@ -377,6 +377,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         <button onclick="setFiltro('mes','')" class="opbtn" style="background:#374151;white-space:nowrap">✕ Limpar</button>
       </div>
     </div>
+    <div style="margin-top:10px">
+      <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Buscar por Cliente</div>
+      <input id="osFiltroCliente" type="text" placeholder="🔍 Nome do cliente..." oninput="setFiltro('cli',this.value)"
+        style="width:100%;border:1px solid var(--bd);border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;box-sizing:border-box;outline:none">
+    </div>
   </div>
 
   <div id="osList"><div class="empty">Carregando...</div></div>
@@ -1457,6 +1462,12 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
           <button onclick="setRdVeiFiltro('vei','Saveiro 2024')" id="rdVV4" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Saveiro 2024</button>
           <button onclick="setRdVeiFiltro('vei','Ka 2017')" id="rdVV5" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Ka 2017</button>
           <button onclick="setRdVeiFiltro('vei','Mobi 2024')" id="rdVV6" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Mobi 2024</button>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 6px">Por Período</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="rdVeiFiltMes" onchange="setRdVeiFiltro('mes',this.value)" style="flex:1;min-width:140px;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--wh)"><option value="">Todos os meses</option></select>
+          <button onclick="setRdVeiFiltroMesAtual()" class="opbtn" style="background:#1a4a7a;font-size:10px;padding:4px 10px;white-space:nowrap">📅 Mês Atual</button>
+          <button onclick="setRdVeiFiltro('mes','')" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;white-space:nowrap">✕ Limpar</button>
         </div>
       </div>
     </div>
@@ -3452,7 +3463,7 @@ function _concluirProgresso(sucesso, msgOk, cb){
 function toast(msg,type,dur){var t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className=type+' show';setTimeout(function(){t.className='';},dur||3000);}
 
 // ── Filtros Resumo OS ─────────────────────────────────────────
-var filtroTipo='', filtroTec='', filtroMes='';
+var filtroTipo='', filtroTec='', filtroMes='', filtroCliente='';
 function _osMes(dt){var p=String(dt||'').split('/');return p.length===3?p[2]+'-'+p[1]:'';}
 function _osMesLabel(ym){
   var mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -3470,6 +3481,7 @@ function setFiltro(campo,val){
   if(campo==='tipo')filtroTipo=val;
   if(campo==='tec')filtroTec=val;
   if(campo==='mes'){filtroMes=val;var sel=document.getElementById('osFiltroMes');if(sel)sel.value=val;}
+  if(campo==='cli'){filtroCliente=val;}
   var tm={'':'fTipAll',Garantia:'fTipGar',Cliente:'fTipCli','Cortesia/Comercial':'fTipCor','Contrato Fechado':'fTipCon'};
   var tv={'':'ftAll',Christiano:'ftChr',Lucas:'ftLuc',Carlos:'ftCar'};
   ['fTipAll','fTipGar','fTipCli','fTipCor','fTipCon'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.opacity='0.45';});
@@ -3492,7 +3504,8 @@ function renderHistFiltrado(){
   var lista=ordens.filter(function(o){
     return (!filtroTipo||o.tipo===filtroTipo)
       &&(!filtroTec||(o.tecnico&&o.tecnico.indexOf(filtroTec)>=0))
-      &&(!filtroMes||_osMes(o.data)===filtroMes);
+      &&(!filtroMes||_osMes(o.data)===filtroMes)
+      &&(!filtroCliente||(o.cliente||'').toLowerCase().indexOf(filtroCliente.toLowerCase())>=0);
   });
   var sig=0,total=0;lista.forEach(function(o){if(o.sigUrl&&o.sigUrl.length>4)sig++;total+=o.vTotal||0;});
   s('st0',lista.length);s('st1',sig);s('st2','R$'+Math.round(total).toLocaleString('pt-BR'));
@@ -4869,7 +4882,7 @@ function setRdFiltroMesAtual(){
 }
 
 // ── Filtros Resumo Veículos (pills) ──────────────────────────
-var _rdVFiltTipo='', _rdVFiltVei='';
+var _rdVFiltTipo='', _rdVFiltVei='', _rdVFiltMes='';
 
 function setRdVeiFiltro(campo, val){
   if(campo==='tipo'){
@@ -4882,7 +4895,17 @@ function setRdVeiFiltro(campo, val){
     var vm={'':'rdVVAll','Montana 2018':'rdVV1','Montana 2020':'rdVV2','Saveiro 2019':'rdVV3','Saveiro 2024':'rdVV4','Ka 2017':'rdVV5','Mobi 2024':'rdVV6'};
     Object.keys(vm).forEach(function(k){var el=document.getElementById(vm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
   }
+  if(campo==='mes'){
+    _rdVFiltMes=val;
+    var sel=document.getElementById('rdVeiFiltMes');if(sel)sel.value=val;
+  }
   carregarResumoVei();
+}
+
+function setRdVeiFiltroMesAtual(){
+  var now=new Date();
+  var ym=now.getFullYear()+'-'+(('0'+(now.getMonth()+1)).slice(-2));
+  setRdVeiFiltro('mes',ym);
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -5044,7 +5067,21 @@ function carregarResumoVei(){
   google.script.run
     .withSuccessHandler(function(rows){
       var veics={},tipos={},total=0;
-      var filtered=(rows||[]).filter(function(v){return(!_rdVFiltTipo||(v.tipo||'')===_rdVFiltTipo)&&(!_rdVFiltVei||(v.veiculo||'')=== _rdVFiltVei);});
+      // Popular dropdown de meses
+      var selMes=document.getElementById('rdVeiFiltMes');
+      if(selMes){
+        var meses={};
+        (rows||[]).forEach(function(v){if(v.data){var m=_osMes(v.data);if(m)meses[m]=true;}});
+        var curMes=selMes.value||_rdVFiltMes||'';
+        var opts='<option value="">Todos os meses</option>';
+        Object.keys(meses).sort().reverse().forEach(function(m){opts+='<option value="'+m+'"'+(m===curMes?' selected':'')+'>'+_osMesLabel(m)+'</option>';});
+        selMes.innerHTML=opts;
+      }
+      var filtered=(rows||[]).filter(function(v){
+        return (!_rdVFiltTipo||(v.tipo||'')===_rdVFiltTipo)
+          &&(!_rdVFiltVei||(v.veiculo||'')=== _rdVFiltVei)
+          &&(!_rdVFiltMes||_osMes(v.data)===_rdVFiltMes);
+      });
       var now=new Date(),thisMes=now.getMonth()+1,thisAno=now.getFullYear(),mesCont=0;
       filtered.forEach(function(v){
         total+=(parseFloat(v.valor)||0);
@@ -5057,11 +5094,60 @@ function carregarResumoVei(){
       if(vs0)vs0.textContent='R$'+Math.round(total).toLocaleString('pt-BR');
       if(vs1)vs1.textContent=filtered.length;
       if(vs2)vs2.textContent=mesCont;
-      var html='<div style="background:#e3f2fd;border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-size:11px;color:#1a4a7a;font-weight:700">TOTAL MANUTENÇÕES</div><div style="font-size:20px;font-weight:800;color:#1a4a7a">'+_rFmt(total)+'</div><div style="font-size:10px;color:#999">'+(rows||[]).length+' registros</div></div>';
-      html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px">Por Veículo</div>';
-      Object.keys(veics).forEach(function(v){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:#fff;border-radius:8px;border-left:4px solid #1a4a7a"><span style="font-size:11px;font-weight:600">'+v+'</span><span style="font-weight:700;color:#1a4a7a">'+_rFmt(veics[v])+'</span></div>';});
-      html+='<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin:8px 0 5px">Por Tipo</div>';
-      Object.keys(tipos).forEach(function(t){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:#fff;border-radius:8px;border-left:4px solid #374151"><span style="font-size:11px;font-weight:600">'+t+'</span><span style="font-weight:700;color:#374151">'+tipos[t]+'x</span></div>';});
+      // Calcular valores por tipo
+      var tiposValor={};
+      filtered.forEach(function(v){
+        var t=v.tipo||'Outro';
+        tiposValor[t]=(tiposValor[t]||0)+(parseFloat(v.valor)||0);
+      });
+      var tipoCor={Abastecimento:'#e3f2fd',Manutencao:'#fff3e0',Borracharia:'#fce4ec',Lavagem:'#e8f5ec'};
+      var tipoTxtCor={Abastecimento:'#1a4a7a',Manutencao:'#bf360c',Borracharia:'#880e4f',Lavagem:'#1A6B2A'};
+      var tipoIco={Abastecimento:'⛽',Manutencao:'🔩',Borracharia:'🔧',Lavagem:'🚿'};
+
+      var html='';
+      // ── Resumo Box (igual Despesas Gerais) ──
+      html+='<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
+      html+='<div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">📊</div>Resumo por Tipo</div>';
+      // Header total + registros
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f5f5f5">';
+      html+='<div style="padding:8px 14px;border-right:1px solid #f5f5f5"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">Total</div><div style="font-size:16px;font-weight:700;color:#1a4a7a">'+_rFmt(total)+'</div></div>';
+      html+='<div style="padding:8px 14px"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">Registros</div><div style="font-size:16px;font-weight:700;color:var(--gr)">'+filtered.length+'</div></div>';
+      html+='</div>';
+      // Cards por tipo
+      if(Object.keys(tiposValor).length){
+        html+='<div style="padding:8px 12px">';
+        html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+        Object.keys(tiposValor).sort(function(a,b){return tiposValor[b]-tiposValor[a];}).forEach(function(t){
+          var cor=tipoTxtCor[t]||'#374151';
+          var bg=tipoCor[t]||'#f5f5f5';
+          var ico=tipoIco[t]||'🔧';
+          var pct=total>0?Math.round(tiposValor[t]/total*100):0;
+          html+='<div style="background:'+bg+';border-radius:10px;padding:9px 10px;border:1px solid rgba(0,0,0,.06)">';
+          html+='<div style="font-size:18px;margin-bottom:3px">'+ico+'</div>';
+          html+='<div style="font-size:10px;font-weight:700;color:'+cor+'">'+t+'</div>';
+          html+='<div style="font-size:13px;font-weight:800;color:'+cor+';margin-top:2px">'+_rFmt(tiposValor[t])+'</div>';
+          html+='<div style="font-size:9px;color:#999;margin-top:1px">'+pct+'% do total</div>';
+          html+='</div>';
+        });
+        html+='</div></div>';
+      }
+      // Por veículo (barras)
+      if(Object.keys(veics).length){
+        html+='<div style="border-top:1px solid #f5f5f5;padding:8px 12px">';
+        html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Por Veículo</div>';
+        Object.keys(veics).sort(function(a,b){return veics[b]-veics[a];}).forEach(function(v){
+          var pct=total>0?Math.max(2,Math.round(veics[v]/total*100)):2;
+          html+='<div style="margin-bottom:6px">';
+          html+='<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">';
+          html+='<span style="font-weight:600;color:#374151">'+v+'</span><span style="font-weight:700;color:#1a4a7a">'+_rFmt(veics[v])+'</span>';
+          html+='</div>';
+          html+='<div style="background:#e3f2fd;border-radius:20px;height:8px;overflow:hidden">';
+          html+='<div style="width:'+pct+'%;height:100%;background:#1a4a7a;border-radius:20px"></div></div>';
+          html+='</div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>'; // fim resumoBox
       document.getElementById('vResContent').innerHTML=html;
     })
     .withFailureHandler(function(){document.getElementById('vResContent').innerHTML='<div class="empty">Erro ao carregar</div>';})
@@ -6914,6 +7000,18 @@ function _parseAgDate(v){
   if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
   var d=new Date(s); return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
 }
+// Extrai HH:MM de qualquer formato (string "14:00", Date object, ou string GMT)
+function _fmtHora(v){
+  if(!v) return '';
+  var s=String(v);
+  // Já está no formato HH:MM
+  var m=s.match(/^(\d{1,2}):(\d{2})$/);
+  if(m) return ('0'+m[1]).slice(-2)+':'+m[2];
+  // Date object serializado (ex: "Sat Dec 30 1899 14:00:00 GMT...")
+  var d=new Date(s);
+  if(!isNaN(d)) return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  return s.substring(0,5); // fallback: pega os 5 primeiros chars
+}
 // ─────────────────────────────────────────────────────────────
 
 function renderAgCal(){
@@ -6988,10 +7086,10 @@ function renderAgCal(){
       var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#E85A0C' : '#1A6B2A';
       var temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
-      var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ev.horaInicio+' ' : '';
+      var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? _fmtHora(ev.horaInicio)+' ' : '';
       var label = hora + (ev.titulo||'');
       var _evIdx=(_agEventos||[]).indexOf(ev);
-      var _osBadge=temOS?'<span style="font-size:8px;background:rgba(255,255,255,.3);border-radius:3px;padding:0 3px;margin-right:2px;font-weight:800">OS</span>':'';
+      var _osBadge=temOS?'<span style="font-size:8px;background:#E85A0C;border-radius:3px;padding:0 3px;margin-right:2px;font-weight:800;color:#fff">OS</span>':'';
       html += '<div onclick="_abrirEvIdx('+_evIdx+')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_osBadge+_escHtml(label)+'</div>';
     });
 
@@ -7036,7 +7134,7 @@ function _abrirDiaModal(diaISO){
   evs.forEach(function(ev,i){
     var fut=d>=hoje;
     var cor=fut?'var(--bl)':'#9e9e9e';
-    var hora=(ev.diaInteiro==='Não'&&ev.horaInicio)?ev.horaInicio+(ev.horaFim?' – '+ev.horaFim:''):'Dia inteiro';
+    var hora=(ev.diaInteiro==='Não'&&ev.horaInicio)?_fmtHora(ev.horaInicio)+(ev.horaFim?' – '+_fmtHora(ev.horaFim):''):'Dia inteiro';
     html+='<div onclick="_abrirEvIdx('+(_agEventos||[]).indexOf(ev)+')" style="border-left:3px solid '+cor+';padding:8px 10px;margin-bottom:8px;border-radius:0 8px 8px 0;background:#f8f9fa;cursor:pointer">';
     var _temOSDia=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
     html+='<div style="font-size:13px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px">'+(ev.titulo||'')+(_temOSDia?'<span style="font-size:9px;background:var(--bl);color:#fff;border-radius:6px;padding:1px 6px;font-weight:700;white-space:nowrap;flex-shrink:0">🔗 OS</span>':'')+'</div>';
@@ -7151,7 +7249,7 @@ function abrirDetalheEvento(ev){
   var html='<div style=\"border-left:4px solid '+corBorda+';padding:0 0 0 12px;margin-bottom:12px\">';
   html+='<div style=\"font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px\">'+(ev.titulo||'--')+'</div>';
   html+='<div style=\"font-size:12px;color:#555\">📅 '+dFmt;
-  if(ev.diaInteiro==='Não'&&ev.horaInicio) html+=' · '+ev.horaInicio+(ev.horaFim?' – '+ev.horaFim:'');
+  if(ev.diaInteiro==='Não'&&ev.horaInicio) html+=' · '+_fmtHora(ev.horaInicio)+(ev.horaFim?' – '+_fmtHora(ev.horaFim):'');
   html+='</div>';
   html+='</div>';
 
@@ -7465,7 +7563,7 @@ function renderAgEventos(){
     var _temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
     html+='<div style="font-size:13px;font-weight:700;color:'+(passado?'#9e9e9e':'#1a1a1a')+'">'+(  _temOS?'🔗 ':'')+ev.titulo+'</div>';
     var _evDFmt=(function(v){if(!v)return '';var s=String(v);var m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);if(m)return m[1]+'/'+m[2]+'/'+String(m[3]).slice(-2);var d=new Date(s);if(!isNaN(d))return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);return s;})(ev.dataISO||ev.data);
-    html+='<div style="font-size:11px;color:#555;margin-top:2px">📅 '+_evDFmt+(ev.diaInteiro==='Não'?' · '+ev.horaInicio+' – '+ev.horaFim:'')+'</div>';
+    html+='<div style="font-size:11px;color:#555;margin-top:2px">📅 '+_evDFmt+(ev.diaInteiro==='Não'?' · '+_fmtHora(ev.horaInicio)+(ev.horaFim?' – '+_fmtHora(ev.horaFim):''):'')+'</div>';
     if(ev.cliente) html+='<div style="font-size:11px;color:#666">👤 '+ev.cliente+'</div>';
     if(ev.responsavel) html+='<div style="font-size:10px;color:#999">👷 '+ev.responsavel+'</div>';
     if(ev.descricao) html+='<div style="font-size:10px;color:#888;font-style:italic;margin-top:2px">'+ev.descricao+'</div>';
