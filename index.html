@@ -1055,7 +1055,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <div id="parqTab" style="display:none">
 <div class="dbody">
   <div class="sec">
-    <div class="sh" style="background:#e65100"><div class="si" style="background:rgba(255,255,255,.1)">👥</div>Novo Gestão de Clientes</div>
+    <div class="sh" style="background:#e65100;cursor:pointer;user-select:none" onclick="_toggleParqForm()">
+      <div class="si" style="background:rgba(255,255,255,.1)">👥</div>Novo Gestão de Clientes
+      <span id="parqFormArr" style="margin-left:auto;font-size:18px;transition:transform .25s;display:inline-block">›</span>
+    </div>
+    <div id="parqFormBody" style="display:none">
     <div class="f"><label class="fl">Data</label><input class="fi" id="parqDt" type="date"></div>
     <div class="f"><label class="fl">Cliente *</label><input class="fi" id="parqCli" type="text" placeholder="Nome do cliente..."></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
@@ -1077,6 +1081,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div class="f"><label class="fl">Obs</label><textarea class="fi" id="parqObs" placeholder="Observações..." style="height:60px"></textarea></div>
     <button class="btn" style="margin:8px 12px 12px;background:#e65100" onclick="salvarParq()">💾 Salvar</button>
+    </div><!-- /parqFormBody -->
   </div>
 
   <!-- PARQUE DE MÁQUINAS -->
@@ -1094,10 +1099,6 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="pmList" style="padding:0 12px 8px"></div>
   </div>
 
-  <div class="sec" style="margin-top:8px">
-    <div class="sh" style="background:#e65100">Registros</div>
-    <div id="parqList"><div class="empty">Carregando...</div></div>
-  </div>
 </div>
 </div>
 
@@ -3558,7 +3559,9 @@ function openSig(target){
   document.body.style.overflow='hidden';
   document.body.style.position='fixed';
   document.body.style.width='100%';
-  setTimeout(rdimSig,60);
+  // iOS precisa de tempo extra para o modal ocupar a tela antes de medir o canvas
+  setTimeout(rdimSig, 120);
+  setTimeout(rdimSig, 350); // segunda chamada garante dimensões corretas
 }
 function closeSig(){
   document.getElementById('sigModal').classList.remove('open');
@@ -3568,10 +3571,22 @@ function closeSig(){
   document.body.style.width='';
 }
 function rdimSig(){
-  var w=sigCv.parentElement,d=window.devicePixelRatio||1;
-  sigCv.width=w.clientWidth*d;sigCv.height=w.clientHeight*d;
-  sigCv.style.width=w.clientWidth+'px';sigCv.style.height=w.clientHeight+'px';
-  sigCtx.scale(d,d);sigCtx.strokeStyle='#1A6B2A';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  var w=sigCv.parentElement;
+  var d=window.devicePixelRatio||1;
+  var cw=w.clientWidth||window.innerWidth;
+  var ch=w.clientHeight||220;
+  // Reset canvas completamente — iOS exige isso para evitar coordenadas cortadas
+  sigCv.width=Math.round(cw*d);
+  sigCv.height=Math.round(ch*d);
+  sigCv.style.width=cw+'px';
+  sigCv.style.height=ch+'px';
+  // Sempre resetar o transform antes de escalar (iOS não herda o scale anterior)
+  sigCtx.setTransform(1,0,0,1,0,0);
+  sigCtx.scale(d,d);
+  sigCtx.strokeStyle='#1A6B2A';
+  sigCtx.lineWidth=2.5;
+  sigCtx.lineCap='round';
+  sigCtx.lineJoin='round';
   sHas=false;
 }
 function clearSig(){var d=window.devicePixelRatio||1;sigCtx.clearRect(0,0,sigCv.width/d,sigCv.height/d);sHas=false;}
@@ -5813,6 +5828,15 @@ function _toggleUsadForm(){
   if(arr) arr.style.transform=open?'rotate(90deg)':'rotate(0deg)';
 }
 
+function _toggleParqForm(){
+  var body=document.getElementById('parqFormBody');
+  var arr=document.getElementById('parqFormArr');
+  if(!body) return;
+  var open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arr) arr.style.transform=open?'rotate(90deg)':'rotate(0deg)';
+}
+
 function loadUsad(){
   var el=document.getElementById('usadList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
   google.script.run.withSuccessHandler(function(rows){
@@ -5946,11 +5970,14 @@ function renderResumoCli(){
   }).sort();
 
   // Stats
-  var totalOS = 0;
-  Object.values(_rcliData).forEach(function(d){ totalOS += d.os.length; });
-  var totalOrcEnv = 0;
+  var totalOS=0, totalFat=0;
   Object.values(_rcliData).forEach(function(d){
-    totalOrcEnv += d.prosps.filter(function(p){ return p.status==='Em andamento'||p.etapa==='Proposta Enviada'; }).length;
+    totalOS+=d.os.length;
+    d.os.forEach(function(o){totalFat+=parseFloat(o.vTotal)||0;});
+  });
+  var totalOrcEnv=0;
+  Object.values(_rcliData).forEach(function(d){
+    totalOrcEnv+=d.prosps.filter(function(p){return p.etapa==='Proposta Enviada';}).length;
   });
   var s0=document.getElementById('rcliSt0');if(s0)s0.textContent=Object.keys(_rcliData).length;
   var s1=document.getElementById('rcliSt1');if(s1)s1.textContent=totalOS;
@@ -5961,99 +5988,136 @@ function renderResumoCli(){
     return;
   }
 
+  var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
   var html='';
+
   clientes.forEach(function(cli){
     var d = _rcliData[cli];
     var totalOSCli = d.os.length;
     var faturado = d.os.reduce(function(a,o){return a+(parseFloat(o.vTotal)||0);},0);
-    var ultimaOS = d.os.slice().sort(function(a,b){
-      return (b.data||'').localeCompare(a.data||'');
-    })[0];
+    var ticketMedio = totalOSCli>0 ? faturado/totalOSCli : 0;
 
-    var orcEnv = d.prosps.filter(function(p){return p.etapa==='Proposta Enviada';}).length;
+    var osSorted = d.os.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+    var ultimaOS = osSorted[0];
+    var primeiraOS = osSorted[osSorted.length-1];
+
+    var orcEnv  = d.prosps.filter(function(p){return p.etapa==='Proposta Enviada';}).length;
     var orcFech = d.prosps.filter(function(p){return p.status==='Ganho';}).length;
     var orcTotal = d.orcs.length;
 
-    var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
-    var tipoMais = (function(){
-      var cnt={};d.os.forEach(function(o){cnt[o.tipo]=(cnt[o.tipo]||0)+1;});
-      return Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0]||'';
-    })();
-    var corCard = tipoCor[tipoMais]||'var(--bl)';
+    // Tipo predominante
+    var cnt={};d.os.forEach(function(o){cnt[o.tipo]=(cnt[o.tipo]||0)+1;});
+    var tipoMais=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0]||'';
+    var corCard=tipoCor[tipoMais]||'var(--bl)';
 
-    var id = 'rcli_'+cli.replace(/[^a-z0-9]/gi,'_');
+    var id='rcli_'+cli.replace(/[^a-z0-9]/gi,'_');
 
-    html += '<div class="ocard" style="margin-bottom:8px">';
+    // — CARD —
+    html+='<div style="border:1px solid var(--bd);border-left:4px solid '+corCard+';border-radius:0 10px 10px 0;background:#fff;margin-bottom:10px;overflow:hidden">';
+
     // Header clicável
-    html += '<div onclick="_toggleRcliCard(\''+id+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none">';
-    html += '<div style="flex:1;min-width:0">';
-    html += '<div style="font-size:14px;font-weight:700;color:#1a1a1a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+cli+'</div>';
-    html += '<div style="font-size:11px;color:var(--mu);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">';
-    html += '<span>📋 '+totalOSCli+' OS</span>';
-    if(faturado>0) html += '<span style="color:var(--gr);font-weight:600">'+fmt(faturado)+'</span>';
-    if(orcTotal>0) html += '<span>📎 '+orcTotal+' orç.</span>';
-    html += '</div></div>';
-    html += '<span id="'+id+'_arr" style="font-size:16px;color:var(--mu);transition:transform .2s;flex-shrink:0;margin-left:8px">›</span>';
-    html += '</div>';
+    html+='<div onclick="_toggleRcliCard(\''+id+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;background:#fafafa">';
+    // Iniciais avatar
+    html+='<div style="width:36px;height:36px;border-radius:50%;background:'+corCard+';color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+cli.charAt(0).toUpperCase()+'</div>';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="font-size:13px;font-weight:800;color:#1a1a1a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+cli+'</div>';
+    html+='<div style="font-size:10px;color:var(--mu);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">';
+    html+='<span>📋 '+totalOSCli+' OS</span>';
+    if(faturado>0) html+='<span style="color:var(--gr);font-weight:700">'+fmt(faturado)+'</span>';
+    if(orcTotal>0) html+='<span>📎 '+orcTotal+' orç.</span>';
+    if(ultimaOS) html+='<span style="color:#888">último: '+(ultimaOS.data||'')+'</span>';
+    html+='</div></div>';
+    html+='<span id="'+id+'_arr" style="font-size:18px;color:var(--mu);transition:transform .2s;flex-shrink:0">›</span>';
+    html+='</div>';
 
-    // Conteúdo expandível
-    html += '<div id="'+id+'" style="display:none;border-top:1px solid var(--bd)">';
+    // — Conteúdo expandível —
+    html+='<div id="'+id+'" style="display:none">';
 
-    // Grid métricas
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #f5f5f5">';
-    html += '<div class="mc"><div class="ml">OS</div><div class="mv">'+totalOSCli+'</div></div>';
-    html += '<div class="mc"><div class="ml">Faturado</div><div class="mv gr" style="font-size:11px">'+fmt(faturado)+'</div></div>';
-    html += '<div class="mc"><div class="ml">Proposta Env.</div><div class="mv" style="color:var(--or)">'+orcEnv+'</div></div>';
-    html += '<div class="mc"><div class="ml">Orç. Fechado</div><div class="mv" style="color:var(--gr)">'+orcFech+'</div></div>';
-    html += '</div>';
+    // Métricas rápidas
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--bd);border-bottom:1px solid #f0f0f0">';
+    html+='<div class="mc"><div class="ml">OS Total</div><div class="mv" style="color:'+corCard+';font-weight:800">'+totalOSCli+'</div></div>';
+    html+='<div class="mc"><div class="ml">Faturado</div><div class="mv gr" style="font-size:11px;font-weight:800">'+fmt(faturado)+'</div></div>';
+    html+='<div class="mc"><div class="ml">Ticket Médio</div><div class="mv" style="font-size:11px;color:#374151">'+fmt(ticketMedio)+'</div></div>';
+    html+='<div class="mc"><div class="ml">Orçamentos</div><div class="mv" style="color:var(--or)">'+orcTotal+'</div></div>';
+    html+='</div>';
+
+    // Tipos de OS (breakdown)
+    if(Object.keys(cnt).length){
+      html+='<div style="padding:8px 14px;border-bottom:1px solid #f0f0f0;display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+      html+='<span style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-right:4px">Tipos:</span>';
+      Object.keys(cnt).forEach(function(t){
+        var c=tipoCor[t]||'#374151';
+        html+='<span style="font-size:9px;background:'+c+'22;color:'+c+';padding:2px 8px;border-radius:8px;font-weight:700">'+t+' ('+cnt[t]+')</span>';
+      });
+      html+='</div>';
+    }
 
     // Última OS
     if(ultimaOS){
-      html += '<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5">';
-      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Última OS</div>';
-      html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-      html += '<span style="font-size:11px;font-weight:700;color:'+( tipoCor[ultimaOS.tipo]||'#374151')+'">'+(ultimaOS.num||'')+'</span>';
-      html += '<span style="font-size:10px;color:var(--mu)">'+(ultimaOS.data||'')+'</span>';
-      if(ultimaOS.tipo) html += '<span style="font-size:9px;background:'+(tipoCor[ultimaOS.tipo]||'#374151')+';color:#fff;padding:1px 6px;border-radius:8px">'+ultimaOS.tipo+'</span>';
-      html += '</div>';
-      if(ultimaOS.descricao) html += '<div style="font-size:11px;color:#666;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+ultimaOS.descricao+'</div>';
-      html += '</div>';
+      var uCor=tipoCor[ultimaOS.tipo]||'#374151';
+      html+='<div style="padding:8px 14px;border-bottom:1px solid #f0f0f0">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">Última OS</div>';
+      html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">';
+      html+='<span style="font-size:12px;font-weight:800;color:'+uCor+'">'+(ultimaOS.num||'')+'</span>';
+      html+='<span style="font-size:10px;color:var(--mu)">'+(ultimaOS.data||'')+'</span>';
+      if(ultimaOS.tipo) html+='<span style="font-size:9px;background:'+uCor+';color:#fff;padding:2px 8px;border-radius:8px;font-weight:700">'+ultimaOS.tipo+'</span>';
+      if(parseFloat(ultimaOS.vTotal)>0) html+='<span style="font-size:11px;font-weight:800;color:var(--gr);margin-left:auto">'+fmt(parseFloat(ultimaOS.vTotal))+'</span>';
+      html+='</div>';
+      if(ultimaOS.descricao) html+='<div style="font-size:11px;color:#666;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+ultimaOS.descricao+'</div>';
+      html+='</div>';
+    }
+
+    // Histórico OS (mini timeline) — se mais de 1 OS
+    if(d.os.length>1){
+      html+='<div style="padding:6px 14px 4px;border-bottom:1px solid #f0f0f0">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Histórico OS</div>';
+      osSorted.forEach(function(o){
+        var oc=tipoCor[o.tipo]||'#374151';
+        html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+        html+='<span style="width:8px;height:8px;border-radius:50%;background:'+oc+';flex-shrink:0"></span>';
+        html+='<span style="font-size:10px;font-weight:700;color:'+oc+'">'+(o.num||'')+'</span>';
+        html+='<span style="font-size:10px;color:#888">'+(o.data||'')+'</span>';
+        if(o.descricao) html+='<span style="font-size:10px;color:#555;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</span>';
+        if(parseFloat(o.vTotal)>0) html+='<span style="font-size:10px;font-weight:700;color:var(--gr);flex-shrink:0">'+fmt(parseFloat(o.vTotal))+'</span>';
+        html+='</div>';
+      });
+      html+='</div>';
     }
 
     // Orçamentos
     if(d.orcs.length){
-      html += '<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5">';
-      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Orçamentos ('+d.orcs.length+')</div>';
+      html+='<div style="padding:8px 14px;border-bottom:1px solid #f0f0f0">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Orçamentos ('+d.orcs.length+')</div>';
       d.orcs.slice(0,3).forEach(function(o){
         var tot=parseFloat(o.total||0);
-        html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">';
-        html += '<span style="font-weight:600;color:var(--or)">'+(o.num||'')+'</span>';
-        html += '<span style="color:#888">'+(o.data||'')+'</span>';
-        if(tot>0) html += '<span style="font-weight:700;color:var(--gr)">'+fmt(tot)+'</span>';
-        html += '</div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-bottom:3px">';
+        html+='<span style="font-weight:700;color:var(--or)">'+(o.num||'')+'</span>';
+        html+='<span style="color:#888;font-size:10px">'+(o.data||'')+'</span>';
+        if(tot>0) html+='<span style="font-weight:700;color:var(--gr)">'+fmt(tot)+'</span>';
+        html+='</div>';
       });
-      if(d.orcs.length>3) html += '<div style="font-size:10px;color:var(--mu)">+' +(d.orcs.length-3)+' mais...</div>';
-      html += '</div>';
+      if(d.orcs.length>3) html+='<div style="font-size:10px;color:var(--mu)">+'+(d.orcs.length-3)+' mais...</div>';
+      html+='</div>';
     }
 
     // Prospecções
     if(d.prosps.length){
       var scor={'Ganho':'#1A6B2A','Perdido':'#666','Em andamento':'#e67e22','Novo':'#1a4a7a'};
-      html += '<div style="padding:8px 14px">';
-      html += '<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Prospecções ('+d.prosps.length+')</div>';
+      html+='<div style="padding:8px 14px">';
+      html+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:4px">Prospecções ('+d.prosps.length+')</div>';
       d.prosps.slice(0,3).forEach(function(p){
-        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
-        html += '<span style="font-size:9px;font-weight:700;background:'+(scor[p.status]||'#666')+';color:#fff;padding:1px 6px;border-radius:8px">'+p.status+'</span>';
-        html += '<span style="font-size:11px;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#555">'+(p.servico||p.etapa||'')+'</span>';
-        if(p.valor&&parseFloat(p.valor)>0) html += '<span style="font-size:11px;font-weight:700;color:var(--gr)">'+fmt(parseFloat(p.valor))+'</span>';
-        html += '</div>';
+        html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+        html+='<span style="font-size:9px;font-weight:700;background:'+(scor[p.status]||'#666')+';color:#fff;padding:2px 7px;border-radius:8px">'+p.status+'</span>';
+        html+='<span style="font-size:11px;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#555">'+(p.servico||p.etapa||'')+'</span>';
+        if(p.valor&&parseFloat(p.valor)>0) html+='<span style="font-size:11px;font-weight:700;color:var(--gr)">'+fmt(parseFloat(p.valor))+'</span>';
+        html+='</div>';
       });
-      if(d.prosps.length>3) html += '<div style="font-size:10px;color:var(--mu)">+'+(d.prosps.length-3)+' mais...</div>';
-      html += '</div>';
+      if(d.prosps.length>3) html+='<div style="font-size:10px;color:var(--mu)">+'+(d.prosps.length-3)+' mais...</div>';
+      html+='</div>';
     }
 
-    html += '</div>'; // fim expandível
-    html += '</div>'; // fim ocard
+    html+='</div>'; // fim expandível
+    html+='</div>'; // fim card
   });
 
   list.innerHTML = html;
