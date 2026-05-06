@@ -1965,10 +1965,14 @@ function _processarOrdens(data){
 function _buildEvOSMap(){
   _evOSMap={};
   (ordens||[]).forEach(function(o){
-    var evId=o.eventoAgendaId||'';
-    if(!evId) return;
-    if(!_evOSMap[evId]) _evOSMap[evId]=[];
-    if(_evOSMap[evId].indexOf(o.num)<0) _evOSMap[evId].push(o.num);
+    var raw=o.eventoAgendaId||'';
+    if(!raw) return;
+    // Suporta multiplos eventos separados por virgula
+    var ids=raw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+    ids.forEach(function(evId){
+      if(!_evOSMap[evId]) _evOSMap[evId]=[];
+      if(_evOSMap[evId].indexOf(o.num)<0) _evOSMap[evId].push(o.num);
+    });
   });
 }
 // ─────────────────────────────────────────────────────────────
@@ -7401,19 +7405,44 @@ function _abrirSeletorOS(eventoId){
   google.script.run
     .withSuccessHandler(function(rows){
       var lista=document.getElementById('agOSSeletorLista');if(!lista)return;
-      // Filtra as que já estão vinculadas a esse evento
-      var jaVinculadas=(ordens||[]).filter(function(o){return o.eventoAgendaId===eventoId;}).map(function(o){return o.num;});
-      var disponiveis=(rows||[]).filter(function(o){return jaVinculadas.indexOf(o.num)<0;});
-      if(!disponiveis.length){lista.innerHTML='<div class="empty" style="padding:20px">Nenhuma OS em aberto disponível para vincular</div>';return;}
+      // Monta mapa OS -> lista de eventos vinculados (suporta multiplos)
+      var osEvMap={};
+      (ordens||[]).forEach(function(o){
+        if(!o.eventoAgendaId) return;
+        var ids=String(o.eventoAgendaId).split(',').map(function(s){return s.trim();}).filter(Boolean);
+        if(ids.length) osEvMap[o.num]=ids;
+      });
+      // Mapa evento id -> titulo
+      var evNomeMap={};
+      (_agEventos||[]).forEach(function(ev){evNomeMap[ev.id]=ev.titulo||ev.id;});
       var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
-      var html='<div style="font-size:11px;color:#888;margin-bottom:10px">Selecione a OS para vincular a este evento:</div>';
-      disponiveis.forEach(function(o){
+      if(!rows||!rows.length){lista.innerHTML='<div class="empty" style="padding:20px">Nenhuma OS em aberto</div>';return;}
+      var html='<div style="font-size:11px;color:#888;margin-bottom:10px">Toque na OS para vincular. ✅ = já vinculada a este evento. Laranja = vinculada a outro evento.</div>';
+      rows.forEach(function(o){
         var cor=tipoCor[o.tipo]||'#374151';
-        html+='<div onclick="_vincularOS(\''+o.num+'\')" style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff;transition:background .15s" onmouseover="this.style.background=\'#f0f4ff\'" onmouseout="this.style.background=\'#fff\'">';
-        html+='<div style="font-size:12px;font-weight:700;color:'+cor+'">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+o.data+'</span></div>';
-        html+='<div style="font-size:13px;font-weight:600;color:#222;margin-top:2px">'+o.cliente+'</div>';
+        var evIds=osEvMap[o.num]||[];
+        var jaNesteEvento=evIds.indexOf(eventoId)>=0;
+        // Badges dos eventos vinculados
+        var vincBadges='';
+        evIds.forEach(function(eid){
+          var nome=evNomeMap[eid]||(eid===eventoId?'Este evento':'Outro evento');
+          var bg=eid===eventoId?'#1a4a7a':'#e65100';
+          vincBadges+='<span style="font-size:9px;background:'+bg+';color:#fff;padding:1px 6px;border-radius:6px;margin-right:3px;font-weight:700">'+nome.substring(0,24)+(nome.length>24?'...':'')+'</span>';
+        });
+        var bgCard=jaNesteEvento?'#f0f4ff':'#fff';
+        if(!jaNesteEvento){
+          html+='<div onclick="_vincularOS(\''+o.num+'\')" onmouseover="this.style.background=\'#f0f4ff\'" onmouseout="this.style.background=\'#fff\'" style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:'+bgCard+'">';
+        } else {
+          html+='<div style="border:1px solid var(--bd);border-left:3px solid '+cor+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px;cursor:default;background:'+bgCard+'">';
+        }
+        html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">';
+        html+='<span style="font-size:12px;font-weight:700;color:'+cor+'">'+o.num+'<span style="font-size:10px;font-weight:400;color:#888;margin-left:6px">'+o.data+'</span></span>';
+        if(jaNesteEvento) html+='<span style="font-size:9px;background:#1a4a7a;color:#fff;padding:2px 8px;border-radius:8px;font-weight:700">Vinculada</span>';
+        html+='</div>';
+        if(vincBadges) html+='<div style="margin-bottom:5px;display:flex;flex-wrap:wrap;gap:3px">'+vincBadges+'</div>';
+        html+='<div style="font-size:13px;font-weight:600;color:#222">'+o.cliente+'</div>';
         if(o.descricao) html+='<div style="font-size:10px;color:#666;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+o.descricao+'</div>';
-        html+='<div style="font-size:12px;font-weight:700;color:var(--gr);margin-top:3px">R$ '+(parseFloat(o.vTotal)||0).toFixed(2).replace('.',',')+'</div>';
+        html+='<div style="font-size:12px;font-weight:700;color:var(--gr);margin-top:3px">'+fmt(parseFloat(o.vTotal)||0)+'</div>';
         html+='</div>';
       });
       lista.innerHTML=html;
