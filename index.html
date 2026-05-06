@@ -400,6 +400,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         <option>Montana 2018</option><option>Montana 2020</option>
         <option>Saveiro 2019</option><option>Saveiro 2024</option>
         <option>Ka 2017</option><option>Mobi 2024</option>
+        <option>MB 1318</option><option>VW 24280</option>
       </select>
     </div>
     <div class="f"><label class="fl">Data</label><input class="fi" id="vmDt" type="date"></div>
@@ -425,6 +426,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div class="f"><label class="fl">Valor (R$)</label><input class="fi" id="vmVal" type="number" step="0.01" placeholder="Ex: 250.00"></div>
     <div class="f"><label class="fl">Descricao</label><textarea class="fi" id="vmDesc" style="height:50px" placeholder="Detalhes..."></textarea></div>
+    <div style="padding:4px 0 8px">
+      <button type="button" class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('vmFotoInp').click()">📷 Anexar Foto</button>
+      <input id="vmFotoInp" type="file" accept="image/*,.heic,.heif,.pdf" multiple style="display:none" onchange="vmAddFotos(this)">
+      <div id="vmFotosPrev" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
   </div>
   <div class="sec">
     <div class="sh" style="background:var(--bl)"><div class="si" style="background:rgba(255,255,255,.1)">&#9997;</div>Assinatura Responsável</div>
@@ -928,7 +934,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="f"><label class="fl">Comprador</label>
       <select class="fi" id="dComp">
         <option value="">Selecione</option>
-        <option>Carlos</option><option>Lucas</option><option>Christiano</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>João Dias</option><option>Everaldo</option>
+        <option>Carlos</option><option>Lucas</option><option>Christiano</option><option>Sandro</option><option>João Acker</option><option>Welinton</option><option>João Dias</option><option>Everaldo</option><option>Juliomaq</option>
       </select>
     </div>
     <div class="f"><label class="fl">CNPJ do Fornecedor</label>
@@ -970,7 +976,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         <select class="fi" id="dPgto">
           <option value="">Selecione</option>
           <option>Comprador Pagou</option>
-          <option>Juliomaq Pagará</option>
+          <option>Juliomaq Pagou</option>
         </select>
       </div>
     </div>
@@ -1424,6 +1430,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
           <button onclick="setRdFiltro('resp','Welinton')" id="rdRespWel" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Welinton</button>
           <button onclick="setRdFiltro('resp','Everaldo')" id="rdRespEve" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Everaldo</button>
           <button onclick="setRdFiltro('resp','João Dias')" id="rdRespJDi" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">João Dias</button>
+          <button onclick="setRdFiltro('resp','Juliomaq')" id="rdRespJul" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Juliomaq</button>
         </div>
         <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 6px">Por Período</div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1462,6 +1469,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
           <button onclick="setRdVeiFiltro('vei','Saveiro 2024')" id="rdVV4" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Saveiro 2024</button>
           <button onclick="setRdVeiFiltro('vei','Ka 2017')" id="rdVV5" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Ka 2017</button>
           <button onclick="setRdVeiFiltro('vei','Mobi 2024')" id="rdVV6" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">Mobi 2024</button>
+          <button onclick="setRdVeiFiltro('vei','MB 1318')" id="rdVV7" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">MB 1318</button>
+          <button onclick="setRdVeiFiltro('vei','VW 24280')" id="rdVV8" class="opbtn" style="background:#374151;font-size:10px;padding:4px 10px;opacity:.45">VW 24280</button>
         </div>
         <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 6px">Por Período</div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1863,6 +1872,7 @@ var vmTecSel   = [];
 var orcItems   = [];
 var sigData    = null;
 var vmSigData  = null;
+var vmFotos    = [];  // [{b64, mime, nome}]
 var sigTarget  = 'cli';
 var midias     = [];
 var ultimaSalva= null;
@@ -2482,6 +2492,27 @@ function setVmTp(v){
   document.getElementById('vmTipo').value=v;
   ['vmT1','vmT2','vmT3','vmT4'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('on',['Abastecimento','Borracharia','Lavagem','Manutencao'][i]===v);});
 }
+function vmAddFotos(inp){
+  Array.from(inp.files).forEach(function(file){
+    var r=new FileReader();
+    r.onload=function(e){
+      vmFotos.push({b64:e.target.result.split(',')[1],mime:file.type||'image/jpeg',nome:file.name});
+      _renderVmFotosPrev();
+    };
+    r.readAsDataURL(file);
+  });
+  inp.value='';
+}
+function vmRemFoto(i){vmFotos.splice(i,1);_renderVmFotosPrev();}
+function _renderVmFotosPrev(){
+  var box=document.getElementById('vmFotosPrev');if(!box)return;
+  box.innerHTML=vmFotos.map(function(f,i){
+    var isImg=f.mime.indexOf('image')>=0;
+    var thumb=isImg?('data:'+f.mime+';base64,'+f.b64):'';
+    return '<div style="position:relative;width:72px;height:72px">'+(thumb?'<img src="'+thumb+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)">':'<div style="width:72px;height:72px;border-radius:8px;border:1px solid var(--bd);background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>')+'<button onclick="vmRemFoto('+i+')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#c62828;color:#fff;border:none;font-size:10px;cursor:pointer;padding:0">✕</button></div>';
+  }).join('');
+}
+
 function saveVei(){
   var vei=g('vmVei'),tp=g('vmTipo');
   if(!vei){toast('Selecione o veiculo','err');return;}
@@ -2496,8 +2527,23 @@ function saveVei(){
         valor: g('vmVal') ? 'R$ '+parseFloat(g('vmVal')||0).toFixed(2).replace('.',',') : '',
         sig: !!vmSigData
       });
-      ['vmVei','vmHodo','vmVal','vmDesc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vmDt').valueAsDate=new Date();document.getElementById('vmTipo').value='';['vmT1','vmT2','vmT3','vmT4'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});vmSigData=null;sHas=false;document.getElementById('vmSigTap').style.display='flex';document.getElementById('vmSigDn').style.display='none';document.getElementById('vmSigW').classList.remove('on');resetVmTecs();loadVei();}else{_concluirProgresso(false,'');toast('Erro: '+(res?res.error:'?'),'err');}})
+      ['vmVei','vmHodo','vmVal','vmDesc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vmDt').valueAsDate=new Date();document.getElementById('vmTipo').value='';['vmT1','vmT2','vmT3','vmT4'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});vmSigData=null;sHas=false;vmFotos=[];document.getElementById('vmFotosPrev').innerHTML='';document.getElementById('vmSigTap').style.display='flex';document.getElementById('vmSigDn').style.display='none';document.getElementById('vmSigW').classList.remove('on');resetVmTecs();loadVei();}else{_concluirProgresso(false,'');toast('Erro: '+(res?res.error:'?'),'err');}})
     .withFailureHandler(function(e){hideLoad();if(btn)btn.disabled=false;toast('Erro: '+e.message,'err');})
+    .withSuccessHandler(function(res2){
+      if(res2&&res2.success){
+        // Upload fotos do veículo
+        var fotos=vmFotos.slice();var fi=0;var numReg=res2.num||'';
+        function nextFotoVm(){
+          if(fi>=fotos.length){toast('Registro salvo!','ok');return;}
+          var f=fotos[fi];fi++;
+          google.script.run
+            .withSuccessHandler(function(){nextFotoVm();})
+            .withFailureHandler(function(){nextFotoVm();})
+            .salvarMidia({numOS:'VEI-'+numReg,nome:f.nome,tipo:f.mime,dados:f.b64});
+        }
+        nextFotoVm();
+      }
+    })
     .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),assinatura:vmSigData||''});
 }
 var _veiData=[];var _veiFiltroVei='';var _veiFiltroTipo='';
@@ -4869,7 +4915,7 @@ function setRdFiltro(campo, val){
   }
   if(campo==='resp'){
     _rdFiltResp=val;
-    var rm={'':'rdRespAll','Carlos':'rdRespCar','Christiano':'rdRespChr','Lucas':'rdRespLuc','Sandro':'rdRespSan','João Acker':'rdRespJAc','Welinton':'rdRespWel','Everaldo':'rdRespEve','João Dias':'rdRespJDi'};
+    var rm={'':'rdRespAll','Carlos':'rdRespCar','Christiano':'rdRespChr','Lucas':'rdRespLuc','Sandro':'rdRespSan','João Acker':'rdRespJAc','Welinton':'rdRespWel','Everaldo':'rdRespEve','João Dias':'rdRespJDi','Juliomaq':'rdRespJul'};
     Object.keys(rm).forEach(function(k){var el=document.getElementById(rm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
     var el=document.getElementById('dResFiltComp');if(el)el.value=val;
   }
@@ -4897,7 +4943,7 @@ function setRdVeiFiltro(campo, val){
   }
   if(campo==='vei'){
     _rdVFiltVei=val;
-    var vm={'':'rdVVAll','Montana 2018':'rdVV1','Montana 2020':'rdVV2','Saveiro 2019':'rdVV3','Saveiro 2024':'rdVV4','Ka 2017':'rdVV5','Mobi 2024':'rdVV6'};
+    var vm={'':'rdVVAll','Montana 2018':'rdVV1','Montana 2020':'rdVV2','Saveiro 2019':'rdVV3','Saveiro 2024':'rdVV4','Ka 2017':'rdVV5','Mobi 2024':'rdVV6','MB 1318':'rdVV7','VW 24280':'rdVV8'};
     Object.keys(vm).forEach(function(k){var el=document.getElementById(vm[k]);if(el)el.style.opacity=(k===val?'1':'0.45');});
   }
   if(campo==='mes'){
@@ -4944,7 +4990,7 @@ function renderResumoDespesas(){
   rows.forEach(function(d){
     var v=parseFloat(d.valor)||0;
     stTotal+=v;
-    if(d.formaPgto==='Juliomaq Pagará'||(d.formaPgto==='Comprador Pagou'&&d.reembolsado!=='Sim'))stAPagar+=v;
+    if(d.formaPgto==='Comprador Pagou'&&d.reembolsado!=='Sim')stAPagar+=v;
   });
   var s0=document.getElementById('rdSt0'),s1=document.getElementById('rdSt1'),s2=document.getElementById('rdSt2');
   if(s0)s0.textContent='R$'+Math.round(stTotal).toLocaleString('pt-BR');
