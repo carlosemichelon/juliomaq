@@ -1751,6 +1751,44 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   </div>
 </div>
 
+<!-- ══ MODAL EDITAR OS ══════════════════════════════════════ -->
+<div id="osEditModal" style="display:none;position:fixed;inset:0;z-index:9020;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center;padding:0">
+  <div style="background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,.2)">
+    <div style="background:#1a4a7a;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:16px 16px 0 0">
+      <span style="font-size:15px;font-weight:700;color:#fff">✏️ Editar OS <span id="osEditNumLabel" style="font-size:12px;opacity:.8"></span></span>
+      <button onclick="fecharEditOS()" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit;touch-action:manipulation">✕</button>
+    </div>
+    <div style="overflow-y:auto;padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" id="osEditNum">
+      <div class="f"><label class="fl">Data</label><input class="fi" id="osEditDt" type="date"></div>
+      <div class="f"><label class="fl">Cliente</label><input class="fi" id="osEditCli" type="text"></div>
+      <div class="f"><label class="fl">Tipo</label>
+        <select class="fi" id="osEditTipo">
+          <option value="">Selecione</option>
+          <option>Cliente</option><option>Garantia</option><option>Cortesia/Comercial</option><option>Contrato Fechado</option>
+        </select>
+      </div>
+      <div class="f"><label class="fl">Técnico(s)</label><input class="fi" id="osEditTec" type="text" placeholder="Ex: Carlos, Lucas"></div>
+      <div class="f"><label class="fl">Veículo</label><input class="fi" id="osEditVei" type="text"></div>
+      <div class="f"><label class="fl">Local</label><input class="fi" id="osEditLocal" type="text"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label class="fl">KM</label><input class="fi" id="osEditKm" type="number" step="0.1"></div>
+        <div><label class="fl">Horas</label><input class="fi" id="osEditHoras" type="number" step="0.1"></div>
+        <div><label class="fl">Vl/Hora</label><input class="fi" id="osEditVHora" type="number" step="0.01"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label class="fl">Vl/KM</label><input class="fi" id="osEditVKm" type="number" step="0.01"></div>
+        <div><label class="fl">Total (R$)</label><input class="fi" id="osEditTotal" type="number" step="0.01"></div>
+      </div>
+      <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="osEditDesc" style="height:70px"></textarea></div>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd);flex-shrink:0">
+      <button onclick="salvarEditOS()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#1a4a7a;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar Alterações</button>
+      <button onclick="fecharEditOS()" style="padding:11px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL EDITAR DESPESA ══════════════════════════════════ -->
 <div id="despEditModal" style="display:none;position:fixed;inset:0;z-index:9020;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center;padding:0">
   <div style="background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,.2)">
@@ -3692,13 +3730,19 @@ function renderHistFiltrado(){
         +'<span style="font-size:9px;font-weight:700;color:#374151">Caso SF:</span>'
         +'<input type="text" class="gar-caso-inp" data-num="'+o.num+'" value="'+(o.salesforce||'')+'" placeholder="N. Caso" style="flex:1;min-width:80px;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit">'
       +'</div>'
-      +'<div class="cacts" style="grid-template-columns:1fr 1fr 1fr 1fr">'
+      +'<div style="padding:4px 14px 6px;background:#f9f9f9;border-top:1px solid #f0f0f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+        +'<span style="font-size:9px;font-weight:700;color:#374151">Nº NFS:</span>'
+        +'<input type="text" class="os-nfs-inp" data-num="'+o.num+'" value="'+(o.numNFS||'')+'" placeholder="Nº da Nota Fiscal de Serviço" style="flex:1;min-width:120px;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit">'
+      +'</div>'
+      +'<div class="cacts" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">'
         +'<button class="cact" onclick="printOS(ordens['+oidx+'])"><div class="cai">&#128196;</div><div class="cal or">PDF</div></button>'
         +'<button class="cact" onclick="waOS(ordens['+oidx+'])"><div class="cai">&#128172;</div><div class="cal wa">WA</div></button>'
-        +'<button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')" ><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orç.</div></button>'
+        +'<button class="cact" onclick="_abrirSeletorOrc(\''+o.num+'\')"><div class="cai">&#128196;</div><div class="cal" style="color:var(--or)">Orç.</div></button>'
         +'<label class="cact" style="cursor:pointer"><div class="cai">&#128247;</div><div class="cal" style="color:#1a4a7a">Fotos</div><input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_adicionarFotosOS(\''+o.num+'\',this)"></label>'
+        +'<button class="cact" onclick="abrirEditOS(\''+o.num+'\')"><div class="cai">✏️</div><div class="cal" style="color:#374151">Editar</div></button>'
       +'</div>'
       +(o.orcamentoVinculado?'<div id="orcVinc_'+o.num+'" style="padding:6px 12px 8px">'+_renderOrcVincBadge(o)+'</div>':'<div id="orcVinc_'+o.num+'"></div>')
+      +_renderOSEventosBadge(o)
       +'</div>';
     html+=card;
   }
@@ -3893,6 +3937,7 @@ document.addEventListener('change', function(e){
   var inp=e.target;
   if(inp.classList.contains('gar-cs-inp')){var num=inp.getAttribute('data-num');if(num&&inp.value.trim())atualizarNotaCS(num,inp.value.trim());return;}
   if(inp.classList.contains('gar-caso-inp')){var num3=inp.getAttribute('data-num');if(num3&&inp.value.trim())google.script.run.withSuccessHandler(function(){loadOrdens();toast('Caso SF salvo!','ok');}).withFailureHandler(function(e){toast('Erro: '+(e&&e.message?e.message:e),'err');}).atualizarCampoOS(num3,'salesforce',inp.value.trim());return;}
+  if(inp.classList.contains('os-nfs-inp')){var num4=inp.getAttribute('data-num');if(num4&&inp.value.trim()){ordens.forEach(function(o){if(o.num===num4)o.numNFS=inp.value.trim();});google.script.run.withSuccessHandler(function(){toast('Nº NFS salvo!','ok');}).withFailureHandler(function(e){toast('Erro: '+(e&&e.message?e.message:e),'err');}).atualizarCampoOS(num4,'numNFS',inp.value.trim());}return;}
 });
 function waProsp(btn){var tel=(btn.getAttribute('data-tel')||'').replace(/[^0-9]/g,'');window.open('https://wa.me/55'+tel,'_blank');}
 
@@ -5690,8 +5735,60 @@ function _toggleUsadForm(){
 function loadUsad(){
   var el=document.getElementById('usadList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
   google.script.run.withSuccessHandler(function(rows){
-    _vendRender('usadList',rows,[{k:'data',l:'Data'},{k:'marca',l:'Marca',big:true},{k:'modelo',l:'Modelo',big:true},{k:'ano',l:'Ano'},{k:'horas',l:'Horas'},{k:'preco',l:'Preço'},{k:'condicao',l:'Condição'},{k:'responsavel',l:'Resp.'},{k:'obs',l:'Obs'}]);
-  }).withFailureHandler(function(){}).getVendas('usad');
+    if(!el)return;
+    if(!rows||!rows.length){el.innerHTML='<div class="empty">Nenhum usado registrado</div>';return;}
+    var condCor={Excelente:'#1A6B2A',Bom:'#1a4a7a',Regular:'#e67e22',Ruim:'#c62828'};
+    var condBg={Excelente:'#e8f5e9',Bom:'#e3f0ff',Regular:'#fff3e0',Ruim:'#fce4e4'};
+    var html='';
+    rows.slice().reverse().forEach(function(r){
+      // Mapeamento: data responsavel marca modelo ano horas preco condicao obs salvoem
+      var marca=r.marca||'';
+      var modelo=r.modelo||'';
+      var ano=r.ano||'';
+      var horas=r.horas&&r.horas!=='-'?r.horas:'';
+      var preco=r.preco&&r.preco!=='-'?parseFloat(r.preco)||0:0;
+      var cond=r.condicao||'';
+      var resp=r.responsavel||'';
+      var obs=r.obs||'';
+      var dtFmt=_fmtVendDate(r.data||'');
+      var corCond=condCor[cond]||'#374151';
+      var bgCond=condBg[cond]||'#f5f5f5';
+
+      html+='<div class="ocard" style="margin:6px 12px">';
+      // Header
+      html+='<div class="chdr">';
+      html+='<span class="cdt">📅 '+dtFmt+'</span>';
+      if(resp) html+='<span style="font-size:10px;background:#f0f0f0;color:#555;padding:2px 7px;border-radius:8px;font-weight:600">👷 '+resp+'</span>';
+      if(cond) html+='<span style="font-size:9px;background:'+bgCond+';color:'+corCond+';padding:2px 8px;border-radius:8px;font-weight:700">'+cond+'</span>';
+      html+='</div>';
+      // Marca + Modelo
+      html+='<div style="padding:6px 14px 4px">';
+      html+='<div style="font-size:14px;font-weight:800;color:#1a1a1a">'+marca+'</div>';
+      if(modelo) html+='<div style="font-size:12px;font-weight:600;color:#555;margin-top:1px">'+modelo+'</div>';
+      html+='</div>';
+      // Grid métricas
+      var mets=[];
+      if(ano&&ano!=='-') mets.push({l:'Ano',v:ano});
+      if(horas) mets.push({l:'Horas',v:horas});
+      if(preco>0) mets.push({l:'Preço',v:fmt(preco),gr:true});
+      if(mets.length){
+        var cols=mets.length<=2?'1fr 1fr':'1fr 1fr 1fr';
+        html+='<div class="cmet" style="grid-template-columns:'+cols+'">';
+        mets.forEach(function(m){
+          html+='<div class="mc"><div class="ml">'+m.l+'</div><div class="mv'+(m.gr?' gr':'')+'" style="font-size:12px">'+m.v+'</div></div>';
+        });
+        html+='</div>';
+      }
+      // Obs
+      if(obs&&obs!=='-'){
+        html+='<div class="cdesc"><div class="cdlbl">Obs</div><div class="cdtxt">'+obs+'</div></div>';
+      }
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }).withFailureHandler(function(){
+    if(el)el.innerHTML='<div class="empty">Erro ao carregar</div>';
+  }).getVendas('usad');
 }
 
 // ══ RESUMO CLIENTES ══════════════════════════════════════════
@@ -7040,6 +7137,101 @@ function toggleReembolso(num, novoStatus){
     .withFailureHandler(function(){toast('Erro ao atualizar','err');})
     .marcarReembolso(num, novoStatus);
 }
+
+// ── Badge de eventos da agenda vinculados à OS ────────────────
+function _renderOSEventosBadge(o){
+  var raw=o.eventoAgendaId||'';
+  if(!raw) return '';
+  var ids=raw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!ids.length) return '';
+  var badges='';
+  ids.forEach(function(evId){
+    var ev=(_agEventos||[]).find(function(e){return e.id===evId;});
+    if(!ev) return;
+    var dtFmt=_fmtVendDate(ev.dataISO||ev.data||'');
+    var titulo=(ev.titulo||'').substring(0,22)+(ev.titulo&&ev.titulo.length>22?'...':'');
+    badges+='<span style="font-size:9px;background:#e3f0ff;color:#1a4a7a;padding:2px 8px;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:3px">📅 '+dtFmt+' · '+titulo+'</span>';
+  });
+  if(!badges) return '';
+  return '<div style="padding:4px 12px 8px;display:flex;flex-wrap:wrap;gap:4px;border-top:1px solid #f5f5f5">'+badges+'</div>';
+}
+// ─────────────────────────────────────────────────────────────
+
+// ── Editar OS ─────────────────────────────────────────────────
+function abrirEditOS(num){
+  var o=(ordens||[]).find(function(x){return x.num===num;});
+  if(!o){toast('OS não encontrada','err');return;}
+  document.getElementById('osEditNum').value=num;
+  document.getElementById('osEditNumLabel').textContent=num;
+  // Data: normaliza para yyyy-mm-dd
+  var dtVal='';
+  if(o.data){
+    var dm=String(o.data).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if(dm) dtVal=dm[3]+'-'+dm[2]+'-'+dm[1];
+    else{var dd2=new Date(o.data);if(!isNaN(dd2))dtVal=dd2.toISOString().slice(0,10);}
+  }
+  document.getElementById('osEditDt').value=dtVal;
+  document.getElementById('osEditCli').value=o.cliente||'';
+  document.getElementById('osEditTipo').value=o.tipo||'';
+  document.getElementById('osEditTec').value=o.tecnico||'';
+  document.getElementById('osEditVei').value=o.veiculo||'';
+  document.getElementById('osEditLocal').value=o.local||'';
+  document.getElementById('osEditKm').value=o.km||'';
+  document.getElementById('osEditHoras').value=o.horas||'';
+  document.getElementById('osEditVHora').value=o.vHora||'';
+  document.getElementById('osEditVKm').value=o.vKm||'';
+  document.getElementById('osEditTotal').value=o.vTotal||'';
+  document.getElementById('osEditDesc').value=o.descricao||'';
+  var modal=document.getElementById('osEditModal');
+  if(modal){modal.style.display='flex';document.body.style.overflow='hidden';}
+}
+
+function fecharEditOS(){
+  var modal=document.getElementById('osEditModal');
+  if(modal)modal.style.display='none';
+  document.body.style.overflow='';
+}
+
+function salvarEditOS(){
+  var num=document.getElementById('osEditNum').value;
+  if(!num){toast('Número da OS não encontrado','err');return;}
+  var dados={
+    num:num,
+    data:document.getElementById('osEditDt').value||'',
+    cliente:document.getElementById('osEditCli').value||'',
+    tipo:document.getElementById('osEditTipo').value||'',
+    tecnico:document.getElementById('osEditTec').value||'',
+    veiculo:document.getElementById('osEditVei').value||'',
+    local:document.getElementById('osEditLocal').value||'',
+    km:parseFloat(document.getElementById('osEditKm').value)||0,
+    horas:parseFloat(document.getElementById('osEditHoras').value)||0,
+    vHora:parseFloat(document.getElementById('osEditVHora').value)||0,
+    vKm:parseFloat(document.getElementById('osEditVKm').value)||0,
+    vTotal:parseFloat(document.getElementById('osEditTotal').value)||0,
+    descricao:document.getElementById('osEditDesc').value||''
+  };
+  toast('Salvando...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        // Atualiza cache local
+        ordens.forEach(function(o){
+          if(o.num===num){
+            o.data=dados.data;o.cliente=dados.cliente;o.tipo=dados.tipo;
+            o.tecnico=dados.tecnico;o.veiculo=dados.veiculo;o.local=dados.local;
+            o.km=dados.km;o.horas=dados.horas;o.vHora=dados.vHora;
+            o.vKm=dados.vKm;o.vTotal=dados.vTotal;o.descricao=dados.descricao;
+          }
+        });
+        fecharEditOS();
+        renderHistFiltrado();
+        toast('OS '+num+' atualizada!','ok');
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .editarOS(dados);
+}
+// ─────────────────────────────────────────────────────────────
 
 // ── Editar Despesa ────────────────────────────────────────────
 function abrirEditDespesa(num){
