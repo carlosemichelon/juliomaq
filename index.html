@@ -2004,7 +2004,7 @@ function _carregarTudo(cb){
       if(_cache.garantias)    { renderGarantias(_cache.garantias); }
       if(_cache.atividades)   { _atividades = _cache.atividades; renderAtiv(); }
       if(_cache.despesas)     { despesas = _cache.despesas; _despResRows = _cache.despesas; renderDesps(); }
-      if(_cache.agendaEventos){ _agEventos = _cache.agendaEventos; renderAgEventos(); if(_agView==='cal') renderAgCal(); }
+      if(_cache.agendaEventos){ _agEventos = _cache.agendaEventos; renderAgEventos(); if(_agView==='cal') renderAgCal(); renderHistFiltrado(); }
       if(_cache.cobrancas)    { _cobranças = _cache.cobrancas; renderCobr(); }
       if(_cache.financeiro)   { _cacheInjectFin(_cache.financeiro); }
 
@@ -2024,7 +2024,7 @@ function _carregarTudo(cb){
     .withFailureHandler(function(e){
       setConn('r','Erro ao conectar: '+e.message);
       // Fallback: carregar individualmente
-      loadOrdens(); loadVei();
+      loadOrdens(); loadVei(); loadAgEventos();
     })
     .lerTudoPlanilha();
 }
@@ -7399,6 +7399,8 @@ function loadAgEventos(){
   google.script.run
     .withSuccessHandler(function(rows){
       _agEventos=rows||[];
+      // Re-renderiza Resumo OS para mostrar badges de eventos
+      if(typeof renderHistFiltrado==='function' && (ordens||[]).length) renderHistFiltrado();
       var hoje=new Date();hoje.setHours(0,0,0,0);
       var thisMes=hoje.getMonth(),thisAno=hoje.getFullYear();
       var total=rows.length,mes=0,prox=0;
