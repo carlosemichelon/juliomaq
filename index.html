@@ -2493,6 +2493,27 @@ function printOS(o){
   html+='<div class="sec"><div class="sh">Veículo</div><table style="width:100%;border-collapse:collapse">'+R('Veículo',o.veiculo)+R('Hodômetro',(o.kmVeiculo||'--')+' km')+R('KM percorrido',(o.km||0)+' km')+R('Horas trabalhadas',(o.horas||0)+' h')+'</table></div>';
   html+='</div>';
 
+  // ── NFS / AGENDA / ORÇAMENTO ──
+  var hasExtra=(o.numNFS||o.eventoAgendaId||o.orcamentoVinculado);
+  if(hasExtra){
+    html+='<div class="sec"><div class="sh">Referências</div><table style="width:100%;border-collapse:collapse">';
+    if(o.numNFS&&o.numNFS!=='undefined'&&o.numNFS.trim())
+      html+=R('Nº NFS',o.numNFS.trim());
+    if(o.orcamentoVinculado&&o.orcamentoVinculado!=='undefined'&&o.orcamentoVinculado.trim())
+      html+=R('Orçamento',o.orcamentoVinculado.trim());
+    if(o.eventoAgendaId&&o.eventoAgendaId!=='undefined'){
+      var evIds=o.eventoAgendaId.split(',').map(function(s){return s.trim();}).filter(Boolean);
+      var evDatas=evIds.map(function(eid){
+        var ev=(_agEventos||[]).find(function(e){return e.id===eid;});
+        if(!ev) return eid;
+        var dt=_fmtVendDate(ev.dataISO||ev.data||'');
+        return dt+(ev.titulo?' · '+(ev.titulo.substring(0,30)):'');
+      }).join(' | ');
+      if(evDatas) html+=R('Datas Agenda',evDatas);
+    }
+    html+='</table></div>';
+  }
+
   // ── SERVIÇO ──
   html+='<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>Serviço</span><span style="background:'+cor+';font-size:10px;padding:2px 10px;border-radius:10px;font-weight:700">'+(o.tipo||'--')+'</span></div>';
   html+='<div style="padding:10px 14px;font-size:13px;line-height:1.7;border-left:4px solid '+cor+';margin:6px;background:#f5faff;border-radius:3px">'+(o.descricao||'Sem descrição')+'</div></div>';
