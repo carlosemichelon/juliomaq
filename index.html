@@ -2563,17 +2563,21 @@ function printOS(o){
   html+='<div class="vc" style="background:#e8f5e9"><div style="font-size:10px;color:#1A6B2A;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total</div><div style="font-size:24px;font-weight:900;color:#1A6B2A">'+fmt(vT)+'</div></div>';
   html+='</div></div>';
 
-  // ── ASSINATURA + FOTOS ──
-  html+='<div class="g2" style="flex:1">';
-  // Assinatura
-  html+='<div class="sec" style="display:flex;flex-direction:column"><div class="sh">Assinatura do Cliente</div>';
-  html+='<div style="display:flex;align-items:center;justify-content:center;padding:6px;min-height:36px">';
-  if(sig){html+='<img src="'+sig+'" style="max-height:30px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">';}
-  else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:4px 20px;color:#bbb;font-size:11px;text-align:center">Sem assinatura</div>';}
+  // ── ASSINATURA + FOTOS ── (coluna: assinatura pequena em cima, fotos embaixo)
+  html+='<div style="flex:1;display:flex;flex-direction:column;gap:6px">';
+
+  // Assinatura — 1/3 da altura
+  html+='<div class="sec" style="flex:1;display:flex;flex-direction:column">';
+  html+='<div class="sh">Assinatura do Cliente</div>';
+  html+='<div style="display:flex;align-items:center;justify-content:center;padding:6px;flex:1">';
+  if(sig){html+='<img src="'+sig+'" style="max-height:44px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">';}
+  else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:4px 20px;color:#bbb;font-size:11px">Sem assinatura</div>';}
   html+='</div></div>';
-  // Fotos
+
+  // Fotos — 2/3 da altura
   var fArr=(o.fotosArr&&o.fotosArr.length)?o.fotosArr:[];
-  html+='<div class="sec" style="display:flex;flex-direction:column;flex:1"><div class="sh">Fotos ('+fArr.length+')</div>';
+  html+='<div class="sec" style="flex:2;display:flex;flex-direction:column">';
+  html+='<div class="sh">Fotos ('+fArr.length+')</div>';
   html+='<div style="padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;flex:1">';
   if(fArr.length){
     fArr.slice(0,9).forEach(function(url){
@@ -2583,7 +2587,8 @@ function printOS(o){
     html+='<div style="color:#bbb;font-size:12px;padding:16px">Nenhuma foto</div>';
   }
   html+='</div></div>';
-  html+='</div>';
+
+  html+='</div>'; // fim coluna assinatura+fotos
 
   // ── RODAPÉ ──
   html+='<div style="text-align:center;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px;margin-top:auto">';
