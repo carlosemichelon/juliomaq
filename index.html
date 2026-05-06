@@ -7078,30 +7078,31 @@ function renderAgCal(){
 
     html += '<div style="min-height:108px;background:'+cellBg+';border-right:1px solid #efefef;border-bottom:1px solid #efefef;border-left:'+borderLeft+';padding:4px 3px;overflow:hidden;position:relative">';
 
-    // Número do dia
+    // Chave do dia — definida antes dos pills
+    var _diaKey = ano+'-'+(('0'+(mes+1)).slice(-2))+'-'+(('0'+d2).slice(-2));
+
+    // Número do dia (clicável)
     if(isHoje){
-      html += '<div style="width:26px;height:26px;background:#1A6B2A;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin:0 auto 3px">'+d2+'</div>';
+      html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="width:26px;height:26px;background:#1A6B2A;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin:0 auto 3px;cursor:pointer">'+d2+'</div>';
     } else {
       var numCor = isPast ? '#c0c0c0' : (isWeekend ? '#aaa' : '#222');
-      html += '<div style="text-align:center;font-size:14px;font-weight:700;color:'+numCor+';margin-bottom:3px">'+d2+'</div>';
+      html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="text-align:center;font-size:14px;font-weight:700;color:'+numCor+';margin-bottom:3px;cursor:pointer">'+d2+'</div>';
     }
 
-    // Eventos (máx 2 visíveis)
+    // Eventos (máx 3 visíveis)
     var maxShow = 3;
     evs.slice(0, maxShow).forEach(function(ev){
       var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#E85A0C' : '#1A6B2A';
       var temOS=_evOSMap[ev.id]&&_evOSMap[ev.id].length>0;
-      var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? _fmtHora(ev.horaInicio)+' ' : '';
-      var label = hora + (ev.titulo||'');
-      var _evIdx=(_agEventos||[]).indexOf(ev);
+      var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ' '+_fmtHora(ev.horaInicio) : '';
+      var label = (ev.titulo||'')+hora;
       var _osBadge=temOS?'<span style="font-size:8px;background:#E85A0C;border-radius:3px;padding:0 3px;margin-right:2px;font-weight:800;color:#fff">OS</span>':'';
       html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_osBadge+_escHtml(label)+'</div>';
     });
 
     // Overflow
     if(evs.length > maxShow){
-      var _diaKey = ano+'-'+(('0'+(mes+1)).slice(-2))+'-'+(('0'+d2).slice(-2));
       html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="font-size:10px;color:#1a4a7a;font-weight:800;text-align:center;cursor:pointer;background:#dde8ff;border-radius:4px;padding:2px 3px;margin-top:1px">+'+(evs.length-maxShow)+' mais</div>';
     }
 
