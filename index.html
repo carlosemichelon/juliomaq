@@ -6896,6 +6896,7 @@ function toggleReembolso(num, novoStatus){
 var _agEventos=[], _agFiltro='todos', _agEditandoId='';
 var _evOSMap={};         // {eventoId: [numOS, ...]}
 var _agCriandoOSParaEvento=null; // evento ativo ao clicar "Criar OS"
+var _agEventoAtivo=null;         // evento aberto no modal de detalhe ou edição
 
 function toggleAgHora(diaInt){
   var b=document.getElementById('agHoraBox');if(b)b.style.display=diaInt?'none':'block';
@@ -7095,7 +7096,7 @@ function renderAgCal(){
       var label = hora + (ev.titulo||'');
       var _evIdx=(_agEventos||[]).indexOf(ev);
       var _osBadge=temOS?'<span style="font-size:8px;background:#E85A0C;border-radius:3px;padding:0 3px;margin-right:2px;font-weight:800;color:#fff">OS</span>':'';
-      html += '<div onclick="_abrirEvIdx('+_evIdx+')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_osBadge+_escHtml(label)+'</div>';
+      html += '<div onclick="_abrirDiaModal(\''+_diaKey+'\')" style="background:'+evBg+';color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;line-height:1.5" title="'+_escHtml(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">'+_osBadge+_escHtml(label)+'</div>';
     });
 
     // Overflow
@@ -7163,6 +7164,7 @@ function fecharDiaModal(){
 
 // ── Editar evento Agenda ──────────────────────────────────────
 function abrirEditEvento(ev){
+  _agEventoAtivo = ev;
   _agEditandoId = ev.id||'';
   document.getElementById('agEditId').value = _agEditandoId;
   document.getElementById('agEditTit').value = ev.titulo||'';
@@ -7241,6 +7243,7 @@ function salvarEdicaoEvento(){
 
 function _abrirEvIdx(i){var ev=(_agEventos||[])[i];if(ev){fecharDiaModal();abrirDetalheEvento(ev);}}
 function abrirDetalheEvento(ev){
+  _agEventoAtivo = ev;
   var modal=document.getElementById('agEvModal');
   var box=document.getElementById('agEvContent');
   if(!modal||!box) return;
@@ -7531,15 +7534,8 @@ function _recarregarOSSectionAberta(eventoId){
 
 // ── Criar OS a partir de um evento da agenda ─────────────────
 function criarOSParaEvento(){
-  // Identifica o evento ativo (detalhe ou edição)
-  var evId = _agEditandoId;
-  var ev = null;
-  if(evId) ev=(_agEventos||[]).find(function(e){return e.id===evId;});
-  if(!ev){
-    // Tenta pegar do modal de detalhe via _seletorOSEventoId ou outro indicador
-    var sec=document.getElementById('agEvOSSection');
-    if(sec&&sec._ev) ev=sec._ev;
-  }
+  // Usa o evento ativo (detalhe ou edição)
+  var ev = _agEventoAtivo;
   _agCriandoOSParaEvento = ev;
   // Fecha modais da agenda
   fecharDetalheEvento();
@@ -7554,11 +7550,9 @@ function criarOSParaEvento(){
       if(fDt&&ev.dataISO) fDt.value=ev.dataISO;
       var fDesc=document.getElementById('fDesc');
       if(fDesc&&ev.descricao) fDesc.value=ev.descricao;
-      // Responsável: tenta selecionar técnico pelo nome do evento
-      var fTec=document.getElementById('fTec');
       if(ev.responsavel){
         var tecBtn=document.getElementById('tec_'+ev.responsavel);
-        if(tecBtn){togTec(ev.responsavel);}
+        if(tecBtn) togTec(ev.responsavel);
       }
       toast('Campos pré-preenchidos com dados do evento','ok',3000);
     }, 200);
