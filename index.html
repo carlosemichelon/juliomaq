@@ -341,7 +341,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="stat"><div class="stn" id="st2">-</div><div class="stl">Faturado</div></div>
   </div>
   <div id="resumoBox" style="display:none;background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">
-    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">&#128202;</div>Resumo por Tipo</div>
+    <div class="sh" style="background:#374151"><div class="si" style="background:rgba(255,255,255,.1)">📊</div>Resumo por Tipo<span id="resumoMesLabel" style="margin-left:auto;font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:10px;font-weight:700"></span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f5f5f5">
       <div style="padding:8px 14px;border-right:1px solid #f5f5f5"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">KM Total</div><div style="font-size:16px;font-weight:700;color:var(--gr)" id="rKm">0 km</div></div>
       <div style="padding:8px 14px"><div style="font-size:9px;color:var(--mu);text-transform:uppercase">Horas</div><div style="font-size:16px;font-weight:700;color:var(--gr)" id="rH">0 h</div></div>
@@ -3514,6 +3514,7 @@ function renderHistFiltrado(){
   var sig=0,total=0;lista.forEach(function(o){if(o.sigUrl&&o.sigUrl.length>4)sig++;total+=o.vTotal||0;});
   s('st0',lista.length);s('st1',sig);s('st2','R$'+Math.round(total).toLocaleString('pt-BR'));
   var rb=document.getElementById('resumoBox');if(rb)rb.style.display=lista.length?'block':'none';
+  var rml=document.getElementById('resumoMesLabel');if(rml)rml.textContent=filtroMes?_osMesLabel(filtroMes):'';
   var kmT=0,hT=0;lista.forEach(function(o){kmT+=o.km||0;hT+=o.horas||0;});
   s('rKm',kmT.toFixed(0)+' km');s('rH',hT.toFixed(1)+' h');
   var tCor={Cliente:'#e8f5ec',Garantia:'#fff3e0','Cortesia/Comercial':'#e3f2fd','Contrato Fechado':'#f3e5f5'};
@@ -7060,7 +7061,7 @@ function renderAgCal(){
 
   // Células vazias antes do dia 1
   for(var i=0; i<primDia; i++){
-    html += '<div style="min-height:84px;background:#fafafa;border-right:1px solid #efefef;border-bottom:1px solid #efefef"></div>';
+    html += '<div style="min-height:108px;background:#fafafa;border-right:1px solid #efefef;border-bottom:1px solid #efefef"></div>';
   }
 
   for(var d2=1; d2<=ultimoDia; d2++){
@@ -7074,7 +7075,7 @@ function renderAgCal(){
     var cellBg = isHoje ? '#e8f5e9' : (isWeekend ? '#f4f4f4' : '#fff');
     var borderLeft = isHoje ? '3px solid #1A6B2A' : '1px solid #efefef';
 
-    html += '<div style="min-height:84px;background:'+cellBg+';border-right:1px solid #efefef;border-bottom:1px solid #efefef;border-left:'+borderLeft+';padding:4px 3px;overflow:hidden;position:relative">';
+    html += '<div style="min-height:108px;background:'+cellBg+';border-right:1px solid #efefef;border-bottom:1px solid #efefef;border-left:'+borderLeft+';padding:4px 3px;overflow:hidden;position:relative">';
 
     // Número do dia
     if(isHoje){
@@ -7085,7 +7086,7 @@ function renderAgCal(){
     }
 
     // Eventos (máx 2 visíveis)
-    var maxShow = 2;
+    var maxShow = 3;
     evs.slice(0, maxShow).forEach(function(ev){
       var d_=_parseAgDate(ev.dataISO||ev.data||'');var fut=d_?d_>=hoje:false;
       var evBg = fut ? '#E85A0C' : '#1A6B2A';
@@ -7111,7 +7112,7 @@ function renderAgCal(){
   var rem = total % 7;
   if(rem > 0){
     for(var j=0; j<7-rem; j++){
-      html += '<div style="min-height:84px;background:#fafafa;border-right:1px solid #efefef;border-bottom:1px solid #efefef"></div>';
+      html += '<div style="min-height:108px;background:#fafafa;border-right:1px solid #efefef;border-bottom:1px solid #efefef"></div>';
     }
   }
 
