@@ -2466,53 +2466,70 @@ function printOS(o){
   var vT=parseFloat(o.vTotal)||0,vH=parseFloat(o.vHora)||0,vK=parseFloat(o.vKm)||0;
   var tCor={Garantia:'#e65c00',Cliente:'#1A6B2A','Cortesia/Comercial':'#1a4a7a','Contrato Fechado':'#6a0dad'};
   var cor=tCor[o.tipo]||'#1A6B2A';
-  function R(l,v){return '<tr><td style="font-size:6.5px;color:#333;text-transform:uppercase;padding:2px 6px;width:38%;border-bottom:1px solid #e0e0e0"><b>'+l+'</b></td><td style="font-size:9px;font-weight:600;padding:2px 6px;border-bottom:1px solid #e0e0e0;text-align:right;color:#111">'+(v||'--')+'</td></tr>';}
-  var win=window.open('','_blank','width=820,height:580');
+  function R(l,v){return '<tr><td style="font-size:10px;color:#555;text-transform:uppercase;padding:5px 10px;width:36%;border-bottom:1px solid #e8e8e8;font-weight:600">'+l+'</td><td style="font-size:13px;font-weight:700;padding:5px 10px;border-bottom:1px solid #e8e8e8;text-align:right;color:#111">'+(v||'--')+'</td></tr>';}
+  var win=window.open('','_blank','width=900,height=1200');
   if(!win){toast('Libere pop-ups para imprimir','warn',5000);return;}
   win.document.open();
-  // Half-A4 (148mm x 210mm = half of A4 landscape, or top-half of portrait)
-  // Layout: compact header + 2-col grid + small sig area
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8">';
   html+='<style>*{box-sizing:border-box;margin:0;padding:0}';
-  html+='body{font-family:Segoe UI,Arial,sans-serif;background:#fff;width:190mm;padding:4mm;display:flex;flex-direction:column;gap:3px;max-height:135mm;overflow:hidden}';
-  html+='@media print{@page{size:A4 portrait;margin:0}body{padding:4mm;width:190mm;height:135mm;max-height:135mm}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}';
-  html+='.sec{border:1px solid #ccc;border-radius:2px;overflow:hidden}.sh{background:#1A6B2A;color:#fff;padding:2px 6px;font-size:7px;font-weight:700}.g2{display:grid;grid-template-columns:1fr 1fr;gap:3px}.v3{display:grid;grid-template-columns:1fr 1fr 1fr}.vc{padding:3px 6px;border-right:1px solid #eee}.vc:last-child{border:none}';
+  html+='body{font-family:Segoe UI,Arial,sans-serif;background:#fff;width:210mm;min-height:297mm;padding:10mm;display:flex;flex-direction:column;gap:6px}';
+  html+='@media print{@page{size:A4 portrait;margin:0}body{padding:10mm;width:210mm;min-height:297mm}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}';
+  html+='.sec{border:1px solid #ddd;border-radius:4px;overflow:hidden;margin-bottom:0}';
+  html+='.sh{background:#1A6B2A;color:#fff;padding:6px 12px;font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}';
+  html+='.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}';
+  html+='.v3{display:grid;grid-template-columns:1fr 1fr 1fr}';
+  html+='.vc{padding:10px 14px;border-right:1px solid #eee}.vc:last-child{border:none}';
   html+='</style></head><body>';
-  html+='<div style="background:#1A6B2A;color:#fff;padding:3px 8px;display:flex;align-items:center;justify-content:space-between;border-radius:2px">';
-  html+='<div style="display:flex;align-items:center;gap:6px"><img src="data:image/svg+xml;base64,'+SVG64+'" style="height:20px"><span style="font-size:12px;font-weight:700">Juliomaq</span></div>';
-  html+='<div style="text-align:right"><div style="font-size:6px;opacity:.8;text-transform:uppercase">Ordem de Servico</div><div style="background:#E85A0C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;display:inline-block">'+(o.num||'OS')+'</div></div></div>';
-  html+='<div style="height:2px;background:#E85A0C"></div>';
-  html+='<div class="g2"><div class="sec"><div class="sh">ATENDIMENTO</div><table style="width:100%;border-collapse:collapse">'+R('Cliente',o.cliente)+R('Tecnico',o.tecnico)+R('Data',o.data)+R('Local',o.local)+'</table></div>';
-  html+='<div class="sec"><div class="sh">VEICULO</div><table style="width:100%;border-collapse:collapse">'+R('Veiculo',o.veiculo)+R('Hodometro',(o.kmVeiculo||'--')+' km')+R('KM',(o.quilometragem||o.km||0)+' km')+R('Horas',(o.horas||0)+' h')+'</table></div></div>';
-  html+='<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>SERVICO</span><span style="background:'+cor+';font-size:6px;padding:1px 5px;border-radius:8px">'+(o.tipo||'--')+'</span></div>';
-  html+='<div style="padding:3px 6px;font-size:8.5px;line-height:1.4;border-left:3px solid #1A6B2A;margin:2px;background:#f0f7ff;border-radius:2px">'+(o.descricao||'Sem descricao')+'</div></div>';
-  html+='<div class="sec"><div class="sh">VALOR</div><div class="v3">';
-  html+='<div class="vc"><div style="font-size:6.5px;color:#333;font-weight:700">Mao de obra</div><div style="font-size:10px;font-weight:700;color:#111">'+fmt(vH)+'</div></div>';
-  html+='<div class="vc" style="background:#dceeff"><div style="font-size:6.5px;color:#0d47a1;font-weight:700;text-transform:uppercase">Deslocamento</div><div style="font-size:10px;font-weight:700;color:#0d47a1">'+fmt(vK)+'</div></div>';
-  html+='<div class="vc" style="background:#d4edda"><div style="font-size:6.5px;color:#1A6B2A;font-weight:700">TOTAL</div><div style="font-size:14px;font-weight:700;color:#1A6B2A">'+fmt(vT)+'</div></div></div></div>';
-  // Bloco assinatura + fotos lado a lado
-  html+='<div class="sec" style="display:flex;flex-direction:row;align-items:stretch;gap:0">';
-  // Aba lateral ASSINATURA
-  html+='<div class="sh" style="writing-mode:vertical-lr;text-orientation:mixed;padding:6px 3px;min-width:18px">ASSINATURA</div>';
+
+  // ── HEADER ──
+  html+='<div style="background:#1A6B2A;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:6px">';
+  html+='<div style="display:flex;align-items:center;gap:10px"><img src="data:image/svg+xml;base64,'+SVG64+'" style="height:32px"><span style="font-size:18px;font-weight:800;letter-spacing:1px">Juliomaq</span></div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:1px">Ordem de Serviço</div><div style="background:#E85A0C;font-size:16px;font-weight:800;padding:3px 14px;border-radius:12px;display:inline-block;margin-top:3px">'+(o.num||'OS')+'</div></div></div>';
+  html+='<div style="height:3px;background:#E85A0C;border-radius:2px"></div>';
+
+  // ── ATENDIMENTO + VEICULO ──
+  html+='<div class="g2">';
+  html+='<div class="sec"><div class="sh">Atendimento</div><table style="width:100%;border-collapse:collapse">'+R('Cliente',o.cliente)+R('Técnico',o.tecnico)+R('Data',o.data)+R('Local',o.local||'--')+'</table></div>';
+  html+='<div class="sec"><div class="sh">Veículo</div><table style="width:100%;border-collapse:collapse">'+R('Veículo',o.veiculo)+R('Hodômetro',(o.kmVeiculo||'--')+' km')+R('KM percorrido',(o.km||0)+' km')+R('Horas trabalhadas',(o.horas||0)+' h')+'</table></div>';
+  html+='</div>';
+
+  // ── SERVIÇO ──
+  html+='<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>Serviço</span><span style="background:'+cor+';font-size:10px;padding:2px 10px;border-radius:10px;font-weight:700">'+(o.tipo||'--')+'</span></div>';
+  html+='<div style="padding:10px 14px;font-size:13px;line-height:1.7;border-left:4px solid '+cor+';margin:6px;background:#f5faff;border-radius:3px">'+(o.descricao||'Sem descrição')+'</div></div>';
+
+  // ── VALOR ──
+  html+='<div class="sec"><div class="sh">Valor</div><div class="v3">';
+  html+='<div class="vc"><div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:4px">Mão de Obra</div><div style="font-size:18px;font-weight:800;color:#111">'+fmt(vH)+'</div></div>';
+  html+='<div class="vc" style="background:#e8f4ff"><div style="font-size:10px;color:#0d47a1;font-weight:700;text-transform:uppercase;margin-bottom:4px">Deslocamento</div><div style="font-size:18px;font-weight:800;color:#0d47a1">'+fmt(vK)+'</div></div>';
+  html+='<div class="vc" style="background:#e8f5e9"><div style="font-size:10px;color:#1A6B2A;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total</div><div style="font-size:24px;font-weight:900;color:#1A6B2A">'+fmt(vT)+'</div></div>';
+  html+='</div></div>';
+
+  // ── ASSINATURA + FOTOS ──
+  html+='<div class="g2" style="flex:1">';
   // Assinatura
-  html+='<div style="flex:1;display:flex;align-items:center;padding:4px 8px;min-height:44px;border-right:1px solid #eee">';
-  if(sig){html+='<img src="'+sig+'" style="max-height:44px;max-width:120px;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:2px">';}
-  else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:6px 20px;color:#aaa;font-size:9px;text-align:center">Sem assinatura</div>';}
-  html+='</div>';
-  // Fotos da OS
+  html+='<div class="sec" style="display:flex;flex-direction:column"><div class="sh">Assinatura do Cliente</div>';
+  html+='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:100px">';
+  if(sig){html+='<img src="'+sig+'" style="max-height:90px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:4px;padding:4px">';}
+  else{html+='<div style="border:2px dashed #ccc;border-radius:6px;padding:16px 32px;color:#bbb;font-size:13px;text-align:center">Sem assinatura</div>';}
+  html+='</div></div>';
+  // Fotos
   var fArr=(o.fotosArr&&o.fotosArr.length)?o.fotosArr:[];
+  html+='<div class="sec" style="display:flex;flex-direction:column"><div class="sh">Fotos ('+fArr.length+')</div>';
+  html+='<div style="padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;flex:1">';
   if(fArr.length){
-    html+='<div style="padding:4px 6px;border-right:1px solid #eee;display:flex;flex-wrap:wrap;gap:4px;align-items:center;max-width:200px">';
-    html+='<div style="width:100%;font-size:6.5px;color:#888;text-transform:uppercase;font-weight:700;margin-bottom:2px">Fotos ('+fArr.length+')</div>';
     fArr.slice(0,6).forEach(function(url){
-            html+='<img src="'+url+'" style="width:44px;height:44px;object-fit:cover;border-radius:3px;border:1px solid #ddd">';
+      html+='<img src="'+url+'" style="width:70px;height:70px;object-fit:cover;border-radius:4px;border:1px solid #ddd">';
     });
-    html+='</div>';
+  } else {
+    html+='<div style="color:#bbb;font-size:12px;padding:16px">Nenhuma foto</div>';
   }
-  // Local / Data
-  html+='<div style="padding:4px 8px;min-width:80px;font-size:8px"><div style="color:#888;text-transform:uppercase;font-size:6.5px">Local</div><div style="font-weight:600">'+(o.local||'--')+'</div><div style="color:#888;text-transform:uppercase;font-size:6.5px;margin-top:3px">Data</div><div style="font-weight:600">'+(o.data||'--')+'</div></div>';
+  html+='</div></div>';
   html+='</div>';
-  html+='<div style="text-align:center;font-size:6.5px;color:#333;border-top:1px solid #ccc;padding-top:2px">'+(o.num||'')+' | Juliomaq | '+new Date().toLocaleString('pt-BR')+' | Total: '+fmt(vT)+'</div>';
+
+  // ── RODAPÉ ──
+  html+='<div style="text-align:center;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px;margin-top:auto">';
+  html+=(o.num||'')+' &nbsp;|&nbsp; Juliomaq &nbsp;|&nbsp; Emitido em: '+new Date().toLocaleString('pt-BR')+' &nbsp;|&nbsp; Total: '+fmt(vT);
+  html+='</div>';
   html+='\n</body></html>';
   win.document.write(html);win.document.close();
   if(isIOS()){toast('iOS: no Safari, toque em Compartilhar → Imprimir','ok',6000);}
