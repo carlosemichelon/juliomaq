@@ -2560,13 +2560,17 @@ function printOS(o){
       html+=R('Orçamento',o.orcamentoVinculado.trim());
     if(o.eventoAgendaId&&o.eventoAgendaId!=='undefined'){
       var evIds=o.eventoAgendaId.split(',').map(function(s){return s.trim();}).filter(Boolean);
-      var evDatas=evIds.map(function(eid){
+      var evPills=evIds.map(function(eid){
         var ev=(_agEventos||[]).find(function(e){return e.id===eid;});
-        if(!ev) return eid;
+        if(!ev) return '';
         var dt=_fmtVendDate(ev.dataISO||ev.data||'');
-        return dt+(ev.titulo?' · '+(ev.titulo.substring(0,30)):'');
-      }).join(' | ');
-      if(evDatas) html+=R('Datas Agenda',evDatas);
+        var titulo=ev.titulo?ev.titulo.substring(0,35):'';
+        return '<span style="display:inline-block;background:#e3f0ff;color:#1a4a7a;border-radius:6px;padding:2px 8px;margin:2px 3px 2px 0;font-size:10px;font-weight:700;white-space:nowrap"><span style="color:#888;font-weight:600;font-size:9px">'+dt+'</span>'+(titulo?' <span style="color:#1a4a7a">'+titulo+'</span>':'')+'</span>';
+      }).filter(Boolean).join('');
+      if(evPills){
+        html+='<tr><td style="font-size:10px;font-weight:700;color:var(--mu);padding:5px 10px;border-bottom:1px solid #e8e8e8;white-space:nowrap;text-align:left">Datas Agenda</td>';
+        html+='<td style="padding:5px 10px;border-bottom:1px solid #e8e8e8;line-height:1.8">'+evPills+'</td></tr>';
+      }
     }
     html+='</table></div>';
   }
@@ -2579,7 +2583,7 @@ function printOS(o){
   html+='<div class="sec"><div class="sh">Valor</div><div class="v3">';
   html+='<div class="vc"><div style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:2px">Mão de Obra</div><div style="font-size:13px;font-weight:800;color:#111">'+fmt(vH)+'</div></div>';
   html+='<div class="vc" style="background:#e8f4ff"><div style="font-size:8px;color:#0d47a1;font-weight:700;text-transform:uppercase;margin-bottom:2px">Deslocamento</div><div style="font-size:13px;font-weight:800;color:#0d47a1">'+fmt(vK)+'</div></div>';
-  html+='<div class="vc" style="background:#e8f5e9"><div style="font-size:8px;color:#1A6B2A;font-weight:700;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:18px;font-weight:900;color:#1A6B2A">'+fmt(vT)+'</div></div>';
+  html+='<div class="vc" style="background:#e8f5e9"><div style="font-size:8px;color:#1A6B2A;font-weight:700;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:13px;font-weight:900;color:#1A6B2A">'+fmt(vT)+'</div></div>';
   html+='</div></div>';
 
   // ── ASSINATURA + FOTOS ── (coluna: assinatura pequena em cima, fotos embaixo)
