@@ -5838,7 +5838,7 @@ function loadParqueM(){
       var html='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;padding:4px 0 6px;letter-spacing:.5px">Últimos registros</div>';
       rows.slice(0,5).forEach(function(r){
         var mqs=[];try{mqs=JSON.parse(r.maquinas||'[]');}catch(e){}
-        var dtFmt=_fmtVendDate(r.data||r.parqDt||'');
+        var dtFmt=r.data||_fmtVendDate(r.salvoEm||'');
         var resp=r.responsavel||r.parqResp||'';
         var area=r.area||r.parqArea||'';
         var culturas=r.culturas||r.parqCulturas||'';
@@ -5972,49 +5972,71 @@ function loadUsad(){
   google.script.run.withSuccessHandler(function(rows){
     if(!el)return;
     if(!rows||!rows.length){el.innerHTML='<div class="empty">Nenhum usado registrado</div>';return;}
+
     var condCor={Excelente:'#1A6B2A',Bom:'#1a4a7a',Regular:'#e67e22',Ruim:'#c62828'};
     var condBg={Excelente:'#e8f5e9',Bom:'#e3f0ff',Regular:'#fff3e0',Ruim:'#fce4e4'};
-    var stCor={Disponivel:'#1A6B2A',Vendido:'#374151','Em negociacao':'#e67e22',Reservado:'#1a4a7a'};
-    var stBg={Disponivel:'#e8f5e9',Vendido:'#f5f5f5','Em negociacao':'#fff3e0',Reservado:'#e3f0ff'};
+    var stCor={Disponivel:'#1A6B2A',Disponível:'#1A6B2A',Vendido:'#374151','Em negociacao':'#e67e22','Em negociação':'#e67e22',Reservado:'#1a4a7a'};
+    var stBg={Disponivel:'#e8f5e9',Disponível:'#e8f5e9',Vendido:'#f5f5f5','Em negociacao':'#fff3e0','Em negociação':'#fff3e0',Reservado:'#e3f0ff'};
+
     var html='';
     rows.slice().reverse().forEach(function(r,idx){
       var marca=r.marca||'';
       var modelo=r.modelo||'';
-      var ano=r.ano||'';
-      var horas=r.horas&&r.horas!=='-'?r.horas:'';
-      var preco=r.preco&&r.preco!=='-'?parseFloat(r.preco)||0:0;
-      var cond=r.condicao||'';
+      var ano=(r.ano&&r.ano!=='-'&&r.ano!=='0')?r.ano:'';
+      var serie=r.horas&&r.horas!=='-'?String(r.horas).trim():''; // col Horas = número de série
+      var precoPedido=r.condicao&&!isNaN(parseFloat(r.condicao))?parseFloat(r.condicao):0; // col Condicao = preço pedido
+      var precoReal=r.preco&&r.preco!=='-'?parseFloat(r.preco)||0:0;
+      // col Obs = condição real da máquina (Excelente/Bom/Regular/Ruim/Em análise)
+      var obsRaw=r.obs||'';
+      var cond=condCor[obsRaw]?obsRaw:''; // é uma condição conhecida?
+      var obsTexto=cond?'':(obsRaw&&obsRaw!=='-'?obsRaw:''); // se não é condição, é obs
       var resp=r.responsavel||'';
-      var obs=r.obs||'';
       var link=r.linkAnuncio||r.LinkAnuncio||'';
       var status=r.status||r.Status||'Disponivel';
       var dtFmt=_fmtVendDate(r.data||'');
-      var corCond=condCor[cond]||'#374151';
-      var bgCond=condBg[cond]||'#f5f5f5';
-      var corSt=stCor[status]||'#374151';
-      var bgSt=stBg[status]||'#f5f5f5';
       var numUsad=r.num||('usad-'+idx);
       var props=[];try{props=JSON.parse(r.propostas||r.Propostas||'[]');}catch(e){}
 
-      html+='<div style="border:1px solid var(--bd);border-left:4px solid '+corCond+';border-radius:0 10px 10px 0;background:#fff;margin:6px 12px;overflow:hidden">';
+      // Cor borda: pela condição real se disponível, senão por status
+      var corBorda=condCor[cond]||(stCor[status]||'#e65100');
+      var corSt=stCor[status]||'#374151';
+      var bgSt=stBg[status]||'#f5f5f5';
+      var bgCond=condBg[cond]||'';
+      var corCond=condCor[cond]||'';
+
+      html+='<div style="border:1px solid var(--bd);border-left:4px solid '+corBorda+';border-radius:0 10px 10px 0;background:#fff;margin:6px 12px;overflow:hidden">';
+
+      // ── Header ──
       html+='<div style="padding:10px 12px 8px">';
-      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">';
       html+='<div style="flex:1;min-width:0">';
       html+='<div style="font-size:15px;font-weight:900;color:#1a1a1a">'+marca+'</div>';
-      if(modelo) html+='<div style="font-size:12px;font-weight:600;color:#555;margin-top:1px">'+modelo+(ano?' · '+ano:'')+'</div>';
-      html+='<div style="font-size:10px;color:var(--mu);margin-top:3px">'+dtFmt+(resp?' · 👷 '+resp:'')+'</div>';
+      if(modelo||ano) html+='<div style="font-size:12px;font-weight:600;color:#555;margin-top:1px">'+[modelo,ano].filter(Boolean).join(' · ')+'</div>';
+      html+='<div style="font-size:10px;color:var(--mu);margin-top:3px">📅 '+dtFmt+(resp?' · 👷 '+resp:'')+'</div>';
       html+='</div>';
+      // Coluna direita: preço real e status
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
-      if(preco>0) html+='<div style="font-size:15px;font-weight:900;color:var(--gr)">'+fmt(preco)+'</div>';
+      if(precoReal>0) html+='<div style="font-size:15px;font-weight:900;color:var(--gr)">'+fmt(precoReal)+'</div>';
       html+='<span style="font-size:9px;background:'+bgSt+';color:'+corSt+';padding:2px 8px;border-radius:8px;font-weight:700">'+status+'</span>';
       html+='</div></div>';
-      html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">';
+
+      // ── Badges ──
+      html+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+      // Condição (real, do campo Obs)
       if(cond) html+='<span style="font-size:9px;background:'+bgCond+';color:'+corCond+';padding:2px 8px;border-radius:8px;font-weight:700">'+cond+'</span>';
-      if(horas) html+='<span style="font-size:9px;background:#f5f5f5;color:#555;padding:2px 8px;border-radius:8px;font-weight:600">'+horas+' h</span>';
-      if(link) html+='<a href="'+link+'" target="_blank" style="font-size:9px;background:#e3f0ff;color:#1a4a7a;padding:2px 8px;border-radius:8px;font-weight:700;text-decoration:none">🔗 Ver anuncio</a>';
+      // Preço pedido (do campo Condicao)
+      if(precoPedido>0) html+='<span style="font-size:9px;background:#fff8e1;color:#e65100;padding:2px 8px;border-radius:8px;font-weight:700">💰 Pedido: '+fmt(precoPedido)+'</span>';
+      // Série/chassi (do campo Horas)
+      if(serie) html+='<span style="font-size:9px;background:#f5f5f5;color:#555;padding:2px 8px;border-radius:8px;font-weight:600">🔢 '+serie+'</span>';
+      // Link
+      if(link) html+='<a href="'+link+'" target="_blank" style="font-size:9px;background:#e3f0ff;color:#1a4a7a;padding:2px 8px;border-radius:8px;font-weight:700;text-decoration:none">🔗 Anúncio</a>';
       html+='</div>';
-      if(obs&&obs!=='-') html+='<div style="font-size:11px;color:#555;margin-top:6px">'+obs+'</div>';
+
+      // Obs texto (se não é uma condição conhecida)
+      if(obsTexto) html+='<div style="font-size:11px;color:#555;margin-top:5px;line-height:1.4">'+obsTexto+'</div>';
       html+='</div>';
+
+      // ── Propostas ──
       html+='<div style="border-top:1px solid #f0f0f0;padding:8px 12px;background:#fafafa">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">';
       html+='<span style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase">Propostas ('+props.length+')</span>';
@@ -6034,7 +6056,8 @@ function loadUsad(){
       } else {
         html+='<div style="font-size:10px;color:#bbb">Nenhuma proposta ainda</div>';
       }
-      html+='</div></div>';
+      html+='</div>';
+      html+='</div>';
     });
     el.innerHTML=html;
   }).withFailureHandler(function(){
