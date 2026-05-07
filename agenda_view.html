@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Agenda Juliomaq</title>
+<style>
+  :root{
+    --bl:#1a4a7a;--gr:#1A6B2A;--or:#E85A0C;--rd:#c62828;
+    --mu:#888;--bd:#e8e8e8;--bg:#f4f6f9;--wh:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:#1a1a1a;}
+
+  /* ── Header ── */
+  .hdr{background:var(--bl);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+  .hdr-logo{display:flex;align-items:center;gap:10px;}
+  .hdr-logo img{width:32px;height:32px;border-radius:8px;}
+  .hdr-title{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+  .hdr-sub{font-size:10px;color:rgba(255,255,255,.65);font-weight:500;margin-top:1px;}
+  .hdr-badge{font-size:10px;background:rgba(255,255,255,.18);color:#fff;padding:3px 10px;border-radius:20px;font-weight:700;}
+
+  /* ── Stats ── */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 12px 0;}
+  .stat{background:#fff;border-radius:10px;padding:10px 12px;text-align:center;border:1px solid var(--bd);}
+  .stat-v{font-size:22px;font-weight:900;color:var(--bl);}
+  .stat-l{font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+
+  /* ── Nav calendário ── */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 8px;}
+  .cal-nav-btn{width:36px;height:36px;border-radius:50%;background:var(--bl);border:none;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+  .cal-nav-btn:active{background:#0d3260;}
+  .cal-label{font-size:16px;font-weight:800;color:var(--bl);}
+
+  /* ── Filtros ── */
+  .filters{display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto;scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .fbtn{border:none;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;touch-action:manipulation;background:#e8ecf3;color:var(--mu);transition:all .15s;}
+  .fbtn.on{background:var(--bl);color:#fff;}
+
+  /* ── Grade ── */
+  .cal-wrap{background:#fff;border-radius:12px;margin:0 12px;overflow:hidden;border:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,.06);}
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:#eef2ff;border-bottom:2px solid #c5d0f5;}
+  .cal-head div{text-align:center;font-size:11px;font-weight:800;color:var(--bl);padding:8px 0;letter-spacing:.2px;}
+  .cal-head div.wkd{color:#aaa;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+  .cal-cell{min-height:72px;border-right:1px solid #efefef;border-bottom:1px solid #efefef;padding:4px 3px;overflow:hidden;cursor:pointer;transition:background .1s;}
+  .cal-cell:active{background:#f0f4ff;}
+  .cal-cell.empty{background:#fafafa;cursor:default;}
+  .cal-cell.today{background:#e8f5e9;border-left:3px solid var(--gr);}
+  .cal-cell.weekend{background:#f8f8f8;}
+  .cal-cell.past .day-num{color:#ccc;}
+  .day-num{text-align:center;font-size:13px;font-weight:700;color:#222;margin-bottom:3px;}
+  .day-num.today-circle{width:24px;height:24px;background:var(--gr);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin:0 auto 3px;}
+  .ev-pill{font-size:9px;font-weight:700;border-radius:4px;padding:2px 4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#fff;line-height:1.5;}
+  .ev-more{font-size:9px;font-weight:800;text-align:center;background:#dde8ff;color:var(--bl);border-radius:4px;padding:2px 3px;margin-top:1px;}
+
+  /* ── Modal dia ── */
+  .modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,.2);}
+  .modal-hdr{background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:16px 16px 0 0;flex-shrink:0;}
+  .modal-title{font-size:15px;font-weight:700;color:#fff;}
+  .modal-close{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+  .modal-body{overflow-y:auto;padding:12px 14px;flex:1;}
+
+  /* ── Card evento no modal ── */
+  .ev-card{border-left:3px solid var(--bl);padding:10px 12px;margin-bottom:8px;border-radius:0 10px 10px 0;background:#f8f9fa;cursor:pointer;}
+  .ev-card:active{background:#eef2ff;}
+  .ev-card-title{font-size:13px;font-weight:800;color:#1a1a1a;display:flex;align-items:center;gap:5px;margin-bottom:4px;}
+  .ev-card-info{font-size:11px;color:#666;line-height:1.6;}
+  .ev-os-badge{font-size:9px;background:var(--or);color:#fff;border-radius:5px;padding:1px 6px;font-weight:800;flex-shrink:0;}
+
+  /* ── Modal detalhe evento ── */
+  .detail-field{margin-bottom:10px;}
+  .detail-label{font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+  .detail-value{font-size:13px;font-weight:600;color:#1a1a1a;}
+  .detail-badge{display:inline-block;font-size:10px;background:var(--bl);color:#fff;padding:3px 10px;border-radius:8px;font-weight:700;margin-top:2px;}
+
+  /* ── Loading / empty ── */
+  .loading{text-align:center;padding:40px 20px;color:var(--mu);}
+  .loading-spin{font-size:28px;animation:spin 1s linear infinite;display:inline-block;margin-bottom:8px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty{text-align:center;padding:24px 16px;color:var(--mu);font-size:13px;}
+
+  /* ── Footer ── */
+  .footer{text-align:center;padding:16px;font-size:10px;color:var(--mu);margin-top:12px;}
+
+  /* Desktop ── */
+  @media(min-width:600px){
+    .cal-cell{min-height:100px;}
+    .ev-pill{font-size:10px;}
+    .day-num{font-size:14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <div style="width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px">🚜</div>
+    <div>
+      <div class="hdr-title">Juliomaq</div>
+      <div class="hdr-sub">Agenda de Atendimentos</div>
+    </div>
+  </div>
+  <div id="hdrBadge" class="hdr-badge">Carregando...</div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat"><div class="stat-v" id="stTotal">—</div><div class="stat-l">Total</div></div>
+  <div class="stat"><div class="stat-v" id="stMes">—</div><div class="stat-l">Este mês</div></div>
+  <div class="stat"><div class="stat-v" id="stProx">—</div><div class="stat-l">Próximos</div></div>
+</div>
+
+<!-- Nav calendário -->
+<div class="cal-nav">
+  <button class="cal-nav-btn" onclick="navCal(-1)">‹</button>
+  <div class="cal-label" id="calLabel">—</div>
+  <button class="cal-nav-btn" onclick="navCal(1)">›</button>
+</div>
+
+<!-- Filtros -->
+<div class="filters">
+  <button class="fbtn on" id="f_todos" onclick="setFiltro('todos')">Todos</button>
+  <button class="fbtn" id="f_proximos" onclick="setFiltro('proximos')">Próximos</button>
+  <button class="fbtn" id="f_mes" onclick="setFiltro('mes')">Este mês</button>
+</div>
+
+<!-- Calendário -->
+<div class="cal-wrap">
+  <div class="cal-head">
+    <div class="wkd">Dom</div><div>Seg</div><div>Ter</div><div>Qua</div>
+    <div>Qui</div><div>Sex</div><div class="wkd">Sáb</div>
+  </div>
+  <div class="cal-grid" id="calGrid">
+    <div class="loading" style="grid-column:1/-1"><div class="loading-spin">📅</div><br>Buscando eventos...</div>
+  </div>
+</div>
+
+<!-- Modal: eventos do dia -->
+<div class="modal-overlay" id="modalDia" onclick="fecharDia(event)">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalDiaTitle">—</div>
+      <button class="modal-close" onclick="fecharDia()">✕</button>
+    </div>
+    <div class="modal-body" id="modalDiaList"></div>
+  </div>
+</div>
+
+<!-- Modal: detalhe evento -->
+<div class="modal-overlay" id="modalEv" onclick="fecharEv(event)">
+  <div class="modal-box">
+    <div class="modal-hdr" id="modalEvHdr" style="background:var(--bl)">
+      <div class="modal-title" id="modalEvTitle">—</div>
+      <button class="modal-close" onclick="fecharEv()">✕</button>
+    </div>
+    <div class="modal-body" id="modalEvBody"></div>
+  </div>
+</div>
+
+<div class="footer">Juliomaq · Visualização somente leitura · Dados em tempo real</div>
+
+<script>
+var BACKEND = 'https://script.google.com/macros/s/AKfycbwtlWfCduBsMBr-omIXjUfuLsqWy1sKVoNnWXDrOjKW14b_GWxO7dqNQSvA8JKjt7hs/exec';
+var _eventos = [];
+var _filtro = 'todos';
+var _calMes = new Date(); _calMes.setDate(1); _calMes.setHours(0,0,0,0);
+var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// ── Parser de data ──────────────────────────────────────────
+function parseData(v){
+  if(!v) return null;
+  var s = String(v);
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  var d = new Date(s); return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function fmtHora(v){
+  if(!v) return '';
+  var s = String(v);
+  var m = s.match(/^(\d{1,2}):(\d{2})/);
+  if(m) return ('0'+m[1]).slice(-2)+':'+m[2];
+  var d = new Date(s);
+  if(!isNaN(d)) return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  return s.substring(0,5);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Carregar eventos do backend ────────────────────────────
+function carregar(){
+  var badge = document.getElementById('hdrBadge');
+  if(badge) badge.textContent = 'Carregando...';
+  fetch(BACKEND, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({fn: 'getAgendaEventosSalvos', args: []})
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      _eventos = (data.result || []);
+      atualizarStats();
+      renderCal();
+      if(badge) badge.textContent = _eventos.length + ' eventos';
+    })
+    .catch(function(e){
+      if(badge) badge.textContent = 'Erro ao carregar';
+      var el = document.getElementById('calGrid');
+      if(el) el.innerHTML = '<div class="loading" style="grid-column:1/-1">⚠️ Não foi possível carregar os eventos.<br><br><small>Verifique se o acesso está liberado nas configurações do Apps Script.</small></div>';
+    });
+}
+
+// ── Stats ───────────────────────────────────────────────────
+function atualizarStats(){
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var mes = hoje.getMonth(), ano = hoje.getFullYear();
+  var total = _eventos.length, mesCnt = 0, prox = 0;
+  _eventos.forEach(function(ev){
+    var d = parseData(ev.dataISO || ev.data || '');
+    if(!d) return;
+    if(d >= hoje) prox++;
+    if(d.getMonth() === mes && d.getFullYear() === ano) mesCnt++;
+  });
+  document.getElementById('stTotal').textContent = total;
+  document.getElementById('stMes').textContent = mesCnt;
+  document.getElementById('stProx').textContent = prox;
+}
+
+// ── Filtro ──────────────────────────────────────────────────
+function setFiltro(f){
+  _filtro = f;
+  ['todos','proximos','mes'].forEach(function(k){
+    var b = document.getElementById('f_'+k);
+    if(b) b.className = 'fbtn' + (k===f?' on':'');
+  });
+  renderCal();
+}
+
+function evPassaFiltro(ev){
+  var d = parseData(ev.dataISO || ev.data || '');
+  if(!d) return _filtro === 'todos';
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  if(_filtro === 'proximos') return d >= hoje;
+  if(_filtro === 'mes'){
+    var cm = _calMes;
+    return d.getFullYear() === cm.getFullYear() && d.getMonth() === cm.getMonth();
+  }
+  return true;
+}
+
+// ── Navegação ───────────────────────────────────────────────
+function navCal(dir){
+  _calMes.setMonth(_calMes.getMonth() + dir);
+  renderCal();
+}
+
+// ── Render calendário ───────────────────────────────────────
+function renderCal(){
+  var el = document.getElementById('calGrid');
+  var lbl = document.getElementById('calLabel');
+  if(!el) return;
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var ano = _calMes.getFullYear(), mes = _calMes.getMonth();
+
+  if(lbl) lbl.textContent = MESES[mes] + ' ' + ano;
+
+  // Filtra eventos do mês visível
+  var evMap = {};
+  _eventos.forEach(function(ev){
+    if(!evPassaFiltro(ev) && _filtro !== 'todos') return;
+    var d = parseData(ev.dataISO || ev.data || '');
+    if(!d) return;
+    if(d.getFullYear() === ano && d.getMonth() === mes){
+      var dia = d.getDate();
+      if(!evMap[dia]) evMap[dia] = [];
+      evMap[dia].push(ev);
+    }
+  });
+
+  var primDia = new Date(ano, mes, 1).getDay();
+  var ultimoDia = new Date(ano, mes+1, 0).getDate();
+  var html = '';
+
+  // Células vazias antes do dia 1
+  for(var i = 0; i < primDia; i++){
+    html += '<div class="cal-cell empty"></div>';
+  }
+
+  for(var d2 = 1; d2 <= ultimoDia; d2++){
+    var dtObj = new Date(ano, mes, d2);
+    var dow = dtObj.getDay();
+    var isHoje = hoje.getFullYear()===ano && hoje.getMonth()===mes && hoje.getDate()===d2;
+    var isWkd = dow===0 || dow===6;
+    var isPast = dtObj < hoje;
+    var evs = evMap[d2] || [];
+    var diaKey = ano+'-'+(('0'+(mes+1)).slice(-2))+'-'+(('0'+d2).slice(-2));
+
+    var cls = 'cal-cell';
+    if(isHoje) cls += ' today';
+    else if(isWkd) cls += ' weekend';
+    if(isPast) cls += ' past';
+
+    html += '<div class="'+cls+'" onclick="abrirDia(\''+diaKey+'\')">';
+
+    // Número do dia
+    if(isHoje){
+      html += '<div class="day-num today-circle">'+d2+'</div>';
+    } else {
+      html += '<div class="day-num">'+d2+'</div>';
+    }
+
+    // Pills de eventos
+    var maxShow = 3;
+    evs.slice(0, maxShow).forEach(function(ev){
+      var dEv = parseData(ev.dataISO || ev.data || '');
+      var fut = dEv ? dEv >= hoje : false;
+      var cor = fut ? 'var(--or)' : '#1A6B2A';
+      var hora = (ev.diaInteiro==='Não' && ev.horaInicio) ? ' ' + fmtHora(ev.horaInicio) : '';
+      html += '<div class="ev-pill" style="background:'+cor+'" title="'+esc(ev.titulo)+(ev.cliente?' — '+ev.cliente:'')+'">' + esc((ev.titulo||'')+hora) + '</div>';
+    });
+    if(evs.length > maxShow){
+      html += '<div class="ev-more">+' + (evs.length - maxShow) + ' mais</div>';
+    }
+
+    html += '</div>';
+  }
+
+  // Completar grade
+  var total = primDia + ultimoDia;
+  var rem = total % 7;
+  if(rem > 0){
+    for(var j = 0; j < 7-rem; j++){
+      html += '<div class="cal-cell empty"></div>';
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Modal: eventos do dia ───────────────────────────────────
+function abrirDia(diaISO){
+  var modal = document.getElementById('modalDia');
+  var list = document.getElementById('modalDiaList');
+  var title = document.getElementById('modalDiaTitle');
+  if(!modal) return;
+
+  var d = parseData(diaISO);
+  if(d && title) title.textContent = '📅 ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' ' + d.getFullYear();
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var evs = _eventos.filter(function(ev){
+    var ed = parseData(ev.dataISO || ev.data || '');
+    return ed && ed.getFullYear()===d.getFullYear() && ed.getMonth()===d.getMonth() && ed.getDate()===d.getDate();
+  });
+
+  if(!evs.length){
+    list.innerHTML = '<div class="empty">📭 Nenhum evento neste dia</div>';
+  } else {
+    var html = '';
+    evs.forEach(function(ev, i){
+      var dEv = parseData(ev.dataISO || ev.data || '');
+      var fut = dEv ? dEv >= hoje : false;
+      var cor = fut ? 'var(--bl)' : '#9e9e9e';
+      var hora = (ev.diaInteiro==='Não' && ev.horaInicio)
+        ? fmtHora(ev.horaInicio) + (ev.horaFim ? ' – ' + fmtHora(ev.horaFim) : '')
+        : 'Dia inteiro';
+      html += '<div class="ev-card" style="border-left-color:'+cor+'" onclick="abrirEv('+i+',\''+esc(diaISO)+'\')">';
+      html += '<div class="ev-card-title">' + esc(ev.titulo||'Sem título') + '</div>';
+      html += '<div class="ev-card-info">🕐 '+hora;
+      if(ev.responsavel) html += ' · 👷 '+esc(ev.responsavel);
+      if(ev.cliente) html += '<br>👤 '+esc(ev.cliente);
+      if(ev.descricao) html += '<br>📝 '+esc(ev.descricao);
+      html += '</div></div>';
+    });
+    list.innerHTML = html;
+  }
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharDia(e){
+  if(e && e.target !== document.getElementById('modalDia')) return;
+  document.getElementById('modalDia').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Modal: detalhe do evento ────────────────────────────────
+var _diaISOAtivo = '';
+function abrirEv(idx, diaISO){
+  _diaISOAtivo = diaISO;
+  var evs = _eventos.filter(function(ev){
+    var d = parseData(diaISO);
+    var ed = parseData(ev.dataISO || ev.data || '');
+    return ed && d && ed.getFullYear()===d.getFullYear() && ed.getMonth()===d.getMonth() && ed.getDate()===d.getDate();
+  });
+  var ev = evs[idx];
+  if(!ev) return;
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var dEv = parseData(ev.dataISO || ev.data || '');
+  var fut = dEv ? dEv >= hoje : false;
+  var cor = fut ? 'var(--or)' : '#1A6B2A';
+
+  var hdr = document.getElementById('modalEvHdr');
+  var title = document.getElementById('modalEvTitle');
+  var body = document.getElementById('modalEvBody');
+  if(hdr) hdr.style.background = fut ? 'var(--bl)' : '#374151';
+  if(title) title.textContent = ev.titulo || 'Evento';
+
+  var hora = (ev.diaInteiro==='Não' && ev.horaInicio)
+    ? fmtHora(ev.horaInicio) + (ev.horaFim ? ' – ' + fmtHora(ev.horaFim) : '')
+    : 'Dia inteiro';
+
+  var html = '';
+
+  // Data e hora
+  html += '<div class="detail-field">';
+  html += '<div class="detail-label">Data & Horário</div>';
+  if(dEv) html += '<div class="detail-value">📅 ' + dEv.getDate() + ' de ' + MESES[dEv.getMonth()] + ' ' + dEv.getFullYear() + '</div>';
+  html += '<div class="detail-value">🕐 ' + hora + '</div>';
+  html += '</div>';
+
+  // Status
+  html += '<div class="detail-field">';
+  html += '<div class="detail-label">Status</div>';
+  html += '<span class="detail-badge" style="background:'+cor+'">' + (fut ? '🔵 Futuro' : '✅ Realizado') + '</span>';
+  html += '</div>';
+
+  // Cliente
+  if(ev.cliente){
+    html += '<div class="detail-field"><div class="detail-label">Cliente</div>';
+    html += '<div class="detail-value">👤 ' + esc(ev.cliente) + '</div></div>';
+  }
+
+  // Responsável
+  if(ev.responsavel){
+    html += '<div class="detail-field"><div class="detail-label">Responsável</div>';
+    html += '<div class="detail-value">👷 ' + esc(ev.responsavel) + '</div></div>';
+  }
+
+  // Descrição
+  if(ev.descricao){
+    html += '<div class="detail-field"><div class="detail-label">Descrição</div>';
+    html += '<div class="detail-value" style="font-weight:500;color:#555;line-height:1.5;font-size:13px">' + esc(ev.descricao) + '</div></div>';
+  }
+
+  // Criado em
+  if(ev.criadoEm){
+    html += '<div class="detail-field"><div class="detail-label">Criado em</div>';
+    html += '<div class="detail-value" style="font-size:11px;color:var(--mu);font-weight:500">' + esc(ev.criadoEm) + '</div></div>';
+  }
+
+  if(body) body.innerHTML = html;
+
+  document.getElementById('modalEv').classList.add('open');
+}
+
+function fecharEv(e){
+  if(e && e.target !== document.getElementById('modalEv')) return;
+  document.getElementById('modalEv').classList.remove('open');
+}
+
+// ── Init ────────────────────────────────────────────────────
+carregar();
+// Atualiza a cada 5 minutos
+setInterval(carregar, 5 * 60 * 1000);
+</script>
+</body>
+</html>
