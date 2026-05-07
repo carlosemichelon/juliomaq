@@ -2184,7 +2184,7 @@ function loadOrdens(){
         }
         return o;
       });
-      setConn('g','Google Sheets — '+ordens.length+' OS');
+      setConn('g','Google Sheets — '+ordens.length+' OS · v5.15');
       _buildEvOSMap();
       var sl=document.getElementById('shLnk'); if(sl) sl.style.display='inline';
       document.getElementById('ordBadge').textContent='OS-'+pad(ordens.length+1);
@@ -2588,8 +2588,8 @@ function printOS(o){
   // Assinatura — metade da altura das fotos
   html+='<div class="sec" style="display:flex;flex-direction:column">';
   html+='<div class="sh">Assinatura do Cliente</div>';
-  html+='<div style="display:flex;align-items:center;justify-content:center;padding:4px;min-height:28px">';
-  if(sig){html+='<img src="'+sig+'" style="max-height:22px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:1px">';}
+  html+='<div style="display:flex;align-items:center;justify-content:center;padding:4px;min-height:42px">';
+  if(sig){html+='<img src="'+sig+'" style="max-height:33px;max-width:100%;object-fit:contain;border:1px solid #eee;border-radius:3px;padding:1px">';}
   else{html+='<div style="border:2px dashed #ccc;border-radius:4px;padding:2px 14px;color:#bbb;font-size:10px">Sem assinatura</div>';}
   html+='</div></div>';
 
@@ -5991,11 +5991,11 @@ function loadUsad(){
       var cond=condCor[obsRaw]?obsRaw:''; // é uma condição conhecida?
       var obsTexto=cond?'':(obsRaw&&obsRaw!=='-'?obsRaw:''); // se não é condição, é obs
       var resp=r.responsavel||'';
-      var link=r.linkAnuncio||r.LinkAnuncio||'';
+      var link=r.linkanuncio||r.linkAnuncio||r.LinkAnuncio||'';
       var status=r.status||r.Status||'Disponivel';
       var dtFmt=_fmtVendDate(r.data||'');
       var numUsad=r.num||('usad-'+idx);
-      var props=[];try{props=JSON.parse(r.propostas||r.Propostas||'[]');}catch(e){}
+      var props=[];try{props=JSON.parse(r.propostas||'[]');}catch(e){}
 
       // Cor borda: pela condição real se disponível, senão por status
       var corBorda=condCor[cond]||(stCor[status]||'#e65100');
