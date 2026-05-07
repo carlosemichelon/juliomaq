@@ -1045,7 +1045,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <button class="btn" style="margin:8px 12px 12px;background:#e65100" onclick="salvarConc()">💾 Salvar</button>
   </div>
   <div class="sec" style="margin-top:8px">
-    <div class="sh" style="background:#e65100">Registros</div>
+    <div class="sh" style="background:#e65100">Vendas Perdidas — Concorrência</div>
+    <div id="concResumo" style="padding:10px 12px;border-bottom:1px solid var(--bd);display:none"></div>
     <div id="concList"><div class="empty">Carregando...</div></div>
   </div>
 </div>
@@ -1132,6 +1133,13 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       </div>
     </div>
     <div class="f"><label class="fl">Obs</label><textarea class="fi" id="usadObs" placeholder="Observações..." style="height:60px"></textarea></div>
+    <div class="f"><label class="fl">Status</label>
+      <select class="fi" id="usadStatus">
+        <option value="">Selecione</option>
+        <option>Disponível</option><option>Em negociação</option><option>Vendido</option><option>Reservado</option>
+      </select>
+    </div>
+    <div class="f"><label class="fl">Link do Anúncio</label><input class="fi" id="usadLink" type="url" placeholder="https://..."></div>
 
     <!-- Fotos do Usado -->
     <div style="padding:0 12px 8px">
@@ -5649,8 +5657,81 @@ function salvarConc(){
 function loadConc(){
   var el=document.getElementById('concList');if(el)el.innerHTML='<div class="empty">Carregando...</div>';
   google.script.run.withSuccessHandler(function(rows){
-    _vendRender('concList',rows,[{k:'data',l:'Data'},{k:'cliente',l:'Cliente',big:true},{k:'marca',l:'Marca'},{k:'modelo',l:'Modelo'},{k:'ano',l:'Ano'},{k:'valor',l:'Valor'},{k:'concorrente',l:'Concorrente'},{k:'responsavel',l:'Resp.'},{k:'obs',l:'Obs'}]);
-  }).withFailureHandler(function(){}).getVendas('conc');
+    if(!el) return;
+    if(!rows||!rows.length){
+      el.innerHTML='<div class="empty">Nenhum registro</div>';
+      return;
+    }
+
+    // ── Resumo ──────────────────────────────────────────────
+    var totalValor=0, marcas={}, concorrentes={};
+    rows.forEach(function(r){
+      totalValor+=parseFloat(r.valor)||0;
+      var m=r.marca||'Outra';
+      marcas[m]=(marcas[m]||0)+1;
+      var c=r.concorrente||'Desconhecido';
+      concorrentes[c]=(concorrentes[c]||0)+1;
+    });
+    var topMarca=Object.keys(marcas).sort(function(a,b){return marcas[b]-marcas[a];})[0]||'—';
+    var topConc=Object.keys(concorrentes).sort(function(a,b){return concorrentes[b]-concorrentes[a];})[0]||'—';
+
+    var rbox=document.getElementById('concResumo');
+    if(rbox){
+      rbox.style.display='block';
+      var rhtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+      rhtml+='<div class="mc"><div class="ml">Registros perdidos</div><div class="mv" style="color:#c62828;font-size:16px;font-weight:800">'+rows.length+'</div></div>';
+      rhtml+='<div class="mc"><div class="ml">Valor total perdido</div><div class="mv" style="color:#c62828;font-size:13px;font-weight:800">'+fmt(totalValor)+'</div></div>';
+      rhtml+='<div class="mc"><div class="ml">Marca mais vendida</div><div class="mv" style="color:#374151;font-weight:700">'+topMarca+' ('+marcas[topMarca]+')</div></div>';
+      rhtml+='<div class="mc"><div class="ml">Concorrente top</div><div class="mv" style="color:#e65100;font-weight:700">'+topConc+'</div></div>';
+      rhtml+='</div>';
+      // Breakdown por marca
+      if(Object.keys(marcas).length>1){
+        rhtml+='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">Por Marca</div>';
+        rhtml+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+        Object.keys(marcas).sort(function(a,b){return marcas[b]-marcas[a];}).forEach(function(m){
+          rhtml+='<span style="font-size:9px;background:#fce4e4;color:#c62828;padding:2px 8px;border-radius:8px;font-weight:700">'+m+' ('+marcas[m]+')</span>';
+        });
+        rhtml+='</div>';
+      }
+      rbox.innerHTML=rhtml;
+    }
+
+    // ── Cards ────────────────────────────────────────────────
+    var html='';
+    rows.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');}).forEach(function(r){
+      var dtFmt=_fmtVendDate(r.data||'');
+      var valor=parseFloat(r.valor)||0;
+      var resp=r.responsavel||'';
+      var conc=r.concorrente||'';
+      var obs=r.obs||'';
+
+      html+='<div style="border:1px solid var(--bd);border-left:4px solid #c62828;border-radius:0 8px 8px 0;background:#fff;padding:8px 10px;margin:6px 12px">';
+      // Header
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">';
+      html+='<div style="flex:1;min-width:0">';
+      // Marca + Modelo + Ano
+      html+='<div style="font-size:13px;font-weight:800;color:#1a1a1a">'+(r.marca||'')+'<span style="font-size:11px;font-weight:600;color:#555;margin-left:6px">'+(r.modelo||'')+(r.ano?' · '+r.ano:'')+'</span></div>';
+      // Cliente
+      if(r.cliente) html+='<div style="font-size:11px;font-weight:600;color:#374151;margin-top:2px">👤 '+r.cliente+'</div>';
+      // Data + resp
+      html+='<div style="font-size:10px;color:var(--mu);margin-top:2px">📅 '+dtFmt+(resp?' · 👷 '+resp:'')+'</div>';
+      // Concorrente badge
+      if(conc) html+='<div style="margin-top:4px"><span style="font-size:9px;background:#fce4e4;color:#c62828;padding:2px 8px;border-radius:8px;font-weight:700">🏢 '+conc+'</span></div>';
+      html+='</div>';
+      // Valor
+      if(valor>0){
+        html+='<div style="text-align:right;flex-shrink:0;margin-left:8px">';
+        html+='<div style="font-size:14px;font-weight:800;color:#c62828">'+fmt(valor)+'</div>';
+        html+='<div style="font-size:8px;color:var(--mu);margin-top:1px">perdido</div>';
+        html+='</div>';
+      }
+      html+='</div>';
+      // Obs
+      if(obs&&obs!=='-') html+='<div style="font-size:10px;color:#666;margin-top:5px;padding-top:5px;border-top:1px solid #f5f5f5">'+obs+'</div>';
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }).withFailureHandler(function(){if(el)el.innerHTML='<div class="empty">Erro ao carregar</div>';}).getVendas('conc');
 }
 
 
@@ -5741,14 +5822,47 @@ function loadParqueM(){
   google.script.run
     .withSuccessHandler(function(rows){
       if(!rows||!rows.length){box.innerHTML='';return;}
+      var condCor={Excelente:'#1A6B2A',Bom:'#1a4a7a',Regular:'#e67e22',Ruim:'#c62828'};
+      var condBg={Excelente:'#e8f5e9',Bom:'#e3f0ff',Regular:'#fff3e0',Ruim:'#fce4e4'};
       var html='<div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;padding:4px 0 6px;letter-spacing:.5px">Últimos registros</div>';
       rows.slice(0,5).forEach(function(r){
         var mqs=[];try{mqs=JSON.parse(r.maquinas||'[]');}catch(e){}
-        html+='<div style="background:#f8f9fa;border-radius:8px;padding:8px 10px;margin-bottom:6px">';
-        html+='<div style="font-size:12px;font-weight:700;margin-bottom:4px">'+r.cliente+'</div>';
-        html+='<div style="font-size:10px;color:var(--mu)">'+mqs.length+' máquina(s) · '+r.salvoEm+'</div>';
+        var dtFmt=_fmtVendDate(r.data||r.parqDt||'');
+        var resp=r.responsavel||r.parqResp||'';
+        var area=r.area||r.parqArea||'';
+        var culturas=r.culturas||r.parqCulturas||'';
+        html+='<div style="border:1px solid var(--bd);border-left:4px solid #e65100;border-radius:0 8px 8px 0;background:#fff;padding:8px 10px;margin-bottom:8px">';
+        // Header
+        html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px">';
+        html+='<div style="flex:1;min-width:0">';
+        html+='<div style="font-size:13px;font-weight:800;color:#1a1a1a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+(r.cliente||'')+'</div>';
+        html+='<div style="font-size:10px;color:var(--mu);margin-top:2px">'+dtFmt+(resp?' · 👷 '+resp:'')+'</div>';
+        html+='</div>';
+        html+='<div style="text-align:right;flex-shrink:0">';
+        html+='<div style="font-size:9px;background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:8px;font-weight:700">🚜 '+mqs.length+' máq.</div>';
+        html+='</div>';
+        html+='</div>';
+        // Badges área e culturas
+        if(area||culturas){
+          html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">';
+          if(area) html+='<span style="font-size:9px;background:#f0f4ff;color:#1a4a7a;padding:1px 7px;border-radius:8px;font-weight:600">🌾 '+area+' ha</span>';
+          if(culturas) html+='<span style="font-size:9px;background:#f5f5f5;color:#555;padding:1px 7px;border-radius:8px;font-weight:600">🌱 '+culturas+'</span>';
+          html+='</div>';
+        }
+        // Máquinas
         mqs.forEach(function(m){
-          html+='<div style="font-size:11px;margin-top:3px;color:#374151">🚜 '+[m.marca,m.modelo,m.ano,m.horas?(m.horas+'h'):''].filter(Boolean).join(' · ')+(m.estado?' — '+m.estado:'')+'</div>';
+          var cond=m.estado||'';
+          var cc=condCor[cond]||'#374151';
+          var cb=condBg[cond]||'#f5f5f5';
+          html+='<div style="display:flex;align-items:center;gap:6px;margin-top:4px;padding:4px 6px;background:#f8f9fa;border-radius:6px">';
+          html+='<span style="font-size:11px">🚜</span>';
+          html+='<span style="font-size:11px;font-weight:700;color:#374151;flex:1">';
+          html+=[m.marca,m.modelo].filter(Boolean).join(' ');
+          html+='</span>';
+          if(m.ano) html+='<span style="font-size:9px;color:#888">'+m.ano+'</span>';
+          if(m.horas) html+='<span style="font-size:9px;color:#888">'+m.horas+'h</span>';
+          if(cond) html+='<span style="font-size:9px;background:'+cb+';color:'+cc+';padding:1px 6px;border-radius:6px;font-weight:700">'+cond+'</span>';
+          html+='</div>';
         });
         html+='</div>';
       });
@@ -5849,9 +5963,10 @@ function loadUsad(){
     if(!rows||!rows.length){el.innerHTML='<div class="empty">Nenhum usado registrado</div>';return;}
     var condCor={Excelente:'#1A6B2A',Bom:'#1a4a7a',Regular:'#e67e22',Ruim:'#c62828'};
     var condBg={Excelente:'#e8f5e9',Bom:'#e3f0ff',Regular:'#fff3e0',Ruim:'#fce4e4'};
+    var stCor={Disponivel:'#1A6B2A',Vendido:'#374151','Em negociacao':'#e67e22',Reservado:'#1a4a7a'};
+    var stBg={Disponivel:'#e8f5e9',Vendido:'#f5f5f5','Em negociacao':'#fff3e0',Reservado:'#e3f0ff'};
     var html='';
-    rows.slice().reverse().forEach(function(r){
-      // Mapeamento: data responsavel marca modelo ano horas preco condicao obs salvoem
+    rows.slice().reverse().forEach(function(r,idx){
       var marca=r.marca||'';
       var modelo=r.modelo||'';
       var ano=r.ano||'';
@@ -5860,45 +5975,103 @@ function loadUsad(){
       var cond=r.condicao||'';
       var resp=r.responsavel||'';
       var obs=r.obs||'';
+      var link=r.linkAnuncio||r.LinkAnuncio||'';
+      var status=r.status||r.Status||'Disponivel';
       var dtFmt=_fmtVendDate(r.data||'');
       var corCond=condCor[cond]||'#374151';
       var bgCond=condBg[cond]||'#f5f5f5';
+      var corSt=stCor[status]||'#374151';
+      var bgSt=stBg[status]||'#f5f5f5';
+      var numUsad=r.num||('usad-'+idx);
+      var props=[];try{props=JSON.parse(r.propostas||r.Propostas||'[]');}catch(e){}
 
-      html+='<div class="ocard" style="margin:6px 12px">';
-      // Header
-      html+='<div class="chdr">';
-      html+='<span class="cdt">📅 '+dtFmt+'</span>';
-      if(resp) html+='<span style="font-size:10px;background:#f0f0f0;color:#555;padding:2px 7px;border-radius:8px;font-weight:600">👷 '+resp+'</span>';
+      html+='<div style="border:1px solid var(--bd);border-left:4px solid '+corCond+';border-radius:0 10px 10px 0;background:#fff;margin:6px 12px;overflow:hidden">';
+      html+='<div style="padding:10px 12px 8px">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:15px;font-weight:900;color:#1a1a1a">'+marca+'</div>';
+      if(modelo) html+='<div style="font-size:12px;font-weight:600;color:#555;margin-top:1px">'+modelo+(ano?' · '+ano:'')+'</div>';
+      html+='<div style="font-size:10px;color:var(--mu);margin-top:3px">'+dtFmt+(resp?' · 👷 '+resp:'')+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
+      if(preco>0) html+='<div style="font-size:15px;font-weight:900;color:var(--gr)">'+fmt(preco)+'</div>';
+      html+='<span style="font-size:9px;background:'+bgSt+';color:'+corSt+';padding:2px 8px;border-radius:8px;font-weight:700">'+status+'</span>';
+      html+='</div></div>';
+      html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">';
       if(cond) html+='<span style="font-size:9px;background:'+bgCond+';color:'+corCond+';padding:2px 8px;border-radius:8px;font-weight:700">'+cond+'</span>';
+      if(horas) html+='<span style="font-size:9px;background:#f5f5f5;color:#555;padding:2px 8px;border-radius:8px;font-weight:600">'+horas+' h</span>';
+      if(link) html+='<a href="'+link+'" target="_blank" style="font-size:9px;background:#e3f0ff;color:#1a4a7a;padding:2px 8px;border-radius:8px;font-weight:700;text-decoration:none">🔗 Ver anuncio</a>';
       html+='</div>';
-      // Marca + Modelo
-      html+='<div style="padding:6px 14px 4px">';
-      html+='<div style="font-size:14px;font-weight:800;color:#1a1a1a">'+marca+'</div>';
-      if(modelo) html+='<div style="font-size:12px;font-weight:600;color:#555;margin-top:1px">'+modelo+'</div>';
+      if(obs&&obs!=='-') html+='<div style="font-size:11px;color:#555;margin-top:6px">'+obs+'</div>';
       html+='</div>';
-      // Grid métricas
-      var mets=[];
-      if(ano&&ano!=='-') mets.push({l:'Ano',v:ano});
-      if(horas) mets.push({l:'Horas',v:horas});
-      if(preco>0) mets.push({l:'Preço',v:fmt(preco),gr:true});
-      if(mets.length){
-        var cols=mets.length<=2?'1fr 1fr':'1fr 1fr 1fr';
-        html+='<div class="cmet" style="grid-template-columns:'+cols+'">';
-        mets.forEach(function(m){
-          html+='<div class="mc"><div class="ml">'+m.l+'</div><div class="mv'+(m.gr?' gr':'')+'" style="font-size:12px">'+m.v+'</div></div>';
+      html+='<div style="border-top:1px solid #f0f0f0;padding:8px 12px;background:#fafafa">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">';
+      html+='<span style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase">Propostas ('+props.length+')</span>';
+      html+='<button onclick="_abrirModalProposta(\''+numUsad+'\')" style="font-size:9px;background:var(--bl);color:#fff;border:none;border-radius:6px;padding:3px 9px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">+ Proposta</button>';
+      html+='</div>';
+      if(props.length){
+        props.slice().reverse().forEach(function(p){
+          var pCor=p.status==='Aceita'?'#1A6B2A':p.status==='Recusada'?'#c62828':'#e67e22';
+          var pBg=p.status==='Aceita'?'#e8f5e9':p.status==='Recusada'?'#fce4e4':'#fff3e0';
+          html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;padding:4px 6px;background:#fff;border-radius:6px;border:1px solid #eee">';
+          html+='<span style="font-size:9px;background:'+pBg+';color:'+pCor+';padding:1px 6px;border-radius:6px;font-weight:700;flex-shrink:0">'+(p.status||'')+'</span>';
+          if(p.cliente) html+='<span style="font-size:10px;font-weight:600;color:#374151;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+p.cliente+'</span>';
+          if(p.valor) html+='<span style="font-size:10px;font-weight:700;color:var(--gr);flex-shrink:0">'+fmt(parseFloat(p.valor)||0)+'</span>';
+          if(p.data) html+='<span style="font-size:9px;color:var(--mu);flex-shrink:0">'+_fmtVendDate(p.data)+'</span>';
+          html+='</div>';
         });
-        html+='</div>';
+      } else {
+        html+='<div style="font-size:10px;color:#bbb">Nenhuma proposta ainda</div>';
       }
-      // Obs
-      if(obs&&obs!=='-'){
-        html+='<div class="cdesc"><div class="cdlbl">Obs</div><div class="cdtxt">'+obs+'</div></div>';
-      }
-      html+='</div>';
+      html+='</div></div>';
     });
     el.innerHTML=html;
   }).withFailureHandler(function(){
     if(el)el.innerHTML='<div class="empty">Erro ao carregar</div>';
   }).getVendas('usad');
+}
+
+function _abrirModalProposta(numUsad){
+  var old=document.getElementById('usadPropModal');if(old)document.body.removeChild(old);
+  var modal=document.createElement('div');
+  modal.id='usadPropModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:9030;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML='<div style="background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;box-shadow:0 -4px 32px rgba(0,0,0,.2)">'
+    +'<div style="background:var(--bl);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:16px 16px 0 0">'
+    +'<span style="font-size:15px;font-weight:700;color:#fff">📝 Nova Proposta</span>'
+    +'<button onclick="var m=document.getElementById(\'usadPropModal\');if(m){document.body.removeChild(m);document.body.style.overflow=\'\';}" style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;font-family:inherit">✕</button>'
+    +'</div>'
+    +'<div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">'
+    +'<div class="f"><label class="fl">Cliente / Interessado</label><input class="fi" id="propCli" type="text" placeholder="Nome do interessado..."></div>'
+    +'<div class="f"><label class="fl">Valor Proposto (R$)</label><input class="fi" id="propValor" type="number" step="0.01" placeholder="0,00"></div>'
+    +'<div class="f"><label class="fl">Status</label><select class="fi" id="propStatus"><option>Em andamento</option><option>Aceita</option><option>Recusada</option></select></div>'
+    +'<div class="f"><label class="fl">Obs</label><textarea class="fi" id="propObs" style="height:50px" placeholder="Observacoes..."></textarea></div>'
+    +'</div>'
+    +'<div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd)">'
+    +'<button onclick="_salvarProposta(\''+numUsad+'\')" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--bl);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">Salvar Proposta</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+  document.body.style.overflow='hidden';
+}
+
+function _salvarProposta(numUsad){
+  var cli=document.getElementById('propCli').value||'';
+  var valor=document.getElementById('propValor').value||'0';
+  var status=document.getElementById('propStatus').value||'Em andamento';
+  var obs=document.getElementById('propObs').value||'';
+  var prop={cliente:cli,valor:valor,status:status,obs:obs,data:new Date().toLocaleDateString('pt-BR')};
+  toast('Salvando proposta...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        var m=document.getElementById('usadPropModal');
+        if(m){document.body.removeChild(m);document.body.style.overflow='';}
+        loadUsad();
+        toast('Proposta salva!','ok');
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .salvarPropostaUsado(numUsad,prop);
 }
 
 // ══ RESUMO CLIENTES ══════════════════════════════════════════
