@@ -1206,6 +1206,12 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="f"><label class="fl">Responsável</label>
       <select class="fi" id="cbResp"><option value="">Selecione</option><option>Everaldo</option><option>João Dias</option></select>
     </div>
+    <div class="f"><label class="fl">Descrição</label><input class="fi" id="cbDesc" type="text" placeholder="Ex: Parcela 1/3 — Montagem..."></div>
+    <div class="f"><label class="fl">Forma de Pagamento</label>
+      <select class="fi" id="cbFormaPgto">
+        <option value="">Selecione</option><option>PIX</option><option>Transferência</option><option>Boleto</option><option>Dinheiro</option><option>Cheque</option>
+      </select>
+    </div>
     <div class="f"><label class="fl">Obs</label><textarea class="fi" id="cbObs" placeholder="Observações..." style="height:50px"></textarea></div>
     <button class="btn" style="margin:8px 12px 12px;background:#c62828" onclick="salvarCobr()">💾 Salvar Cobrança</button>
   </div>
@@ -1213,14 +1219,19 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
   <div class="sec" style="margin-top:8px">
     <div class="sh" style="background:#c62828;display:flex;align-items:center;justify-content:space-between">
       <span>Cobranças</span>
-      <div style="display:flex;gap:4px">
+      <div style="display:flex;gap:4px;align-items:center">
         <button class="cbFBtn on" id="cbf_all"  onclick="setCobrFiltro('')">Todas</button>
         <button class="cbFBtn" id="cbf_pend" onclick="setCobrFiltro('Pendente')" style="background:rgba(255,255,255,.15)">⏳</button>
         <button class="cbFBtn" id="cbf_atrs" onclick="setCobrFiltro('Atrasado')" style="background:rgba(255,255,255,.15)">🔴</button>
         <button class="cbFBtn" id="cbf_pago" onclick="setCobrFiltro('Pago')" style="background:rgba(255,255,255,.15)">✅</button>
       </div>
     </div>
-    <div id="cobrTotal" style="padding:6px 12px;font-size:12px;color:var(--mu)"></div>
+    <div style="padding:6px 12px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px">
+      <select id="cobrMesFiltro" onchange="renderCobr()" style="flex:1;border:1px solid var(--bd);border-radius:8px;padding:5px 8px;font-size:11px;font-family:inherit;background:#fff;color:var(--tx)">
+        <option value="">Todos os meses</option>
+      </select>
+      <span id="cobrTotal" style="font-size:11px;color:var(--mu);white-space:nowrap"></span>
+    </div>
     <div id="cobrList"><div class="empty">Carregando...</div></div>
   </div>
 </div>
@@ -6804,6 +6815,21 @@ try{_renderVendParcelas();_renderVendUsados();var nh=document.getElementById('ve
 // ══ COBRANÇAS ════════════════════════════════════════════════
 var _cobranças = [], _cobrFiltro = '';
 
+function marcarCobrancaPaga(num){
+  if(!num){toast('Número não encontrado','err');return;}
+  toast('Marcando como recebida...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){
+        _cobranças.forEach(function(c){if(c.num===num)c.status='Pago';});
+        renderCobr();
+        toast('Cobrança marcada como recebida!','ok');
+      } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .marcarCobrancaPaga(num);
+}
+
 function setCobrFiltro(f){
   _cobrFiltro = f;
   var map = {'':'cbf_all','Pendente':'cbf_pend','Atrasado':'cbf_atrs','Pago':'cbf_pago'};
@@ -6824,6 +6850,8 @@ function salvarCobr(){
     status: (document.getElementById('cbStatus')||{}).value||'Pendente',
     responsavel: (document.getElementById('cbResp')||{}).value||'',
     obs: (document.getElementById('cbObs')||{}).value||'',
+    descricao: (document.getElementById('cbDesc')||{}).value||'',
+    formaPgto: (document.getElementById('cbFormaPgto')||{}).value||'',
     criadoEm: new Date().toLocaleString('pt-BR')
   };
   _iniciarProgresso('💳 Cobrança',[{pct:20,label:'Preparando...'},{pct:60,label:'Salvando na planilha...'}]);
@@ -6833,7 +6861,7 @@ function salvarCobr(){
       if(r&&r.success){
         toast('Cobrança salva!','ok');
           _registrarUltimoSalvo('Cobrança', cli);
-        ['cbCli','cbValor','cbVenc','cbObs','cbOS'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+        ['cbCli','cbValor','cbVenc','cbObs','cbOS','cbDesc','cbFormaPgto'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
         try{document.getElementById('cbVenc').valueAsDate=new Date();}catch(e){}
         var sel=document.getElementById('cbStatus');if(sel)sel.value='Pendente';
         var rep=document.getElementById('cbResp');if(rep)rep.value='';
@@ -6876,49 +6904,116 @@ function _fmtCobrDate(v){
 function renderCobr(){
   var el=document.getElementById('cobrList');if(!el)return;
   var hoje=new Date();hoje.setHours(0,0,0,0);
-  var lista=_cobranças.filter(function(c){return !_cobrFiltro||c.status===_cobrFiltro;});
-  var totalGeral=_cobranças.reduce(function(a,c){return a+(parseFloat(c.valor)||0);},0);
+  var mesFiltro=(document.getElementById('cobrMesFiltro')||{}).value||'';
+
+  // Popula select de meses com base nos dados
+  var mesSelect=document.getElementById('cobrMesFiltro');
+  if(mesSelect){
+    var mesesSet={};
+    _cobranças.forEach(function(c){
+      var vf=_fmtCobrDate(c.vencimento);
+      if(vf){var ps=vf.split('/');if(ps.length===3){var k=ps[2]+'/'+ps[1];mesesSet[k]=(ps[1]+'/20'+ps[2]);}}
+    });
+    var optHtml='<option value="">Todos os meses</option>';
+    Object.keys(mesesSet).sort().reverse().forEach(function(k){
+      var sel=mesFiltro===k?'selected':'';
+      optHtml+='<option value="'+k+'" '+sel+'>'+mesesSet[k]+'</option>';
+    });
+    var cur=mesSelect.value;
+    mesSelect.innerHTML=optHtml;
+    mesSelect.value=cur;
+  }
+
+  var lista=_cobranças.filter(function(c){
+    if(_cobrFiltro&&c.status!==_cobrFiltro) return false;
+    if(mesFiltro){
+      var vf=_fmtCobrDate(c.vencimento);
+      if(!vf) return false;
+      var ps=vf.split('/');
+      if(ps.length<3) return false;
+      var k=ps[2]+'/'+ps[1];
+      if(k!==mesFiltro) return false;
+    }
+    return true;
+  });
+
+  // Ordena: Atrasado > Pendente > Pago, depois por vencimento
+  lista.sort(function(a,b){
+    var ord={Atrasado:0,Pendente:1,Pago:2};
+    var oa=ord[a.status]!==undefined?ord[a.status]:1;
+    var ob=ord[b.status]!==undefined?ord[b.status]:1;
+    if(oa!==ob) return oa-ob;
+    return (a.vencimento||'').localeCompare(b.vencimento||'');
+  });
+
   var totalFilt=lista.reduce(function(a,c){return a+(parseFloat(c.valor)||0);},0);
+  var pendFilt=lista.filter(function(c){return c.status!=='Pago';}).reduce(function(a,c){return a+(parseFloat(c.valor)||0);},0);
   var totEl=document.getElementById('cobrTotal');
-  if(totEl) totEl.innerHTML='<strong>'+lista.length+' cobrança'+(lista.length!==1?'s':'')+'</strong> &nbsp;|&nbsp; Total filtrado: <strong style="color:#c62828">R$ '+totalFilt.toFixed(2).replace('.',',')+'</strong>';
-  if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhuma cobrança'+(  _cobrFiltro?' com este filtro':'')+'</div>';return;}
-  var statusCor={'Pendente':'#e67e22','Pago':'#1A6B2A','Atrasado':'#c62828'};
-  var statusIco={'Pendente':'⏳','Pago':'✅','Atrasado':'🔴'};
+  if(totEl) totEl.innerHTML='<strong>'+lista.length+'</strong> cobr. · <strong style="color:#c62828">'+fmt(pendFilt)+'</strong> a receber';
+
+  if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhuma cobrança'+((_cobrFiltro||mesFiltro)?' com este filtro':'')+'</div>';return;}
+
+  var statusCor={Pendente:'#e67e22',Pago:'#1A6B2A',Atrasado:'#c62828'};
+  var statusBg={Pendente:'#fff3e0',Pago:'#e8f5e9',Atrasado:'#fce4e4'};
+  var statusIco={Pendente:'⏳',Pago:'✅',Atrasado:'🔴'};
+  var pgtoIco={PIX:'⚡',Transferência:'🏦',Boleto:'📄',Dinheiro:'💵',Cheque:'📋'};
   var html='';
+
   lista.forEach(function(c){
     var cor=statusCor[c.status]||'#666';
+    var bg=statusBg[c.status]||'#fff8f0';
     var ico=statusIco[c.status]||'•';
     var vFmt=_fmtCobrDate(c.vencimento);
     var vDate=null;
-    if(vFmt){var ps=vFmt.split('/');if(ps.length===3)vDate=new Date(parseInt('20'+ps[2]),parseInt(ps[1])-1,parseInt(ps[0]));}
+    var diasAtraso=0;
+    if(vFmt){
+      var ps=vFmt.split('/');
+      if(ps.length===3) vDate=new Date(parseInt('20'+ps[2]),parseInt(ps[1])-1,parseInt(ps[0]));
+    }
     var atrasada=vDate&&c.status!=='Pago'&&vDate<hoje;
-    if(atrasada) cor='#c62828';
-
-    html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px;border:1px solid #f0f0f0;border-left:4px solid '+cor+'">';
-
-    // Linha 1: cliente + badge status
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
-    html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a">'+c.cliente+'</div>';
-    html+='<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'18;padding:3px 8px;border-radius:10px;white-space:nowrap">'+ico+' '+c.status+'</span>';
-    html+='</div>';
-
-    // Linha 2: OS + valor
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-    if(c.os) html+='<span style="font-size:10px;font-weight:700;color:#c62828;background:#fce4e4;padding:1px 7px;border-radius:8px">'+c.os+'</span>';
-    html+='<span style="font-size:20px;font-weight:800;color:'+cor+'">R$ '+(parseFloat(c.valor)||0).toFixed(2).replace('.',',')+'</span>';
-    html+='</div>';
-
-    // Linha 3: vencimento + responsável
-    if(vFmt||c.responsavel){
-      html+='<div style="font-size:11px;color:'+(atrasada?'#c62828':'#888')+';display:flex;align-items:center;gap:6px">';
-      if(vFmt) html+='<span>'+(atrasada?'⚠️ ':'📅 ')+'Venc: <b>'+vFmt+'</b></span>';
-      if(vFmt&&c.responsavel) html+='<span style="color:#ddd">·</span>';
-      if(c.responsavel) html+='<span>👷 '+c.responsavel+'</span>';
-      html+='</div>';
+    if(atrasada){
+      cor='#c62828';
+      diasAtraso=Math.floor((hoje-vDate)/(1000*60*60*24));
     }
 
-    // Linha 4: obs
-    if(c.obs) html+='<div style="font-size:11px;color:#888;font-style:italic;margin-top:4px">'+c.obs+'</div>';
+    html+='<div style="border:1px solid var(--bd);border-left:4px solid '+cor+';border-radius:0 10px 10px 0;background:#fff;margin:6px 12px;overflow:hidden">';
+
+    // ── Header ──
+    html+='<div style="padding:10px 12px 8px">';
+    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px">';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="font-size:13px;font-weight:800;color:#1a1a1a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+c.cliente+'</div>';
+    if(c.descricao) html+='<div style="font-size:11px;color:#555;margin-top:1px">'+c.descricao+'</div>';
+    html+='</div>';
+    html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
+    html+='<div style="font-size:16px;font-weight:900;color:'+cor+'">'+fmt(parseFloat(c.valor)||0)+'</div>';
+    html+='<span style="font-size:9px;background:'+bg+';color:'+cor+';padding:2px 8px;border-radius:8px;font-weight:700">'+ico+' '+c.status+'</span>';
+    html+='</div></div>';
+
+    // ── Info row ──
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+    if(c.os) html+='<span style="font-size:9px;font-weight:700;color:#c62828;background:#fce4e4;padding:2px 7px;border-radius:6px">'+c.os+'</span>';
+    if(vFmt){
+      if(atrasada){
+        html+='<span style="font-size:10px;font-weight:700;color:#c62828">⚠️ '+diasAtraso+'d atraso ('+vFmt+')</span>';
+      } else {
+        html+='<span style="font-size:10px;color:#888">📅 '+vFmt+'</span>';
+      }
+    }
+    if(c.responsavel) html+='<span style="font-size:10px;color:#888">👷 '+c.responsavel+'</span>';
+    if(c.formaPgto) html+='<span style="font-size:9px;background:#f5f5f5;color:#555;padding:2px 7px;border-radius:6px;font-weight:600">'+(pgtoIco[c.formaPgto]||'💳')+' '+c.formaPgto+'</span>';
+    html+='</div>';
+
+    if(c.obs) html+='<div style="font-size:10px;color:#888;margin-top:4px;font-style:italic">'+c.obs+'</div>';
+
+    html+='</div>';
+
+    // ── Ação marcar como paga ──
+    if(c.status!=='Pago'){
+      html+='<div style="padding:6px 12px 8px;border-top:1px solid #f5f5f5;background:#fafafa">';
+      html+='<button onclick="marcarCobrancaPaga(\''+c.num+'\')" style="width:100%;padding:8px;border:none;border-radius:8px;background:#1A6B2A;color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">✅ Marcar como Recebida</button>';
+      html+='</div>';
+    }
 
     html+='</div>';
   });
