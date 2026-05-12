@@ -3922,12 +3922,30 @@ function renderHistFiltrado(){
       sigHtml='<img class="csimg" data-sig-num="'+o.num+'" src="'+initialSrc+'" alt="" style="'+(initialSrc?'':'display:none')+'" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'inline\'">'
              +'<span class="csno" style="'+(initialSrc?'display:none':'')+'">Carregando...</span>';
     }
+    // Descrição dos eventos agenda vinculados
+    var agDescHtml='';
+    if(o.eventoAgendaId&&_agEventos&&_agEventos.length){
+      var evIds=String(o.eventoAgendaId).split(',').map(function(s){return s.trim();}).filter(Boolean);
+      evIds.forEach(function(eid){
+        var ev=_agEventos.find(function(e){return e.id===eid;});
+        if(ev&&ev.descricao&&ev.descricao.trim()){
+          var dt=_fmtVendDate(ev.dataISO||ev.data||'');
+          agDescHtml+='<div style="margin-top:4px;padding:5px 8px;background:#f0f4ff;border-left:3px solid #1a4a7a;border-radius:0 6px 6px 0">'
+            +'<div style="font-size:8px;font-weight:700;color:#1a4a7a;margin-bottom:2px">📅 '+dt+(ev.titulo?' — '+ev.titulo.substring(0,30):'')+'</div>'
+            +'<div style="font-size:10px;color:#374151;line-height:1.4">'+ev.descricao+'</div>'
+            +'</div>';
+        }
+      });
+    }
+
     // Build card
     var card='<div class="ocard">'
       +'<div class="chdr"><span class="cnum">'+(o.num||'--')+'</span><span class="cdt">'+(o.data||'')+'</span>'
       +'<span style="background:'+tipoBg+';color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px">'+tipoNm+'</span>'
       +'<button class="pgbtn" style="'+pgS+'" onclick="togglePaga('+oidx+')">'+( o.paga?'PAGA':'Pagar')+'</button></div>'
-      +'<div class="cdesc" style="padding:5px 14px 3px"><div class="cdlbl">Descricao</div><div class="cdtxt">'+(o.descricao||'Sem descricao')+'</div></div>'
+      +'<div class="cdesc" style="padding:5px 14px 3px"><div class="cdlbl">Descricao</div><div class="cdtxt">'+(o.descricao||'Sem descricao')+'</div>'
+      +agDescHtml
+      +'</div>'
       +'<div class="cnm" style="padding:2px 14px 4px;font-size:12px">'+(o.cliente||'--')+' <span style="font-size:11px;color:var(--mu);font-weight:400">'+(o.tecnico||'')+'</span>'+spL+'</div>'
       +'<div class="cmet" style="grid-template-columns:1fr 1fr 1fr">'
         +'<div class="mc"><div class="ml">Horas</div><div class="mv">'+(o.horas||0)+' h</div></div>'
