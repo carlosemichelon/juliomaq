@@ -1937,6 +1937,22 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="ldbarFill" style="height:100%;background:#fff;border-radius:10px;width:0%;transition:width .3s ease"></div>
   </div>
   <div id="ldSub" style="display:none;font-size:11px;color:rgba(255,255,255,.7);text-align:center"></div>
+  <!-- Progresso de fotos -->
+  <div id="ldFotoBox" style="display:none;margin-top:10px;width:240px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:10px;color:rgba(255,255,255,.8);font-weight:700">📷 Fotos</span>
+      <span id="ldFotoCnt" style="font-size:10px;color:rgba(255,255,255,.8)">0/0</span>
+    </div>
+    <div style="background:rgba(255,255,255,.2);border-radius:10px;height:6px;overflow:hidden">
+      <div id="ldFotoFill" style="height:100%;background:#4ade80;border-radius:10px;width:0%;transition:width .4s ease"></div>
+    </div>
+    <div id="ldFotoNome" style="font-size:9px;color:rgba(255,255,255,.6);margin-top:3px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></div>
+  </div>
+  <!-- Indicador de conexão -->
+  <div id="ldConn" style="display:none;margin-top:12px;display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.75)">
+    <div id="ldConnDot" style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
+    <span id="ldConnTxt">Conectado</span>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -3544,37 +3560,35 @@ function uploadMidias(numOS){
   var fila=midias.slice();
   midias=[];
   var prev=document.getElementById('mediaPrev');if(prev)prev.innerHTML='';
-  showLoad('Enviando fotos...','0 de '+total);
+
+  // Mostra painel de fotos dedicado
+  showLoad('Enviando fotos...','Aguarde — não feche o aplicativo');
   setProgress(0);
+  var fotoBox=document.getElementById('ldFotoBox');
+  if(fotoBox) fotoBox.style.display='block';
+  _setFotoProgress(0, total, '');
 
   function comprimirFoto(file, cb){
     var isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
                  file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
     if(file.type.indexOf('video') === 0){
-      // Vídeos: envia sem compressão
       var r=new FileReader();
       r.onload=function(e){cb(e.target.result.split(',')[1], file.type);};
       r.readAsDataURL(file);
       return;
     }
     if(isHeic){
-      // HEIC: canvas não processa HEIC — envia raw e deixa o Drive converter
       var r=new FileReader();
-      r.onload=function(e){
-        var b64=e.target.result.split(',')[1];
-        cb(b64, 'image/heic');
-      };
+      r.onload=function(e){cb(e.target.result.split(',')[1], 'image/heic');};
       r.readAsDataURL(file);
       return;
     }
-    // Se arquivo < 500KB, envia sem comprimir
     if(file.size < 500*1024){
       var r0=new FileReader();
       r0.onload=function(e){cb(e.target.result.split(',')[1], file.type||'image/jpeg');};
       r0.readAsDataURL(file);
       return;
     }
-    // Comprime para JPEG 80% max 1200px
     var r=new FileReader();
     r.onload=function(e){
       var img=new Image();
@@ -3587,9 +3601,7 @@ function uploadMidias(numOS){
         var jpeg=cv.toDataURL('image/jpeg',0.8);
         cb(jpeg.split(',')[1],'image/jpeg');
       };
-      img.onerror=function(){
-        cb(e.target.result.split(',')[1], file.type||'image/jpeg');
-      };
+      img.onerror=function(){cb(e.target.result.split(',')[1], file.type||'image/jpeg');};
       img.src=e.target.result;
     };
     r.readAsDataURL(file);
@@ -3597,6 +3609,8 @@ function uploadMidias(numOS){
 
   function enviarProxima(){
     if(!fila.length){
+      var fotoBox=document.getElementById('ldFotoBox');
+      if(fotoBox) fotoBox.style.display='none';
       setProgress(100,'Concluído!');
       setTimeout(function(){
         hideLoad();
@@ -3606,13 +3620,15 @@ function uploadMidias(numOS){
       return;
     }
     var file=fila.shift();
-    var idx=total-fila.length;
-    var pct=Math.round(((idx-1)/total)*100);
-    setProgress(pct,'Enviando fotos...', idx+' de '+total+': '+file.name.substring(0,25));
+    var enviado=total-fila.length;
+    var pct=Math.round(((enviado-1)/total)*100);
+    _setFotoProgress(enviado-1, total, file.name.substring(0,30));
+    setProgress(pct,'Enviando fotos...');
     comprimirFoto(file, function(b64, tipo){
       google.script.run
         .withSuccessHandler(function(res){
           if(res&&res.success) ok++; else fail++;
+          _setFotoProgress(total-fila.length, total, '');
           enviarProxima();
         })
         .withFailureHandler(function(){
@@ -3721,12 +3737,36 @@ function g(id){var el=document.getElementById(id);return el?el.value:'';}
 function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
 function pad(n){return String(n).padStart(3,'0');}
 function fmt(v){var n=parseFloat(v)||0,str=n.toFixed(2).replace('.',','),p=str.split(','),ip=p[0],r='';for(var i=0;i<ip.length;i++){if(i>0&&(ip.length-i)%3===0)r+='.';r+=ip[i];}return 'R$ '+r+','+p[1];}
+function _setFotoProgress(enviado, total, nome){
+  var cnt=document.getElementById('ldFotoCnt');
+  var fill=document.getElementById('ldFotoFill');
+  var nmEl=document.getElementById('ldFotoNome');
+  if(cnt) cnt.textContent=enviado+'/'+total;
+  if(fill) fill.style.width=(total>0?Math.round((enviado/total)*100):0)+'%';
+  if(nmEl) nmEl.textContent=nome||'';
+}
+
+// ── Monitor de conexão no overlay de loading ──────────────────
+function _monitorarConexao(){
+  var dot=document.getElementById('ldConnDot');
+  var txt=document.getElementById('ldConnTxt');
+  var box=document.getElementById('ldConn');
+  if(!dot||!txt) return;
+  var online=navigator.onLine;
+  if(dot) dot.style.background=online?'#4ade80':'#f87171';
+  if(txt) txt.textContent=online?'Conectado':'Sem conexão — aguardando...';
+  if(box) box.style.display='flex';
+}
+window.addEventListener('online',  function(){ _monitorarConexao(); });
+window.addEventListener('offline', function(){ _monitorarConexao(); });
+
 function showLoad(t,sub){
   var l=document.getElementById('load');if(!l)return;
   l.className='open';
   var lt=document.getElementById('ldtxt');if(lt)lt.textContent=t||'Aguarde...';
   var ls=document.getElementById('ldSub');if(ls){ls.textContent=sub||'';ls.style.display=sub?'block':'none';}
   var lb=document.getElementById('ldbar');if(lb)lb.style.display='none';
+  _monitorarConexao();
   var lf=document.getElementById('ldbarFill');if(lf)lf.style.width='0%';
 }
 function setProgress(pct,txt,sub){
