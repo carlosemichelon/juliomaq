@@ -2643,7 +2643,24 @@ function printOS(o){
 
   // ── SERVIÇO ──
   html+='<div class="sec"><div class="sh" style="display:flex;align-items:center;justify-content:space-between"><span>Serviço</span><span style="background:'+cor+';font-size:10px;padding:2px 10px;border-radius:10px;font-weight:700">'+(o.tipo||'--')+'</span></div>';
-  html+='<div style="padding:10px 14px;font-size:13px;line-height:1.7;border-left:4px solid '+cor+';margin:6px;background:#f5faff;border-radius:3px">'+(o.descricao||'Sem descrição')+'</div></div>';
+  html+='<div style="padding:5px 14px 3px">';
+  html+='<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Descrição</div>';
+  html+='<div style="font-size:12px;color:#1a1a1a;line-height:1.6">'+(o.descricao||'Sem descrição')+'</div>';
+  // Descrições dos eventos agenda vinculados
+  if(o.eventoAgendaId&&_agEventos&&_agEventos.length){
+    var evIds2=o.eventoAgendaId.split(',').map(function(s){return s.trim();}).filter(Boolean);
+    evIds2.forEach(function(eid){
+      var ev=_agEventos.find(function(e){return e.id===eid;});
+      if(ev&&ev.descricao&&ev.descricao.trim()){
+        var dt=_fmtVendDate(ev.dataISO||ev.data||'');
+        html+='<div style="margin-top:5px;padding:5px 8px;background:#f0f4ff;border-left:3px solid #1a4a7a;border-radius:0 6px 6px 0">';
+        html+='<div style="font-size:8px;font-weight:700;color:#1a4a7a;margin-bottom:2px">📅 '+dt+(ev.titulo?' — '+ev.titulo.substring(0,35):'')+'</div>';
+        html+='<div style="font-size:10px;color:#374151;line-height:1.4">'+ev.descricao+'</div>';
+        html+='</div>';
+      }
+    });
+  }
+  html+='</div></div>';
 
   // ── VALOR ──
   html+='<div class="sec"><div class="sh">Valor</div><div class="v3">';
