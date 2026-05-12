@@ -2518,12 +2518,49 @@ function imprimirAtual(){ if(ultimaSalva) printOS(ultimaSalva); }
 function waAtual(){ if(ultimaSalva) waOS(ultimaSalva); }
 
 // ── Print OS ─────────────────────────────────────────────────
+function _urlToBase64(url, cb){
+  try{
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET',url,true);
+    xhr.responseType='blob';
+    xhr.onload=function(){
+      if(xhr.status!==200){cb(url);return;}
+      var r=new FileReader();
+      r.onloadend=function(){cb(r.result);};
+      r.onerror=function(){cb(url);};
+      r.readAsDataURL(xhr.response);
+    };
+    xhr.onerror=function(){cb(url);};
+    xhr.send();
+  }catch(e){cb(url);}
+}
+
+function _carregarFotosBase64(urls, callback){
+  if(!urls||!urls.length){callback([]);return;}
+  var resultados=new Array(urls.length);
+  var pendentes=urls.length;
+  urls.forEach(function(url,i){
+    var m1=url.match(/[?&]id=([^&]+)/);
+    var m2=url.match(/\/d\/([^\/\?]+)/);
+    var fid=m1?m1[1]:(m2?m2[1]:null);
+    var proxyUrl=fid?('https://lh3.googleusercontent.com/d/'+fid+'=w400-h400-c'):url;
+    _urlToBase64(proxyUrl,function(b64){
+      resultados[i]=b64;
+      if(--pendentes===0) callback(resultados);
+    });
+  });
+}
+
 function printOS(o){
-  var sig=(o.sig&&o.sig.indexOf('data:')===0)?o.sig:((o.sigUrl&&o.sigUrl.length>4)?o.sigUrl:'');
+  var sig=(o.sig&&o.sig.indexOf('data:')===0)?o.sig:((o.sigUrl&&o.sigUrl.length>4)?driveThumb(o.sigUrl,'w400'):'');
   var vT=parseFloat(o.vTotal)||0,vH=parseFloat(o.vHora)||0,vK=parseFloat(o.vKm)||0;
   var tCor={Garantia:'#e65c00',Cliente:'#1A6B2A','Cortesia/Comercial':'#1a4a7a','Contrato Fechado':'#6a0dad'};
   var cor=tCor[o.tipo]||'#1A6B2A';
   function R(l,v){return '<tr><td style="font-size:10px;color:#555;text-transform:uppercase;padding:5px 10px;width:36%;border-bottom:1px solid #e8e8e8;font-weight:600">'+l+'</td><td style="font-size:13px;font-weight:700;padding:5px 10px;border-bottom:1px solid #e8e8e8;text-align:right;color:#111">'+(v||'--')+'</td></tr>';}
+  var fArr=(o.fotosArr&&o.fotosArr.length)?o.fotosArr:[];
+  toast('Preparando PDF...','ok',5000);
+  _carregarFotosBase64(fArr,function(fotosB64){
+  o._fotosB64=fotosB64;
   var win=window.open('','_blank','width=900,height=1200');
   if(!win){toast('Libere pop-ups para imprimir','warn',5000);return;}
   win.document.open();
@@ -2602,9 +2639,12 @@ function printOS(o){
   html+='<div class="sec" style="flex:2;display:flex;flex-direction:column">';
   html+='<div class="sh">Fotos ('+fArr.length+')</div>';
   html+='<div style="padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;flex:1">';
-  if(fArr.length){
-    fArr.slice(0,9).forEach(function(url){
-      html+='<img src="'+url+'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid #ddd">';
+  var fArr2=o._fotosB64&&o._fotosB64.length?o._fotosB64:fArr;
+  if(fArr2.length){
+    fArr2.slice(0,9).forEach(function(src){
+      if(src&&src.length>10){
+        html+='<img src="'+src+'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid #ddd;flex-shrink:0">';
+      }
     });
   } else {
     html+='<div style="color:#bbb;font-size:12px;padding:16px">Nenhuma foto</div>';
@@ -2619,6 +2659,7 @@ function printOS(o){
   html+='</div>';
   html+='\n</body></html>';
   win.document.write(html);win.document.close();
+  }); // fim _carregarFotosBase64
   if(isIOS()){toast('iOS: no Safari, toque em Compartilhar → Imprimir','ok',6000);}
   else{setTimeout(function(){try{win.focus();win.print();}catch(ex){}},500);}
 }
