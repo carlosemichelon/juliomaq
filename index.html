@@ -3937,6 +3937,14 @@ function renderHistFiltrado(){
         }
       });
     }
+    // Obs adicional editável
+    var obsAd=o.obsAdicional||'';
+    var obsAdHtml='<div style="margin-top:6px">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:3px">✏️ Observações Adicionais</div>'
+      +'<textarea id="obsAd_'+o.num+'" rows="2" placeholder="Escreva observações adicionais..." '
+      +'style="width:100%;font-family:inherit;font-size:11px;border:1.5px solid var(--bd);border-radius:8px;padding:6px 8px;resize:vertical;color:#374151;background:#fafafa;box-sizing:border-box;line-height:1.4" '
+      +'onblur="_salvarObsAd(\''+o.num+'\',this.value)">'+obsAd+'</textarea>'
+      +'</div>';
 
     // Build card
     var card='<div class="ocard">'
@@ -3945,6 +3953,7 @@ function renderHistFiltrado(){
       +'<button class="pgbtn" style="'+pgS+'" onclick="togglePaga('+oidx+')">'+( o.paga?'PAGA':'Pagar')+'</button></div>'
       +'<div class="cdesc" style="padding:5px 14px 3px"><div class="cdlbl">Descricao</div><div class="cdtxt">'+(o.descricao||'Sem descricao')+'</div>'
       +agDescHtml
+      +obsAdHtml
       +'</div>'
       +'<div class="cnm" style="padding:2px 14px 4px;font-size:12px">'+(o.cliente||'--')+' <span style="font-size:11px;color:var(--mu);font-weight:400">'+(o.tecnico||'')+'</span>'+spL+'</div>'
       +'<div class="cmet" style="grid-template-columns:1fr 1fr 1fr">'
@@ -5412,7 +5421,26 @@ function renderResumoDespesas(){
     html+='<div style="flex:1">';
     html+='<div style="font-size:12px;font-weight:700">'+d.fornecedor+'</div>';
     html+='<div style="font-size:11px;color:#555">'+d.descricao+'</div>';
-    html+='<div style="font-size:10px;color:#999;margin-top:2px">'+d.data+' · '+(d.comprador||'--')+'</div>';
+    // Data formatada
+    var dtDesp=(function(v){
+      if(!v) return '';
+      var s=String(v);
+      if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+      var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m) return m[3]+'/'+m[2]+'/'+m[1];
+      var d2=new Date(s);
+      if(!isNaN(d2)) return ('0'+d2.getDate()).slice(-2)+'/'+(('0'+(d2.getMonth()+1)).slice(-2))+'/'+d2.getFullYear();
+      return s.substring(0,10);
+    })(d.data||'');
+    html+='<div style="font-size:10px;color:#999;margin-top:2px">'+dtDesp+'</div>';
+    // Comprador em destaque
+    if(d.comprador){
+      var comprIco=d.comprador.toLowerCase().indexOf('juliomaq')>=0?'🏢':'👤';
+      html+='<div style="display:flex;align-items:center;gap:5px;margin-top:4px">';
+      html+='<span style="font-size:14px">'+comprIco+'</span>';
+      html+='<span style="font-size:13px;font-weight:800;color:#374151">'+d.comprador+'</span>';
+      html+='</div>';
+    }
     html+='<div style="font-size:10px;color:'+cor+';margin-top:1px">'+d.categoria+'</div>';
     // Badges
     html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">';
@@ -5551,7 +5579,16 @@ function carregarResumoVei(){
         var cor=tipoTxtCor[t]||'#374151';
         var bg=tipoCor[t]||'#f5f5f5';
         var ico=tipoIco[t]||'🔧';
-        var dtFmt=_fmtVendDate(v.data||'');
+        var dtFmt=(function(v){
+          if(!v) return '';
+          var s=String(v);
+          if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+          var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if(m) return m[3]+'/'+m[2]+'/'+m[1];
+          var d=new Date(s);
+          if(!isNaN(d)) return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+d.getFullYear();
+          return s.substring(0,10);
+        })(v.data||'');
         html+='<div style="border:1px solid var(--bd);border-left:4px solid '+cor+';border-radius:0 8px 8px 0;background:#fff;padding:8px 10px;margin-bottom:6px">';
         html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
         html+='<div style="flex:1;min-width:0">';
@@ -7770,6 +7807,16 @@ function salvarEditVei(){
     .editarManutencao(dados);
 }
 // ─────────────────────────────────────────────────────────────
+
+function _salvarObsAd(num, valor){
+  // Salva obs adicional na col Z (25) da OS
+  var o=ordens.find(function(x){return x.num===num;});
+  if(o) o.obsAdicional=valor;
+  google.script.run
+    .withSuccessHandler(function(){toast('Obs salva','ok',1500);})
+    .withFailureHandler(function(){toast('Erro ao salvar obs','err');})
+    .atualizarCampoOS(num,'obsAdicional',valor);
+}
 
 // ── Editar OS ─────────────────────────────────────────────────
 function abrirEditOS(num){
