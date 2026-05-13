@@ -906,13 +906,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Carlos" style="display:none">Carlos</label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Christiano" style="display:none">Christiano</label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Lucas" style="display:none">Lucas</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Sandro" style="display:none">Sandro</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="João Acker" style="display:none">João Acker</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Welinton" style="display:none">Welinton</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="Everaldo" style="display:none">Everaldo</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTec(this)"><input type="checkbox" class="agTecChk" value="João Dias" style="display:none">João Dias</label>
       </div>
-    </div>
     </div>
     <div class="f" style="align-items:center">
       <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer">
@@ -1759,6 +1753,13 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
       </div>
       <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="agEditDesc" style="height:60px"></textarea></div>
+      <div class="f"><label class="fl">Técnicos Destinados</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px 2px">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecEdit(this)"><input type="checkbox" class="agEditTecChk" value="Carlos" style="display:none">Carlos</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecEdit(this)"><input type="checkbox" class="agEditTecChk" value="Christiano" style="display:none">Christiano</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecEdit(this)"><input type="checkbox" class="agEditTecChk" value="Lucas" style="display:none">Lucas</label>
+        </div>
+      </div>
       <div id="agEditOSBox" style="padding:0 4px 8px"></div>
     </div>
     <div style="padding:0 16px 16px;display:flex;gap:8px">
@@ -8012,6 +8013,36 @@ function _limparTecnicos(){
   });
 }
 
+function _toggleTecEdit(lbl){
+  var chk=lbl.querySelector('.agEditTecChk');
+  if(!chk) return;
+  chk.checked=!chk.checked;
+  if(chk.checked){lbl.style.background='var(--bl)';lbl.style.color='#fff';lbl.style.borderColor='var(--bl)';}
+  else{lbl.style.background='#f5f5f5';lbl.style.color='#374151';lbl.style.borderColor='var(--bd)';}
+}
+
+function _setTecnicosEdit(tecnicos){
+  // Reset todos
+  document.querySelectorAll('.agEditTecChk').forEach(function(c){
+    c.checked=false;
+    var lbl=c.parentElement;
+    if(lbl){lbl.style.background='#f5f5f5';lbl.style.color='#374151';lbl.style.borderColor='var(--bd)';}
+  });
+  if(!tecnicos) return;
+  var lista=tecnicos.split(',').map(function(t){return t.trim();});
+  document.querySelectorAll('.agEditTecChk').forEach(function(c){
+    if(lista.indexOf(c.value)>=0){
+      c.checked=true;
+      var lbl=c.parentElement;
+      if(lbl){lbl.style.background='var(--bl)';lbl.style.color='#fff';lbl.style.borderColor='var(--bl)';}
+    }
+  });
+}
+
+function _getTecnicosEdit(){
+  return Array.from(document.querySelectorAll('.agEditTecChk:checked')).map(function(c){return c.value;}).join(', ');
+}
+
 function toggleAgHora(diaInt){
   var b=document.getElementById('agHoraBox');if(b)b.style.display=diaInt?'none':'block';
 }
@@ -8298,6 +8329,7 @@ function abrirEditEvento(ev){
   // Responsável
   var sel=document.getElementById('agEditResp');
   if(sel){for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===ev.responsavel)sel.selectedIndex=i;}}
+  _setTecnicosEdit(ev.tecnicos||'');
   // Dia inteiro
   var diaInt = ev.diaInteiro==='Sim';
   document.getElementById('agEditDiaInt').checked = diaInt;
@@ -8341,6 +8373,7 @@ function salvarEdicaoEvento(){
     horaInicio:diaInt?'':(document.getElementById('agEditHrIn')||{}).value||'',
     horaFim:diaInt?'':(document.getElementById('agEditHrFim')||{}).value||'',
     responsavel:(document.getElementById('agEditResp')||{}).value||'',
+    tecnicos:_getTecnicosEdit(),
     descricao:(document.getElementById('agEditDesc')||{}).value||''
   };
   _iniciarProgresso('📅 Editando evento',[{pct:30,label:'Salvando...'},{pct:75,label:'Atualizando...'}]);
