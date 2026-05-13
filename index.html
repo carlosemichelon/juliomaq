@@ -5770,7 +5770,7 @@ function renderAtiv(){
       html+='<div style="flex:1;min-width:0">';
       html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px">'+a.descricao+'</div>';
       if(a.data) html+='<div style="font-size:10px;color:'+(vencida?'#c62828':'#999')+'">'+( vencida?'⚠️ ':'')+a.data+'</div>';
-      if(a.obs) html+='<div style="font-size:11px;color:#666;margin-top:3px;font-style:italic">'+a.obs+'</div>';
+      if(a.obs){var obsDisplay=a.obs.replace(/\s*\|\s*evId:[^\s|]*/,'').trim();if(obsDisplay)html+='<div style="font-size:11px;color:#666;margin-top:3px;font-style:italic">'+obsDisplay+'</div>';}
       html+='</div>';
       // Status + select
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
