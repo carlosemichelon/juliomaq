@@ -672,6 +672,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
         <div><label class="fl">Status</label>
           <select class="fi" id="aStatus" style="background:#fff">
+            <option value="">— Nenhum —</option>
             <option value="Solicitado">Solicitado</option>
             <option value="Em análise">Em análise</option>
             <option value="Aguardando retorno do item">Aguardando retorno do item</option>
@@ -5755,7 +5756,7 @@ function renderAtiv(){
     html+='<span style="font-size:10px;background:'+tinfo.cor+'22;color:'+tinfo.cor+';padding:1px 7px;border-radius:8px;font-weight:700">'+items.length+'</span>';
     html+='</div>';
     items.forEach(function(a){
-      var stCor=_STATUS_COR[a.status]||'#555';
+      var stCor=_STATUS_COR[a.status]||(a.status?'#555':'#bbb');
       var vencida=a.data&&a.status!=='Encerrado'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
       var obsDisplay=a.obs?a.obs.replace(/\s*\|\s*evId:[^\s|]*/,'').trim():'';
       html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px">';
@@ -5766,10 +5767,10 @@ function renderAtiv(){
       if(obsDisplay) html+='<div style="font-size:11px;color:#666;margin-top:3px;font-style:italic">'+obsDisplay+'</div>';
       html+='</div>';
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
-      html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stCor+'18;padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+a.status+'</span>';
+      html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stCor+'18;padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+(a.status||'— Nenhum —')+'</span>';
       html+='<select onchange="atualizarStatusAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer;max-width:130px">';
-      ['Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
-        html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';
+      ['','Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
+        html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';
       });
       html+='</select>';
       html+='<button onclick="abrirEditAtiv(\''+a.id+'\')" style="font-size:9px;background:#f5f5f5;border:1px solid var(--bd);color:#374151;border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✏️ Editar</button>';
@@ -5790,7 +5791,7 @@ function abrirEditAtiv(id){
   modal.id='ativEditModal';
   modal.style.cssText='position:fixed;inset:0;z-index:9030;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
   var topicoOpts=['Entregas','Garantia','Servicos','Revisoes','OT Pendentes'].map(function(t){return '<option value="'+t+'"'+(a.topico===t?' selected':'')+'>'+t+'</option>';}).join('');
-  var statusOpts=['Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';}).join('');
+  var statusOpts=['','Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';}).join('');
   var dtVal=a.data?a.data.split('/').reverse().join('-'):'';
   modal.innerHTML='<div style="background:#fff;width:100%;max-width:480px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25)">'
     +'<div style="background:#00396b;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">'
@@ -5811,6 +5812,7 @@ function abrirEditAtiv(id){
     +'<div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd)">'
     +'<button onclick="salvarEditAtiv()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>'
     +'<button onclick="fecharEditAtiv()" style="padding:11px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Cancelar</button>'
+    +'<button onclick="apagarAtiv(\''+id+'\')" style="padding:11px 14px;border:none;border-radius:10px;background:#c62828;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation">🗑️</button>'
     +'</div></div>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
@@ -5844,6 +5846,18 @@ function salvarEditAtiv(){
     })
     .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
     .editarAtividade(dados);
+}
+
+function apagarAtiv(id){
+  if(!confirm('Apagar este registro?')) return;
+  fecharEditAtiv();
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){loadAtividades();toast('Registro apagado','ok');}
+      else toast('Erro ao apagar','err');
+    })
+    .withFailureHandler(function(){toast('Erro ao apagar','err');})
+    .apagarAtividade(id);
 }
 
 function atualizarStatusAtiv(id,novoStatus){
