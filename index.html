@@ -5753,7 +5753,8 @@ function renderAtiv(){
       var d=(a.descricao||'').toLowerCase();
       if(d.indexOf('entrega')>=0||d.indexOf('delivery')>=0) a.topico='Entregas';
       else if(d.indexOf('garantia')>=0||d.indexOf('peça')>=0||d.indexOf('peca')>=0) a.topico='Garantia';
-      else if(d.indexOf('revisão')>=0||d.indexOf('revisao')>=0||d.indexOf('revisao')>=0) a.topico='Revisoes';
+      else if(d.indexOf('revisão')>=0||d.indexOf('revisao')>=0) a.topico='Revisoes';
+      else a.topico='Servicos'; // cliente, contrato, serviço = Servicos
     }
     return a;
   }).filter(function(a){
