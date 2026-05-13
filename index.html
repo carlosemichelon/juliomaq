@@ -652,10 +652,19 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <button onclick="toggleNovaAtiv()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">➕ Nova</button>
     </div>
 
-    <!-- Formulário nova atividade (colapsável) -->
+    <!-- Formulário nova atividade -->
     <div id="novaAtivForm" style="display:none;padding:12px;border-bottom:1px solid var(--bd);background:#f0f4ff">
+      <div class="f"><label class="fl">Tópico *</label>
+        <select class="fi" id="aTopico">
+          <option value="Entregas">📦 Entregas</option>
+          <option value="Garantia">🛡️ Garantia</option>
+          <option value="Servicos">🔧 Serviços</option>
+          <option value="Revisoes">🔍 Revisões</option>
+          <option value="OT Pendentes">⏳ OT Pendentes</option>
+        </select>
+      </div>
       <div class="f"><label class="fl">Descrição *</label>
-        <textarea class="fi" id="aDesc" placeholder="O que precisa ser feito..." style="height:60px"></textarea>
+        <textarea class="fi" id="aDesc" placeholder="Descreva o item..." style="height:60px"></textarea>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 8px">
         <div><label class="fl">Data Limite</label>
@@ -663,44 +672,38 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
         <div><label class="fl">Status</label>
           <select class="fi" id="aStatus" style="background:#fff">
-            <option value="Pendente">Pendente</option>
-            <option value="Em andamento">Em andamento</option>
-            <option value="Concluída">Concluída</option>
+            <option value="Solicitado">Solicitado</option>
+            <option value="Em análise">Em análise</option>
+            <option value="Aguardando retorno do item">Aguardando retorno do item</option>
+            <option value="Aguardando pagamento">Aguardando pagamento</option>
+            <option value="Aprovado">Aprovado</option>
+            <option value="Aprovado com retorno da peça">Aprovado com retorno da peça</option>
+            <option value="Reprovado">Reprovado</option>
+            <option value="Reprovado falta de informações">Reprovado falta de informações</option>
+            <option value="Encerrado">Encerrado</option>
           </select>
         </div>
-      </div>
-      <div class="f"><label class="fl">Responsável</label>
-        <select class="fi" id="aResp">
-          <option value="">Selecione</option>
-          <option>Carlos</option><option>Christiano</option><option>Lucas</option>
-          <option>Sandro</option><option>João Acker</option><option>Welinton</option>
-          <option>Everaldo</option><option>João Dias</option>
-        </select>
       </div>
       <div class="f"><label class="fl">Obs</label>
         <input class="fi" id="aObs" type="text" placeholder="Observação...">
       </div>
-      <div class="f"><label class="fl">Aguardando</label>
-        <input class="fi" id="aAguard" type="text" placeholder="O que estou aguardando...">
-      </div>
-      <div class="f"><label class="fl">Pendente (o que falta para finalizar)</label>
-        <input class="fi" id="aPend" type="text" placeholder="Ex: Retorno do cliente, aprovação...">
-      </div>
       <div style="display:flex;gap:8px;padding:0 12px">
-        <button onclick="salvarAtiv()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 Salvar</button>
-        <button onclick="toggleNovaAtiv()" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer">Cancelar</button>
+        <button onclick="salvarAtiv()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>
+        <button onclick="toggleNovaAtiv()" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Cancelar</button>
       </div>
     </div>
 
-    <!-- Filtros de status -->
-    <div style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap">
-      <button class="aFBtn on" id="afb_all"     onclick="setAtivFiltro('')">Todas</button>
-      <button class="aFBtn" id="afb_pend"   onclick="setAtivFiltro('Pendente')" style="color:#bf360c">⏳ Pendente</button>
-      <button class="aFBtn" id="afb_and"    onclick="setAtivFiltro('Em andamento')" style="color:#e67e22">🔄 Em andamento</button>
-      <button class="aFBtn" id="afb_conc"   onclick="setAtivFiltro('Concluída')" style="color:#1A6B2A">✅ Concluída</button>
+    <!-- Filtros por tópico -->
+    <div style="display:flex;gap:5px;padding:8px 12px;flex-wrap:wrap;overflow-x:auto">
+      <button class="aFBtn on" id="afb_all" onclick="setAtivFiltro('')">Todos</button>
+      <button class="aFBtn" id="afb_ent" onclick="setAtivFiltro('Entregas')">📦 Entregas</button>
+      <button class="aFBtn" id="afb_gar" onclick="setAtivFiltro('Garantia')">🛡️ Garantia</button>
+      <button class="aFBtn" id="afb_ser" onclick="setAtivFiltro('Servicos')">🔧 Serviços</button>
+      <button class="aFBtn" id="afb_rev" onclick="setAtivFiltro('Revisoes')">🔍 Revisões</button>
+      <button class="aFBtn" id="afb_ot" onclick="setAtivFiltro('OT Pendentes')">⏳ OT Pendentes</button>
     </div>
 
-    <div id="ativList"><div class="empty" style="padding:16px">Nenhuma atividade</div></div>
+    <div id="ativList"><div class="empty" style="padding:16px">Nenhum registro</div></div>
   </div>
 
   <!-- Botões Salesforce -->
@@ -5657,9 +5660,27 @@ function confirmarHistSenha(){
 // ══ ATIVIDADES SALESFORCE ═════════════════════════════════════
 var _atividades = [], _ativFiltro = '';
 
+var _TOPICOS = {
+  'Entregas':    {ico:'📦', cor:'#1a4a7a'},
+  'Garantia':    {ico:'🛡️', cor:'#6a1b9a'},
+  'Servicos':    {ico:'🔧', cor:'#00396b'},
+  'Revisoes':    {ico:'🔍', cor:'#374151'},
+  'OT Pendentes':{ico:'⏳', cor:'#bf360c'}
+};
+var _STATUS_COR = {
+  'Solicitado':                   '#1a4a7a',
+  'Em análise':                   '#e67e22',
+  'Aguardando retorno do item':   '#e65100',
+  'Aguardando pagamento':         '#7b1fa2',
+  'Aprovado':                     '#1A6B2A',
+  'Aprovado com retorno da peça': '#2e7d32',
+  'Reprovado':                    '#c62828',
+  'Reprovado falta de informações':'#bf360c',
+  'Encerrado':                    '#555'
+};
+
 function toggleNovaAtiv(){
-  var f=document.getElementById('novaAtivForm');
-  if(!f) return;
+  var f=document.getElementById('novaAtivForm');if(!f)return;
   var show=f.style.display==='none';
   f.style.display=show?'block':'none';
   if(show){
@@ -5670,35 +5691,31 @@ function toggleNovaAtiv(){
 
 function setAtivFiltro(f){
   _ativFiltro=f;
-  var map={'':'afb_all','Pendente':'afb_pend','Em andamento':'afb_and','Concluída':'afb_conc'};
-  Object.values(map).forEach(function(id){var b=document.getElementById(id);if(b)b.classList.remove('on');});
-  var active=map[f||''];if(active){var ab=document.getElementById(active);if(ab)ab.classList.add('on');}
+  var ids=['afb_all','afb_ent','afb_gar','afb_ser','afb_rev','afb_ot'];
+  ids.forEach(function(id){var b=document.getElementById(id);if(b)b.classList.remove('on');});
+  var map={'':'afb_all','Entregas':'afb_ent','Garantia':'afb_gar','Servicos':'afb_ser','Revisoes':'afb_rev','OT Pendentes':'afb_ot'};
+  var ab=document.getElementById(map[f||'']);if(ab)ab.classList.add('on');
   renderAtiv();
 }
 
 function salvarAtiv(){
   var desc=(document.getElementById('aDesc')||{}).value||'';
-  if(!desc.trim()){toast('Descreva a atividade','warn');return;}
+  if(!desc.trim()){toast('Descreva o item','warn');return;}
   var dados={
+    topico:(document.getElementById('aTopico')||{}).value||'Servicos',
     descricao:desc.trim(),
     data:isoToLocal((document.getElementById('aDt')||{}).value||''),
-    status:(document.getElementById('aStatus')||{}).value||'Pendente',
-    responsavel:(document.getElementById('aResp')||{}).value||'',
-    obs:(document.getElementById('aObs')||{}).value||'',
-    aguardando:(document.getElementById('aAguard')||{}).value||'',
-    pendente:(document.getElementById('aPend')||{}).value||'',
-    criadoEm:new Date().toLocaleString('pt-BR')
+    status:(document.getElementById('aStatus')||{}).value||'Solicitado',
+    obs:(document.getElementById('aObs')||{}).value||''
   };
-  _iniciarProgresso('📋 Atividade Salesforce',[{pct:20,label:'Preparando...'},{pct:60,label:'Salvando...'}]);
+  _iniciarProgresso('📋 Salesforce',[{pct:30,label:'Salvando...'}]);
   google.script.run
     .withSuccessHandler(function(r){
-      _concluirProgresso(r&&r.success,'Atividade registrada!');
+      _concluirProgresso(r&&r.success,'');
       if(r&&r.success){
-        toast('Atividade salva!','ok');
-          _registrarUltimoSalvo('Atividade SF', dados.descricao);
-        ['aDesc','aObs','aAguard','aPend'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-        var sel=document.getElementById('aStatus');if(sel)sel.value='Pendente';
-        var rep=document.getElementById('aResp');if(rep)rep.value='';
+        toast('Registro salvo!','ok');
+        ['aDesc','aObs'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+        var sel=document.getElementById('aStatus');if(sel)sel.value='Solicitado';
         toggleNovaAtiv();
         loadAtividades();
       } else { toast('Erro: '+(r&&r.error||'?'),'err'); }
@@ -5709,47 +5726,61 @@ function salvarAtiv(){
 
 function loadAtividades(){
   google.script.run
-    .withSuccessHandler(function(rows){
-      _atividades=rows||[];
-      renderAtiv();
-    })
+    .withSuccessHandler(function(rows){_atividades=rows||[];renderAtiv();})
     .withFailureHandler(function(){})
     .getAtividades();
 }
 
 function renderAtiv(){
   var el=document.getElementById('ativList');if(!el)return;
-  var lista=_atividades.filter(function(a){return !_ativFiltro||a.status===_ativFiltro;});
-  if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhuma atividade'+(  _ativFiltro?' com este status':'')+'</div>';return;}
-  var statusCor={'Pendente':'#bf360c','Em andamento':'#e67e22','Concluída':'#1A6B2A'};
-  var statusIco={'Pendente':'⏳','Em andamento':'🔄','Concluída':'✅'};
+  var lista=_atividades.filter(function(a){
+    if(!_ativFiltro) return true;
+    return (a.topico||'Servicos')===_ativFiltro;
+  });
+  if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhum registro'+(  _ativFiltro?' neste tópico':'')+'</div>';return;}
+
+  // Agrupa por topico quando filtro = todos
+  var grupos={};
+  lista.forEach(function(a){
+    var t=a.topico||'Servicos';
+    if(!grupos[t]) grupos[t]=[];
+    grupos[t].push(a);
+  });
+  var ordemTopicos=['Entregas','Garantia','Servicos','Revisoes','OT Pendentes'];
+
   var html='';
-  lista.forEach(function(a,i){
-    var cor=statusCor[a.status]||'#666';
-    var ico=statusIco[a.status]||'•';
-    var vencida=a.data&&a.status!=='Concluída'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
-    html+='<div style="border-left:4px solid '+cor+';background:#fff;margin:6px 12px;border-radius:0 8px 8px 0;padding:10px 12px;">';
-    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
-    html+='<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+a.descricao+'</div>';
-    // Formatar data (aceita dd/mm/yyyy, dd/mm/yy e Date strings)
-    function _fmtAtivD(v){
-      if(!v) return '';
-      var m=String(v).match(/(\d{2})\/(\d{2})\/(20)?(\d{2})$/);
-      if(m) return m[1]+'/'+m[2]+'/'+(m[3]?m[4]:m[4]);
-      var d=new Date(v); if(!isNaN(d)) return ('0'+d.getDate()).slice(-2)+'/'+(('0'+(d.getMonth()+1)).slice(-2))+'/'+String(d.getFullYear()).slice(2);
-      return v;
-    }
-    var _dFmt=_fmtAtivD(a.data);
-    if(_dFmt) html+='<div style="font-size:11px;color:'+(vencida?'#c00':'#999')+'">'+(vencida?'⚠️ ':'')+_dFmt+(a.responsavel?' · '+a.responsavel:'')+'</div>';
-    if(a.obs) html+='<div style="font-size:11px;color:#666;margin-top:2px;font-style:italic">'+a.obs+'</div>';
-    if(a.aguardando) html+='<div style="font-size:11px;color:#e65100;margin-top:3px;background:#fff3e0;border-radius:6px;padding:2px 7px;display:inline-block">⏳ '+a.aguardando+'</div>';
-    if(a.pendente) html+='<div style="font-size:11px;color:#bf360c;margin-top:3px;background:#fce4ec;border-radius:6px;padding:2px 7px;display:inline-block">🔲 Pendente: '+a.pendente+'</div>';
+  ordemTopicos.forEach(function(topico){
+    var items=grupos[topico];
+    if(!items||!items.length) return;
+    var tinfo=_TOPICOS[topico]||{ico:'📋',cor:'#374151'};
+
+    // Header do grupo
+    html+='<div style="padding:6px 12px 4px;display:flex;align-items:center;gap:6px">';
+    html+='<span style="font-size:14px">'+tinfo.ico+'</span>';
+    html+='<span style="font-size:11px;font-weight:800;color:'+tinfo.cor+';text-transform:uppercase;letter-spacing:.5px">'+topico+'</span>';
+    html+='<span style="font-size:10px;background:'+tinfo.cor+'22;color:'+tinfo.cor+';padding:1px 7px;border-radius:8px;font-weight:700">'+items.length+'</span>';
     html+='</div>';
-    html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
-    html+='<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'18;padding:2px 7px;border-radius:10px;white-space:nowrap">'+ico+' '+a.status+'</span>';
-    var selId='sel_'+i;html+='<select onchange="atualizarStatusAtiv(\''+a.id+'\',this.value)" style="font-size:10px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer">';
-    ['Pendente','Em andamento','Concluída'].forEach(function(s){html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';});
-    html+='</select></div></div></div>';
+
+    items.forEach(function(a,i){
+      var stCor=_STATUS_COR[a.status]||'#555';
+      var vencida=a.data&&a.status!=='Encerrado'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
+      html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px;">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      // Conteúdo
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px">'+a.descricao+'</div>';
+      if(a.data) html+='<div style="font-size:10px;color:'+(vencida?'#c62828':'#999')+'">'+( vencida?'⚠️ ':'')+a.data+'</div>';
+      if(a.obs) html+='<div style="font-size:11px;color:#666;margin-top:3px;font-style:italic">'+a.obs+'</div>';
+      html+='</div>';
+      // Status + select
+      html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
+      html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stCor+'18;padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+a.status+'</span>';
+      var _sid='atv_'+a.id.replace(/[^a-z0-9]/gi,'_');html+='<select onchange="atualizarStatusAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer;max-width:130px">';
+      ['Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
+        html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';
+      });
+      html+='</select></div></div></div>';
+    });
   });
   el.innerHTML=html;
 }
