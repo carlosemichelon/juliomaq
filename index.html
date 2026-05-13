@@ -5677,7 +5677,18 @@ var _STATUS_COR = {
   'Aprovado com retorno da peça': '#2e7d32',
   'Reprovado':                    '#c62828',
   'Reprovado falta de informações':'#bf360c',
-  'Encerrado':                    '#555'
+  'Encerrado':                    '#555555'
+};
+var _STATUS_BG = {
+  'Solicitado':                   '#e3f0ff',
+  'Em análise':                   '#fff3e0',
+  'Aguardando retorno do item':   '#fbe9e7',
+  'Aguardando pagamento':         '#f3e5f5',
+  'Aprovado':                     '#e8f5e9',
+  'Aprovado com retorno da peça': '#e8f5e9',
+  'Reprovado':                    '#fce4e4',
+  'Reprovado falta de informações':'#fce4e4',
+  'Encerrado':                    '#f0f0f0'
 };
 
 function toggleNovaAtiv(){
@@ -5737,6 +5748,13 @@ function renderAtiv(){
   var statusMap={'Pendente':'Solicitado','Em andamento':'Em análise','Concluída':'Encerrado'};
   var lista=_atividades.map(function(a){
     if(statusMap[a.status]) a.status=statusMap[a.status];
+    // Auto-detecta topico para registros antigos sem topico definido
+    if(!a.topico||a.topico==='Servicos'){
+      var d=(a.descricao||'').toLowerCase();
+      if(d.indexOf('entrega')>=0||d.indexOf('delivery')>=0) a.topico='Entregas';
+      else if(d.indexOf('garantia')>=0||d.indexOf('peça')>=0||d.indexOf('peca')>=0) a.topico='Garantia';
+      else if(d.indexOf('revisão')>=0||d.indexOf('revisao')>=0||d.indexOf('revisao')>=0) a.topico='Revisoes';
+    }
     return a;
   }).filter(function(a){
     if(!_ativFiltro) return true;
@@ -5762,12 +5780,14 @@ function renderAtiv(){
       html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px">';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
       html+='<div style="flex:1;min-width:0">';
-      html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px">'+a.descricao+'</div>';
-      if(a.data) html+='<div style="font-size:10px;color:'+(vencida?'#c62828':'#999')+'">'+(vencida?'⚠️ ':'')+a.data+'</div>';
-      if(obsDisplay) html+='<div style="font-size:11px;color:#666;margin-top:3px;font-style:italic">'+obsDisplay+'</div>';
+      html+='<div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;line-height:1.3">'+a.descricao+'</div>';
+      html+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">';
+      if(a.data) html+='<span style="font-size:10px;color:'+(vencida?'#c62828':'#888')+'">'+(vencida?'⚠️ ':'')+a.data+'</span>';
+      html+='</div>';
+      if(obsDisplay) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+obsDisplay+'</div>';
       html+='</div>';
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
-      html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stCor+'18;padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+(a.status||'— Nenhum —')+'</span>';
+      var stBg=_STATUS_BG[a.status]||'#f5f5f5';html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stBg+';padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+(a.status||'— Nenhum —')+'</span>';
       html+='<select onchange="atualizarStatusAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer;max-width:130px">';
       ['','Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
         html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';
