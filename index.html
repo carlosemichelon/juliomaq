@@ -244,7 +244,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="f">
       <label class="fl">Tipo de Atendimento</label>
       <div class="tgrid g2" style="padding:6px 0">
-        <button type="button" class="topt" id="tipG" onclick="setTp('Garantia')"><div class="tico">&#128737;</div><div class="tlbl">Garantia</div><div class="tsub">R$90/h R$1,90/km</div></button>
+        <button type="button" class="topt" id="tipG" onclick="setTp('Garantia')"><div class="tico">&#128737;</div><div class="tlbl">Garantia/Stara</div><div class="tsub">R$90/h R$1,90/km</div></button>
         <button type="button" class="topt" id="tipC" onclick="setTp('Cliente')"><div class="tico">&#128100;</div><div class="tlbl">Cliente</div><div class="tsub">R$220/h R$3,10/km</div></button>
         <button type="button" class="topt" id="tipX" onclick="setTp('Cortesia/Comercial')"><div class="tico">&#129309;</div><div class="tlbl">Comercial</div><div class="tsub">R$120/h R$0/km</div></button>
         <button type="button" class="topt" id="tipF" onclick="setTp('Contrato Fechado')"><div class="tico">&#128203;</div><div class="tlbl">Contrato Fechado</div><div class="tsub">valor acordado</div></button>
@@ -357,7 +357,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Filtrar por Tipo</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
       <button onclick="setFiltro('tipo','')" id="fTipAll" class="opbtn" style="background:var(--gr)">Todos</button>
-      <button onclick="setFiltro('tipo','Garantia')" id="fTipGar" class="opbtn" style="background:#bf360c">Garantia</button>
+      <button onclick="setFiltro('tipo','Garantia')" id="fTipGar" class="opbtn" style="background:#bf360c">Garantia/Stara</button>
       <button onclick="setFiltro('tipo','Cliente')" id="fTipCli" class="opbtn" style="background:#1a4a7a">Cliente</button>
       <button onclick="setFiltro('tipo','Cortesia/Comercial')" id="fTipCor" class="opbtn" style="background:#374151">Comercial</button>
       <button onclick="setFiltro('tipo','Contrato Fechado')" id="fTipCon" class="opbtn" style="background:#6a0dad">Contrato</button>
@@ -1813,10 +1813,21 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <div class="f"><label class="fl">Tipo</label>
         <select class="fi" id="osEditTipo">
           <option value="">Selecione</option>
-          <option>Cliente</option><option>Garantia</option><option>Cortesia/Comercial</option><option>Contrato Fechado</option>
+          <option>Cliente</option><option value="Garantia">Garantia/Stara</option><option>Cortesia/Comercial</option><option>Contrato Fechado</option>
         </select>
       </div>
-      <div class="f"><label class="fl">Técnico(s)</label><input class="fi" id="osEditTec" type="text" placeholder="Ex: Carlos, Lucas"></div>
+      <div class="f"><label class="fl">Técnico(s)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px 2px">
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Carlos" style="display:none">Carlos</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Christiano" style="display:none">Christiano</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Lucas" style="display:none">Lucas</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Sandro" style="display:none">Sandro</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="João Acker" style="display:none">João Acker</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Welinton" style="display:none">Welinton</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="Everaldo" style="display:none">Everaldo</label>
+          <label style="display:flex;align-items:center;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecOS(this)"><input type="checkbox" class="osEditTecChk" value="João Dias" style="display:none">João Dias</label>
+        </div>
+      </div>
       <div class="f"><label class="fl">Veículo</label><input class="fi" id="osEditVei" type="text"></div>
       <div class="f"><label class="fl">Local</label><input class="fi" id="osEditLocal" type="text"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
@@ -2047,7 +2058,7 @@ function printWindow(html){
 // ─────────────────────────────────────────────────────────────────────────────
 // ── Constants ────────────────────────────────────────────────
 var RATES = {
-  'Garantia':           {vh:90,  vk:1.9},
+  'Garantia':           {vh:90,  vk:1.9}, // Garantia/Stara
   'Cliente':            {vh:220, vk:3.1},
   'Cortesia/Comercial': {vh:120, vk:0},
   'Contrato Fechado':   {vh:220, vk:3.1}
@@ -3919,7 +3930,7 @@ function renderHistFiltrado(){
     if(filtroTec&&tecNomes.length>1&&tecNomes.indexOf(filtroTec)>=0){vEx=Math.round(vEx/tecNomes.length*100)/100;spL=' <span style="font-size:9px;color:#b45309;background:#fff3e0;padding:1px 5px;border-radius:8px">÷'+tecNomes.length+'</span>';}
     var pgS=o.paga?'background:#1A6B2A;color:#fff':'background:#e0e0e0;color:#666';
     var tipoCor={Cliente:'#1a4a7a',Garantia:'#bf360c','Cortesia/Comercial':'#374151','Contrato Fechado':'#6a0dad'};
-    var tipoLabel={Cliente:'Cliente',Garantia:'Garantia','Cortesia/Comercial':'Comercial','Contrato Fechado':'Contrato'};
+    var tipoLabel={Cliente:'Cliente',Garantia:'Garantia/Stara','Cortesia/Comercial':'Comercial','Contrato Fechado':'Contrato'};
     var tipoBg=tipoCor[o.tipo]||'#374151';
     var tipoNm=tipoLabel[o.tipo]||o.tipo||'--';
     // Fotos count
@@ -5728,8 +5739,10 @@ function salvarAtiv(){
     descricao:desc.trim(),
     data:isoToLocal((document.getElementById('aDt')||{}).value||''),
     status:(document.getElementById('aStatus')||{}).value||'Solicitado',
-    obs:(document.getElementById('aObs')||{}).value||'',
-    nota:(document.getElementById('aObsNota')||{}).value||''
+    idRef:(document.getElementById('aObs')||{}).value.trim()||'',
+    observacao:(document.getElementById('aObsNota')||{}).value.trim()||'',
+    casoSF:'',
+    evId:''
   };
   _iniciarProgresso('📋 Salesforce',[{pct:30,label:'Salvando...'}]);
   google.script.run
@@ -5813,11 +5826,9 @@ function renderAtiv(){
     items.forEach(function(a){
       var stCor=_STATUS_COR[a.status]||(a.status?'#555':'#bbb');
       var vencida=a.data&&a.status!=='Encerrado'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
-      var _obsRaw=a.obs||'';
-      var casoSFMatch=_obsRaw.match(/SF:([^\s|]+)/);
-      var casoSF=casoSFMatch?casoSFMatch[1]:'';
-      var observNota=(_obsRaw.match(/OBSERV:([^|]+)/)||['',''])[1].trim();
-      var obsDisplay=_obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
+      var casoSF=a.casoSF||'';
+      var observNota=a.observacao||'';
+      var obsDisplay=a.idRef||'';
       html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px">';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
       html+='<div style="flex:1;min-width:0">';
@@ -5852,32 +5863,22 @@ function _salvarCasoSF(input){
   var novoSF=(input.value||'').trim();
   var a=_atividades.find(function(x){return x.id===id;});
   if(!a) return;
-  // Reconstrói obs preservando evId e texto
-  var obsRaw=a.obs||'';
-  var evIdMatch=obsRaw.match(/evId:([^\s|]+)/);
-  var evId=evIdMatch?evIdMatch[1]:'';
-  var notaMatch=obsRaw.match(/OBSERV:([^|]+)/);
-  var nota=notaMatch?notaMatch[1].trim():'';
-  var obsLimpa=obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
-  var novaObs=obsLimpa+(nota?' | OBSERV:'+nota:'')+(novoSF?' | SF:'+novoSF:'')+(evId?' | evId:'+evId:'');
   // Atualiza cache local
-  a.obs=novaObs;
+  a.casoSF=novoSF;
   // Salva no backend
   google.script.run
     .withSuccessHandler(function(r){if(r&&r.success) toast('Caso SF salvo','ok',1500);})
     .withFailureHandler(function(){toast('Erro ao salvar caso SF','err');})
-    .editarAtividade({id:id,topico:a.topico,descricao:a.descricao,data:a.data,status:a.status,obs:novaObs});
+    .editarAtividade({id:id,topico:a.topico,descricao:a.descricao,data:a.data,status:a.status,idRef:a.idRef||'',observacao:a.observacao||'',casoSF:novoSF,evId:a.evId||''});
 }
 
 function abrirEditAtiv(id){
   var a=_atividades.find(function(x){return x.id===id;});
   if(!a){toast('Não encontrado','err');return;}
-  var _obsRaw2=a.obs||'';
-  var evIdMatch=_obsRaw2.match(/evId:([^\s|]+)/);
-  var casoSFMatchE=_obsRaw2.match(/SF:([^\s|]+)/);
-  var casoSFEdit=casoSFMatchE?casoSFMatchE[1]:'';
-  var observNotaEdit=(_obsRaw2.match(/OBSERV:([^|]+)/)||['',''])[1].trim();
-  var obsDisplay=_obsRaw2.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
+  var casoSFEdit=a.casoSF||'';
+  var observNotaEdit=a.observacao||'';
+  var obsDisplay=a.idRef||'';
+  var evId2=a.evId||'';
   var evIdOculto=evIdMatch?evIdMatch[1]:'';
   var old2=document.getElementById('ativEditModal');if(old2)document.body.removeChild(old2);
   var modal=document.createElement('div');
@@ -5923,17 +5924,19 @@ function salvarEditAtiv(){
   var evId=document.getElementById('ativEditEvId').value;
   var desc=(document.getElementById('ativEditDesc')||{}).value.trim();
   if(!desc){toast('Informe a descrição','warn');return;}
-  var obs=(document.getElementById('ativEditObs')||{}).value.trim();
+  var idRef=(document.getElementById('ativEditObs')||{}).value.trim();
   var casoSF=(document.getElementById('ativEditCasoSF')||{}).value.trim();
   var nota=(document.getElementById('ativEditObsNota')||{}).value.trim();
-  var obsVal=obs+(nota?' | OBSERV:'+nota:'')+(casoSF?' | SF:'+casoSF:'')+(evId?' | evId:'+evId:'');
   var dados={
     id:id,
     topico:(document.getElementById('ativEditTopico')||{}).value||'Servicos',
     descricao:desc,
     data:isoToLocal((document.getElementById('ativEditDt')||{}).value)||'',
     status:(document.getElementById('ativEditStatus')||{}).value||'Solicitado',
-    obs:obsVal
+    idRef:idRef,
+    observacao:nota,
+    casoSF:casoSF,
+    evId:evId2
   };
   toast('Salvando...','ok',3000);
   google.script.run
@@ -8040,6 +8043,33 @@ function _salvarObsAd(num, valor){
 }
 
 // ── Editar OS ─────────────────────────────────────────────────
+function _toggleTecOS(lbl){
+  var chk=lbl.querySelector('.osEditTecChk');
+  if(!chk) return;
+  chk.checked=!chk.checked;
+  if(chk.checked){lbl.style.background='var(--bl)';lbl.style.color='#fff';lbl.style.borderColor='var(--bl)';}
+  else{lbl.style.background='#f5f5f5';lbl.style.color='#374151';lbl.style.borderColor='var(--bd)';}
+}
+function _setTecOS(tecStr){
+  document.querySelectorAll('.osEditTecChk').forEach(function(c){
+    c.checked=false;
+    var lbl=c.parentElement;
+    if(lbl){lbl.style.background='#f5f5f5';lbl.style.color='#374151';lbl.style.borderColor='var(--bd)';}
+  });
+  if(!tecStr) return;
+  var lista=tecStr.split(',').map(function(t){return t.trim();});
+  document.querySelectorAll('.osEditTecChk').forEach(function(c){
+    if(lista.indexOf(c.value)>=0){
+      c.checked=true;
+      var lbl=c.parentElement;
+      if(lbl){lbl.style.background='var(--bl)';lbl.style.color='#fff';lbl.style.borderColor='var(--bl)';}
+    }
+  });
+}
+function _getTecOS(){
+  return Array.from(document.querySelectorAll('.osEditTecChk:checked')).map(function(c){return c.value;}).join(', ');
+}
+
 function _recalcOsTotal(){
   var km=parseFloat(document.getElementById('osEditKm').value)||0;
   var hrs=parseFloat(document.getElementById('osEditHoras').value)||0;
@@ -8062,9 +8092,10 @@ function abrirEditOS(num){
   document.getElementById('osEditDt').value=dtVal;
   document.getElementById('osEditCli').value=o.cliente||'';
   document.getElementById('osEditTipo').value=o.tipo||'';
-  document.getElementById('osEditTec').value=o.tecnico||'';
+  _setTecOS(o.tecnico||'');
   document.getElementById('osEditVei').value=o.veiculo||'';
   document.getElementById('osEditLocal').value=o.local||'';
+  _setTecOS(o.tecnico||'');
   document.getElementById('osEditKm').value=o.km||'';
   document.getElementById('osEditHoras').value=o.horas||'';
   document.getElementById('osEditVHora').value=220;
@@ -8090,7 +8121,7 @@ function salvarEditOS(){
     data:document.getElementById('osEditDt').value||'',
     cliente:document.getElementById('osEditCli').value||'',
     tipo:document.getElementById('osEditTipo').value||'',
-    tecnico:document.getElementById('osEditTec').value||'',
+    tecnico:_getTecOS(),
     veiculo:document.getElementById('osEditVei').value||'',
     local:document.getElementById('osEditLocal').value||'',
     km:parseFloat(document.getElementById('osEditKm').value)||0,
