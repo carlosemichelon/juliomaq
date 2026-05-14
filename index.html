@@ -3977,6 +3977,7 @@ function renderHistFiltrado(){
 
     // Build card
     var card='<div class="ocard">'
++'<div class="cnm" style="padding:4px 14px 2px"><div style="font-size:14px;font-weight:800;color:#1a1a1a;line-height:1.2">'+(o.cliente||'--')+'</div>'+(o.tecnico?'<div style="font-size:11px;color:var(--mu);font-weight:500;margin-top:1px">'+o.tecnico+spL+'</div>':'')+'</div>'
       +'<div class="chdr"><span class="cnum">'+(o.num||'--')+'</span><span class="cdt">'+(o.data||'')+'</span>'
       +'<span style="background:'+tipoBg+';color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px">'+tipoNm+'</span>'
       +'<button class="pgbtn" style="'+pgS+'" onclick="togglePaga('+oidx+')">'+( o.paga?'PAGA':'Pagar')+'</button></div>'
@@ -3984,8 +3985,7 @@ function renderHistFiltrado(){
       +agDescHtml
       +obsAdHtml
       +'</div>'
-      +'<div class="cnm" style="padding:2px 14px 4px"><div style="font-size:14px;font-weight:800;color:#1a1a1a;line-height:1.2">'+(o.cliente||'--')+'</div>'+(o.tecnico?'<div style="font-size:11px;color:var(--mu);font-weight:500;margin-top:1px">'+o.tecnico+spL+'</div>':'')+'</div>'
-      +'<div class="cmet" style="grid-template-columns:1fr 1fr 1fr">'
+            +'<div class="cmet" style="grid-template-columns:1fr 1fr 1fr">'
         +'<div class="mc"><div class="ml">Horas</div><div class="mv">'+(o.horas||0)+' h</div></div>'
         +'<div class="mc"><div class="ml">KM</div><div class="mv">'+(o.km||0)+' km</div></div>'
         +'<div class="mc"><div class="ml">Total</div><div class="mv gr">'+fmt(vEx)+'</div></div>'
