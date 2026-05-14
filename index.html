@@ -1837,7 +1837,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div><label class="fl">Vl/KM</label><input class="fi" id="osEditVKm" type="number" step="0.01" readonly style="background:#f0f0f0;color:#888"></div>
-        <div><label class="fl">Total (R$)</label><input class="fi" id="osEditTotal" type="number" step="0.01" readonly style="background:#f0f4ff;font-weight:700;color:#1a4a7a"></div>
+        <div><label class="fl">Total bruto</label><input class="fi" id="osEditTotal" type="number" step="0.01" readonly style="background:#f0f0f0;color:#888"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label class="fl">Desconto (%)</label><input class="fi" id="osEditDesconto" type="number" step="0.1" min="0" max="100" value="0" oninput="_recalcOsTotal()" placeholder="0"></div>
+        <div><label class="fl">💰 Valor Final (R$)</label><input class="fi" id="osEditValorFinal" type="number" step="0.01" readonly style="background:#f0f4ff;font-weight:800;color:#1a4a7a;font-size:14px"></div>
       </div>
       <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="osEditDesc" style="height:70px"></textarea></div>
     </div>
@@ -8073,8 +8077,11 @@ function _getTecOS(){
 function _recalcOsTotal(){
   var km=parseFloat(document.getElementById('osEditKm').value)||0;
   var hrs=parseFloat(document.getElementById('osEditHoras').value)||0;
-  var total=(hrs*220)+(km*2.9);
-  document.getElementById('osEditTotal').value=total.toFixed(2);
+  var bruto=(hrs*220)+(km*2.9);
+  document.getElementById('osEditTotal').value=bruto.toFixed(2);
+  var desc=parseFloat(document.getElementById('osEditDesconto').value)||0;
+  var final=bruto*(1-(desc/100));
+  document.getElementById('osEditValorFinal').value=final.toFixed(2);
 }
 
 function abrirEditOS(num){
@@ -8101,7 +8108,12 @@ function abrirEditOS(num){
   document.getElementById('osEditVHora').value=220;
   document.getElementById('osEditVKm').value=2.9;
   var _km=parseFloat(o.km)||0, _hrs=parseFloat(o.horas)||0;
-  document.getElementById('osEditTotal').value=((_hrs*220)+(_km*2.9)).toFixed(2);
+  var _bruto=(parseFloat(o.km)||0)*2.9+(parseFloat(o.horas)||0)*220;
+  document.getElementById('osEditTotal').value=_bruto.toFixed(2);
+  var _vTotal=parseFloat(o.vTotal)||_bruto;
+  var _desc=_bruto>0?Math.round((1-(_vTotal/_bruto))*1000)/10:0;
+  document.getElementById('osEditDesconto').value=(_desc>0?_desc:0);
+  document.getElementById('osEditValorFinal').value=_vTotal.toFixed(2);
   document.getElementById('osEditDesc').value=o.descricao||'';
   var modal=document.getElementById('osEditModal');
   if(modal){modal.style.display='flex';document.body.style.overflow='hidden';}
@@ -8128,7 +8140,7 @@ function salvarEditOS(){
     horas:parseFloat(document.getElementById('osEditHoras').value)||0,
     vHora:parseFloat(document.getElementById('osEditVHora').value)||0,
     vKm:parseFloat(document.getElementById('osEditVKm').value)||0,
-    vTotal:parseFloat(document.getElementById('osEditTotal').value)||0,
+    vTotal:parseFloat(document.getElementById('osEditValorFinal').value)||parseFloat(document.getElementById('osEditTotal').value)||0,
     descricao:document.getElementById('osEditDesc').value||''
   };
   toast('Salvando...','ok',3000);
