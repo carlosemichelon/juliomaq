@@ -5815,6 +5815,12 @@ function renderAtiv(){
     return true;
   });
   if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhum registro'+(_ativFiltro?' neste tópico':'')+'</div>';return;}
+  // Ordena por data crescente (mais antigas/urgentes primeiro)
+  lista.sort(function(a,b){
+    var da=a.data?a.data.split('/').reverse().join('-'):'9999-99-99';
+    var db=b.data?b.data.split('/').reverse().join('-'):'9999-99-99';
+    return da<db?-1:da>db?1:0;
+  });
   var grupos={};
   lista.forEach(function(a){var t=a.topico||'Servicos';if(!grupos[t])grupos[t]=[];grupos[t].push(a);});
   var ordemTopicos=['Entregas','Garantia','Servicos','Revisoes','OT Pendentes'];
