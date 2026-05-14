@@ -695,13 +695,20 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
 
     <!-- Filtros por tópico -->
-    <div style="display:flex;gap:5px;padding:8px 12px;flex-wrap:wrap;overflow-x:auto">
+    <div style="display:flex;gap:5px;padding:8px 12px 4px;flex-wrap:wrap;overflow-x:auto">
       <button class="aFBtn on" id="afb_all" onclick="setAtivFiltro('')">Todos</button>
       <button class="aFBtn" id="afb_ent" onclick="setAtivFiltro('Entregas')">📦 Entregas</button>
       <button class="aFBtn" id="afb_gar" onclick="setAtivFiltro('Garantia')">🛡️ Garantia</button>
       <button class="aFBtn" id="afb_ser" onclick="setAtivFiltro('Servicos')">🔧 Serviços</button>
       <button class="aFBtn" id="afb_rev" onclick="setAtivFiltro('Revisoes')">🔍 Revisões</button>
       <button class="aFBtn" id="afb_ot" onclick="setAtivFiltro('OT Pendentes')">⏳ OT Pendentes</button>
+    </div>
+    <!-- Filtro por mês -->
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px 8px">
+      <span style="font-size:10px;font-weight:700;color:#888;white-space:nowrap">📅 Mês:</span>
+      <select id="ativMesFiltro" onchange="renderAtiv()" style="flex:1;font-size:11px;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-family:inherit;color:#374151;background:#fff;cursor:pointer">
+        <option value="">Todos os meses</option>
+      </select>
     </div>
 
     <div id="ativList"><div class="empty" style="padding:16px">Nenhum registro</div></div>
@@ -3977,7 +3984,7 @@ function renderHistFiltrado(){
       +agDescHtml
       +obsAdHtml
       +'</div>'
-      +'<div class="cnm" style="padding:2px 14px 4px;font-size:12px">'+(o.cliente||'--')+' <span style="font-size:11px;color:var(--mu);font-weight:400">'+(o.tecnico||'')+'</span>'+spL+'</div>'
+      +'<div class="cnm" style="padding:2px 14px 4px"><div style="font-size:14px;font-weight:800;color:#1a1a1a;line-height:1.2">'+(o.cliente||'--')+'</div>'+(o.tecnico?'<div style="font-size:11px;color:var(--mu);font-weight:500;margin-top:1px">'+o.tecnico+spL+'</div>':'')+'</div>'
       +'<div class="cmet" style="grid-template-columns:1fr 1fr 1fr">'
         +'<div class="mc"><div class="ml">Horas</div><div class="mv">'+(o.horas||0)+' h</div></div>'
         +'<div class="mc"><div class="ml">KM</div><div class="mv">'+(o.km||0)+' km</div></div>'
@@ -5738,7 +5745,27 @@ function salvarAtiv(){
 
 function loadAtividades(){
   google.script.run
-    .withSuccessHandler(function(rows){_atividades=rows||[];renderAtiv();})
+    .withSuccessHandler(function(rows){
+      _atividades=rows||[];
+      // Preenche filtro de mês com meses presentes nos dados
+      var sel=document.getElementById('ativMesFiltro');
+      if(sel){
+        var mesesMap={};
+        var nomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        _atividades.forEach(function(a){
+          if(!a.data) return;
+          var p=a.data.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if(!p) return;
+          var key=p[3]+'-'+p[2]; // yyyy-MM
+          mesesMap[key]=nomes[parseInt(p[2])-1]+'/'+p[3];
+        });
+        var atual=sel.value;
+        var keys=Object.keys(mesesMap).sort().reverse();
+        sel.innerHTML='<option value="">Todos os meses</option>';
+        keys.forEach(function(k){sel.innerHTML+='<option value="'+k+'"'+(k===atual?' selected':'')+'>'+mesesMap[k]+'</option>';});
+      }
+      renderAtiv();
+    })
     .withFailureHandler(function(){})
     .getAtividades();
 }
@@ -5746,6 +5773,7 @@ function loadAtividades(){
 function renderAtiv(){
   var el=document.getElementById('ativList');if(!el)return;
   var statusMap={'Pendente':'Solicitado','Em andamento':'Em análise','Concluída':'Encerrado'};
+  var mesFiltro=(document.getElementById('ativMesFiltro')||{}).value||'';
   var lista=_atividades.map(function(a){
     if(statusMap[a.status]) a.status=statusMap[a.status];
     // Auto-detecta topico para registros antigos sem topico definido
@@ -5758,8 +5786,12 @@ function renderAtiv(){
     }
     return a;
   }).filter(function(a){
-    if(!_ativFiltro) return true;
-    return (a.topico||'Servicos')===_ativFiltro;
+    if(_ativFiltro && (a.topico||'Servicos')!==_ativFiltro) return false;
+    if(mesFiltro && a.data){
+      var p=a.data.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if(p && (p[3]+'-'+p[2])!==mesFiltro) return false;
+    }
+    return true;
   });
   if(!lista.length){el.innerHTML='<div class="empty" style="padding:16px">Nenhum registro'+(_ativFiltro?' neste tópico':'')+'</div>';return;}
   var grupos={};
@@ -5777,7 +5809,10 @@ function renderAtiv(){
     items.forEach(function(a){
       var stCor=_STATUS_COR[a.status]||(a.status?'#555':'#bbb');
       var vencida=a.data&&a.status!=='Encerrado'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
-      var obsDisplay=a.obs?a.obs.replace(/\s*\|\s*evId:[^\s|]*/,'').trim():'';
+      var _obsRaw=a.obs||'';
+      var casoSFMatch=_obsRaw.match(/SF:([^\s|]+)/);
+      var casoSF=casoSFMatch?casoSFMatch[1]:'';
+      var obsDisplay=_obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
       html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px">';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
       html+='<div style="flex:1;min-width:0">';
@@ -5786,6 +5821,11 @@ function renderAtiv(){
       if(a.data) html+='<span style="font-size:10px;color:'+(vencida?'#c62828':'#888')+'">'+(vencida?'⚠️ ':'')+a.data+'</span>';
       html+='</div>';
       if(obsDisplay) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+obsDisplay+'</div>';
+      // Caso SF inline
+      html+='<div style="display:flex;align-items:center;gap:5px;margin-top:5px">';
+      html+='<span style="font-size:9px;font-weight:700;color:#00396b;white-space:nowrap">☁️ Caso SF:</span>';
+      html+='<input type="text" value="'+casoSF+'" placeholder="N. caso..." data-ativ-id="'+a.id+'" onchange="_salvarCasoSF(this)" style="flex:1;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit;color:#374151;background:#fff;max-width:120px">';
+      html+='</div>';
       html+='</div>';
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
       var stBg=_STATUS_BG[a.status]||'#f5f5f5';html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stBg+';padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+(a.status||'— Nenhum —')+'</span>';
@@ -5801,11 +5841,34 @@ function renderAtiv(){
   el.innerHTML=html;
 }
 
+function _salvarCasoSF(input){
+  var id=input.getAttribute('data-ativ-id');
+  var novoSF=(input.value||'').trim();
+  var a=_atividades.find(function(x){return x.id===id;});
+  if(!a) return;
+  // Reconstrói obs preservando evId e texto
+  var obsRaw=a.obs||'';
+  var evIdMatch=obsRaw.match(/evId:([^\s|]+)/);
+  var evId=evIdMatch?evIdMatch[1]:'';
+  var obsLimpa=obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
+  var novaObs=obsLimpa+(novoSF?' | SF:'+novoSF:'')+(evId?' | evId:'+evId:'');
+  // Atualiza cache local
+  a.obs=novaObs;
+  // Salva no backend
+  google.script.run
+    .withSuccessHandler(function(r){if(r&&r.success) toast('Caso SF salvo','ok',1500);})
+    .withFailureHandler(function(){toast('Erro ao salvar caso SF','err');})
+    .editarAtividade({id:id,topico:a.topico,descricao:a.descricao,data:a.data,status:a.status,obs:novaObs});
+}
+
 function abrirEditAtiv(id){
   var a=_atividades.find(function(x){return x.id===id;});
   if(!a){toast('Não encontrado','err');return;}
-  var obsDisplay=a.obs?a.obs.replace(/\s*\|\s*evId:[^\s|]*/,'').trim():'';
-  var evIdMatch=a.obs?a.obs.match(/evId:([^\s|]+)/):null;
+  var _obsRaw2=a.obs||'';
+  var evIdMatch=_obsRaw2.match(/evId:([^\s|]+)/);
+  var casoSFMatchE=_obsRaw2.match(/SF:([^\s|]+)/);
+  var casoSFEdit=casoSFMatchE?casoSFMatchE[1]:'';
+  var obsDisplay=_obsRaw2.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
   var evIdOculto=evIdMatch?evIdMatch[1]:'';
   var old2=document.getElementById('ativEditModal');if(old2)document.body.removeChild(old2);
   var modal=document.createElement('div');
@@ -5829,6 +5892,7 @@ function abrirEditAtiv(id){
     +'<div><label class="fl">Status</label><select class="fi" id="ativEditStatus">'+statusOpts+'</select></div>'
     +'</div>'
     +'<div class="f"><label class="fl">Observações</label><textarea class="fi" id="ativEditObs" style="height:55px" placeholder="Observações...">'+obsDisplay+'</textarea></div>'
+    +'<div class="f"><label class="fl">☁️ Caso SF</label><input class="fi" id="ativEditCasoSF" type="text" placeholder="N. caso Salesforce..." value="'+casoSFEdit+'"></div>'
     +'</div>'
     +'<div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd)">'
     +'<button onclick="salvarEditAtiv()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>'
@@ -5850,7 +5914,8 @@ function salvarEditAtiv(){
   var desc=(document.getElementById('ativEditDesc')||{}).value.trim();
   if(!desc){toast('Informe a descrição','warn');return;}
   var obs=(document.getElementById('ativEditObs')||{}).value.trim();
-  var obsVal=obs+(evId?' | evId:'+evId:'');
+  var casoSF=(document.getElementById('ativEditCasoSF')||{}).value.trim();
+  var obsVal=obs+(casoSF?' | SF:'+casoSF:'')+(evId?' | evId:'+evId:'');
   var dados={
     id:id,
     topico:(document.getElementById('ativEditTopico')||{}).value||'Servicos',
