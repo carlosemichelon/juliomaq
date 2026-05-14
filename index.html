@@ -5856,6 +5856,11 @@ function renderAtiv(){
       html+='</div>';
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
       var stBg=_STATUS_BG[a.status]||'#f5f5f5';html+='<span style="font-size:9px;font-weight:700;color:'+stCor+';background:'+stBg+';padding:2px 8px;border-radius:10px;white-space:nowrap;text-align:right;max-width:120px;line-height:1.4">'+(a.status||'— Nenhum —')+'</span>';
+      html+='<select onchange="atualizarTopicoAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:'+tinfo.cor+';font-weight:700;background:#fff;cursor:pointer;max-width:130px;margin-bottom:2px">';
+      ['Entregas','Garantia','Servicos','Revisoes','OT Pendentes'].forEach(function(t){
+        html+='<option value="'+t+'"'+(a.topico===t?' selected':'')+'>'+({Entregas:'📦 Entregas',Garantia:'🛡️ Garantia',Servicos:'🔧 Serviços',Revisoes:'🔍 Revisões','OT Pendentes':'⏳ OT Pendentes'}[t]||t)+'</option>';
+      });
+      html+='</select>';
       html+='<select onchange="atualizarStatusAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer;max-width:130px">';
       ['','Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
         html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';
@@ -5968,6 +5973,19 @@ function apagarAtiv(id){
     })
     .withFailureHandler(function(){toast('Erro ao apagar','err');})
     .apagarAtividade(id);
+}
+
+function atualizarTopicoAtiv(id, novoTopico){
+  if(!id) return;
+  var a=_atividades.find(function(x){return x.id===id;});
+  if(!a) return;
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success){a.topico=novoTopico;renderAtiv();toast('Tópico atualizado!','ok',2000);}
+      else toast('Erro ao atualizar tópico','err');
+    })
+    .withFailureHandler(function(){toast('Erro ao atualizar tópico','err');})
+    .editarAtividade({id:id,topico:novoTopico,descricao:a.descricao,data:a.data,status:a.status,idRef:a.idRef||'',observacao:a.observacao||'',casoSF:a.casoSF||'',evId:a.evId||''});
 }
 
 function atualizarStatusAtiv(id,novoStatus){
