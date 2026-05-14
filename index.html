@@ -685,8 +685,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
           </select>
         </div>
       </div>
-      <div class="f"><label class="fl">Obs</label>
-        <input class="fi" id="aObs" type="text" placeholder="Observação...">
+      <div class="f"><label class="fl">ID</label>
+        <input class="fi" id="aObs" type="text" placeholder="Identificador, referência...">
+      </div>
+      <div class="f"><label class="fl">Observação</label>
+        <textarea class="fi" id="aObsNota" placeholder="Observações livres..." style="height:50px"></textarea>
       </div>
       <div style="display:flex;gap:8px;padding:0 12px">
         <button onclick="salvarAtiv()" style="flex:1;padding:10px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>
@@ -1817,13 +1820,13 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <div class="f"><label class="fl">Veículo</label><input class="fi" id="osEditVei" type="text"></div>
       <div class="f"><label class="fl">Local</label><input class="fi" id="osEditLocal" type="text"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <div><label class="fl">KM</label><input class="fi" id="osEditKm" type="number" step="0.1"></div>
-        <div><label class="fl">Horas</label><input class="fi" id="osEditHoras" type="number" step="0.1"></div>
-        <div><label class="fl">Vl/Hora</label><input class="fi" id="osEditVHora" type="number" step="0.01"></div>
+        <div><label class="fl">KM</label><input class="fi" id="osEditKm" type="number" step="0.1" oninput="_recalcOsTotal()"></div>
+        <div><label class="fl">Horas</label><input class="fi" id="osEditHoras" type="number" step="0.1" oninput="_recalcOsTotal()"></div>
+        <div><label class="fl">Vl/Hora</label><input class="fi" id="osEditVHora" type="number" step="0.01" readonly style="background:#f0f0f0;color:#888"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div><label class="fl">Vl/KM</label><input class="fi" id="osEditVKm" type="number" step="0.01"></div>
-        <div><label class="fl">Total (R$)</label><input class="fi" id="osEditTotal" type="number" step="0.01"></div>
+        <div><label class="fl">Vl/KM</label><input class="fi" id="osEditVKm" type="number" step="0.01" readonly style="background:#f0f0f0;color:#888"></div>
+        <div><label class="fl">Total (R$)</label><input class="fi" id="osEditTotal" type="number" step="0.01" readonly style="background:#f0f4ff;font-weight:700;color:#1a4a7a"></div>
       </div>
       <div class="f"><label class="fl">Descrição</label><textarea class="fi" id="osEditDesc" style="height:70px"></textarea></div>
     </div>
@@ -5725,7 +5728,8 @@ function salvarAtiv(){
     descricao:desc.trim(),
     data:isoToLocal((document.getElementById('aDt')||{}).value||''),
     status:(document.getElementById('aStatus')||{}).value||'Solicitado',
-    obs:(document.getElementById('aObs')||{}).value||''
+    obs:(document.getElementById('aObs')||{}).value||'',
+    nota:(document.getElementById('aObsNota')||{}).value||''
   };
   _iniciarProgresso('📋 Salesforce',[{pct:30,label:'Salvando...'}]);
   google.script.run
@@ -5812,7 +5816,8 @@ function renderAtiv(){
       var _obsRaw=a.obs||'';
       var casoSFMatch=_obsRaw.match(/SF:([^\s|]+)/);
       var casoSF=casoSFMatch?casoSFMatch[1]:'';
-      var obsDisplay=_obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
+      var observNota=(_obsRaw.match(/OBSERV:([^|]+)/)||['',''])[1].trim();
+      var obsDisplay=_obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
       html+='<div style="border-left:4px solid '+tinfo.cor+';background:#fff;margin:3px 12px 6px;border-radius:0 8px 8px 0;padding:9px 11px">';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
       html+='<div style="flex:1;min-width:0">';
@@ -5820,7 +5825,8 @@ function renderAtiv(){
       html+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">';
       if(a.data) html+='<span style="font-size:10px;color:'+(vencida?'#c62828':'#888')+'">'+(vencida?'⚠️ ':'')+a.data+'</span>';
       html+='</div>';
-      if(obsDisplay) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+obsDisplay+'</div>';
+      if(obsDisplay) html+='<div style="display:flex;align-items:center;gap:5px;margin-top:4px">'+'<span style="font-size:9px;font-weight:700;color:#888">ID:</span>'+'<span style="font-size:11px;color:#374151;font-weight:600">'+obsDisplay+'</span></div>';
+      if(observNota) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+observNota+'</div>';
       // Caso SF inline
       html+='<div style="display:flex;align-items:center;gap:5px;margin-top:5px">';
       html+='<span style="font-size:9px;font-weight:700;color:#00396b;white-space:nowrap">☁️ Caso SF:</span>';
@@ -5850,8 +5856,10 @@ function _salvarCasoSF(input){
   var obsRaw=a.obs||'';
   var evIdMatch=obsRaw.match(/evId:([^\s|]+)/);
   var evId=evIdMatch?evIdMatch[1]:'';
-  var obsLimpa=obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
-  var novaObs=obsLimpa+(novoSF?' | SF:'+novoSF:'')+(evId?' | evId:'+evId:'');
+  var notaMatch=obsRaw.match(/OBSERV:([^|]+)/);
+  var nota=notaMatch?notaMatch[1].trim():'';
+  var obsLimpa=obsRaw.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
+  var novaObs=obsLimpa+(nota?' | OBSERV:'+nota:'')+(novoSF?' | SF:'+novoSF:'')+(evId?' | evId:'+evId:'');
   // Atualiza cache local
   a.obs=novaObs;
   // Salva no backend
@@ -5868,7 +5876,8 @@ function abrirEditAtiv(id){
   var evIdMatch=_obsRaw2.match(/evId:([^\s|]+)/);
   var casoSFMatchE=_obsRaw2.match(/SF:([^\s|]+)/);
   var casoSFEdit=casoSFMatchE?casoSFMatchE[1]:'';
-  var obsDisplay=_obsRaw2.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').trim();
+  var observNotaEdit=(_obsRaw2.match(/OBSERV:([^|]+)/)||['',''])[1].trim();
+  var obsDisplay=_obsRaw2.replace(/\s*\|\s*evId:[^\s|]*/,'').replace(/\s*SF:[^\s|]*/,'').replace(/\s*OBSERV:[^|]*/,'').trim();
   var evIdOculto=evIdMatch?evIdMatch[1]:'';
   var old2=document.getElementById('ativEditModal');if(old2)document.body.removeChild(old2);
   var modal=document.createElement('div');
@@ -5891,7 +5900,8 @@ function abrirEditAtiv(id){
     +'<div><label class="fl">Data</label><input class="fi" id="ativEditDt" type="date" value="'+dtVal+'"></div>'
     +'<div><label class="fl">Status</label><select class="fi" id="ativEditStatus">'+statusOpts+'</select></div>'
     +'</div>'
-    +'<div class="f"><label class="fl">Observações</label><textarea class="fi" id="ativEditObs" style="height:55px" placeholder="Observações...">'+obsDisplay+'</textarea></div>'
+    +'<div class="f"><label class="fl">ID</label><input class="fi" id="ativEditObs" type="text" placeholder="Identificador, referência..." value="'+obsDisplay+'"></div>'
+    +'<div class="f"><label class="fl">Observação</label><textarea class="fi" id="ativEditObsNota" style="height:55px" placeholder="Observações livres...">'+observNotaEdit+'</textarea></div>'
     +'<div class="f"><label class="fl">☁️ Caso SF</label><input class="fi" id="ativEditCasoSF" type="text" placeholder="N. caso Salesforce..." value="'+casoSFEdit+'"></div>'
     +'</div>'
     +'<div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--bd)">'
@@ -5915,7 +5925,8 @@ function salvarEditAtiv(){
   if(!desc){toast('Informe a descrição','warn');return;}
   var obs=(document.getElementById('ativEditObs')||{}).value.trim();
   var casoSF=(document.getElementById('ativEditCasoSF')||{}).value.trim();
-  var obsVal=obs+(casoSF?' | SF:'+casoSF:'')+(evId?' | evId:'+evId:'');
+  var nota=(document.getElementById('ativEditObsNota')||{}).value.trim();
+  var obsVal=obs+(nota?' | OBSERV:'+nota:'')+(casoSF?' | SF:'+casoSF:'')+(evId?' | evId:'+evId:'');
   var dados={
     id:id,
     topico:(document.getElementById('ativEditTopico')||{}).value||'Servicos',
@@ -8029,6 +8040,13 @@ function _salvarObsAd(num, valor){
 }
 
 // ── Editar OS ─────────────────────────────────────────────────
+function _recalcOsTotal(){
+  var km=parseFloat(document.getElementById('osEditKm').value)||0;
+  var hrs=parseFloat(document.getElementById('osEditHoras').value)||0;
+  var total=(hrs*220)+(km*2.9);
+  document.getElementById('osEditTotal').value=total.toFixed(2);
+}
+
 function abrirEditOS(num){
   var o=(ordens||[]).find(function(x){return x.num===num;});
   if(!o){toast('OS não encontrada','err');return;}
@@ -8049,9 +8067,10 @@ function abrirEditOS(num){
   document.getElementById('osEditLocal').value=o.local||'';
   document.getElementById('osEditKm').value=o.km||'';
   document.getElementById('osEditHoras').value=o.horas||'';
-  document.getElementById('osEditVHora').value=o.vHora||'';
-  document.getElementById('osEditVKm').value=o.vKm||'';
-  document.getElementById('osEditTotal').value=o.vTotal||'';
+  document.getElementById('osEditVHora').value=220;
+  document.getElementById('osEditVKm').value=2.9;
+  var _km=parseFloat(o.km)||0, _hrs=parseFloat(o.horas)||0;
+  document.getElementById('osEditTotal').value=((_hrs*220)+(_km*2.9)).toFixed(2);
   document.getElementById('osEditDesc').value=o.descricao||'';
   var modal=document.getElementById('osEditModal');
   if(modal){modal.style.display='flex';document.body.style.overflow='hidden';}
