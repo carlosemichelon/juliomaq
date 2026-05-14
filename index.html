@@ -8074,6 +8074,9 @@ function _getTecOS(){
   return Array.from(document.querySelectorAll('.osEditTecChk:checked')).map(function(c){return c.value;}).join(', ');
 }
 
+var _TIPO_LABEL={Cliente:'Cliente',Garantia:'Garantia/Stara','Cortesia/Comercial':'Comercial','Contrato Fechado':'Contrato'};
+function _tipoLabel(t){return _TIPO_LABEL[t]||t||'--';}
+
 function _recalcOsTotal(){
   var km=parseFloat(document.getElementById('osEditKm').value)||0;
   var hrs=parseFloat(document.getElementById('osEditHoras').value)||0;
