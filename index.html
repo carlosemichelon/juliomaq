@@ -5840,12 +5840,18 @@ function renderAtiv(){
       html+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">';
       if(a.data) html+='<span style="font-size:10px;color:'+(vencida?'#c62828':'#888')+'">'+(vencida?'⚠️ ':'')+a.data+'</span>';
       html+='</div>';
-      if(obsDisplay) html+='<div style="display:flex;align-items:center;gap:5px;margin-top:4px">'+'<span style="font-size:9px;font-weight:700;color:#888">ID:</span>'+'<span style="font-size:11px;color:#374151;font-weight:600">'+obsDisplay+'</span></div>';
+      // ID (readonly para OT Pendentes com técnicos)
+      if(a.topico==='OT Pendentes'&&obsDisplay&&obsDisplay.indexOf('Técnico')>=0){
+        html+='<div style="font-size:10px;color:#555;margin-top:4px">🔧 <b>'+obsDisplay+'</b></div>';
+      } else if(obsDisplay){
+        html+='<div style="display:flex;align-items:center;gap:5px;margin-top:4px">'+'<span style="font-size:9px;font-weight:700;color:#888">ID:</span>'+'<span style="font-size:11px;color:#374151;font-weight:600">'+obsDisplay+'</span></div>';
+      }
       if(observNota) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+observNota+'</div>';
-      // Caso SF inline
+      // Caso SF editável (nunca mostra 'Técnicos:' aqui)
+      var sfVal=casoSF&&casoSF.indexOf('Técnico')<0?casoSF:'';
       html+='<div style="display:flex;align-items:center;gap:5px;margin-top:5px">';
       html+='<span style="font-size:9px;font-weight:700;color:#00396b;white-space:nowrap">☁️ Caso SF:</span>';
-      html+='<input type="text" value="'+casoSF+'" placeholder="N. caso..." data-ativ-id="'+a.id+'" onchange="_salvarCasoSF(this)" style="flex:1;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit;color:#374151;background:#fff;max-width:120px">';
+      html+='<input type="text" value="'+sfVal+'" placeholder="N. caso..." data-ativ-id="'+a.id+'" onchange="_salvarCasoSF(this)" style="flex:1;border:1px solid #e0e0e0;border-radius:5px;padding:2px 6px;font-size:10px;font-family:inherit;color:#374151;background:#fff;max-width:120px">';
       html+='</div>';
       html+='</div>';
       html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">';
