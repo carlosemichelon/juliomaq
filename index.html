@@ -5787,7 +5787,7 @@ function loadAtividades(){
       }
       renderAtiv();
     })
-    .withFailureHandler(function(){})
+    .withFailureHandler(function(e){toast('Erro atividades: '+(e&&e.message||'falha'),'err',4000);var el=document.getElementById('ativList');if(el)el.innerHTML='<div class="empty" style="padding:16px;color:#c62828">Erro ao carregar — verifique reimplantação</div>';})
     .getAtividades();
 }
 
