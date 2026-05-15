@@ -2009,25 +2009,27 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         return function(){
           var args=Array.from(arguments);
           var s=_s,f=_f;
-          var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+          var timedOut=false;
           var timer=setTimeout(function(){
-            if(ctrl) ctrl.abort();
+            timedOut=true;
             if(f) f(new Error('Tempo esgotado (45s) — tente novamente'));
           },45000);
-          fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args}),signal:ctrl?ctrl.signal:undefined})
+          fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args})})
             .then(function(r){
               clearTimeout(timer);
+              if(timedOut) return;
               if(!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText);
               return r.text();
             })
             .then(function(txt){
+              if(!txt||timedOut) return;
               var d;
               try{ d=JSON.parse(txt); }
-              catch(pe){ throw new Error('Resposta inválida do servidor: '+txt.substring(0,100)); }
+              catch(pe){ throw new Error('Resposta inválida: '+txt.substring(0,80)); }
               if(d.success!==false&&s) s(d.result!==undefined?d.result:d);
               else if(d.success===false&&f) f(new Error(d.error||'Erro no servidor'));
             })
-            .catch(function(e){clearTimeout(timer);console.error('[GAS shim]',prop,e.message);if(f)f(e);});
+            .catch(function(e){clearTimeout(timer);if(!timedOut&&f)f(e);});
         };
       }
     });
