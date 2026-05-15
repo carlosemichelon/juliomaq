@@ -1035,7 +1035,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
       </div>
     </div>
-    <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 12px;background:#6a1b9a">💾 Salvar Despesa</button>
+    <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 4px;background:#6a1b9a">💾 Salvar Despesa</button>
+    <button onclick="_testarBackend()" style="margin:0 12px 12px;width:calc(100% - 24px);padding:8px;border:1px dashed #999;border-radius:8px;background:#f9f9f9;font-size:11px;color:#666;cursor:pointer;font-family:inherit">🔧 Testar conexão com backend</button>
   </div>
   </div>
 
@@ -2014,9 +2015,19 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
             if(f) f(new Error('Tempo esgotado (45s) — tente novamente'));
           },45000);
           fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args}),signal:ctrl?ctrl.signal:undefined})
-            .then(function(r){clearTimeout(timer);return r.json();})
-            .then(function(d){if(d.success!==false&&s)s(d.result!==undefined?d.result:d);else if(d.success===false&&f)f(new Error(d.error||'Erro no servidor'));})
-            .catch(function(e){clearTimeout(timer);if(f)f(e);});
+            .then(function(r){
+              clearTimeout(timer);
+              if(!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText);
+              return r.text();
+            })
+            .then(function(txt){
+              var d;
+              try{ d=JSON.parse(txt); }
+              catch(pe){ throw new Error('Resposta inválida do servidor: '+txt.substring(0,100)); }
+              if(d.success!==false&&s) s(d.result!==undefined?d.result:d);
+              else if(d.success===false&&f) f(new Error(d.error||'Erro no servidor'));
+            })
+            .catch(function(e){clearTimeout(timer);console.error('[GAS shim]',prop,e.message);if(f)f(e);});
         };
       }
     });
@@ -5159,6 +5170,19 @@ function clearDespFoto(){
   var pv=document.getElementById('dFotoPreview');if(pv)pv.style.display='none';
   var fi=document.getElementById('dFotoImg');if(fi)fi.src='';
   var inp=document.getElementById('dFotoInp');if(inp)inp.value='';
+}
+
+function _testarBackend(){
+  toast('Testando conexão...','ok',2000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      var msg = r ? JSON.stringify(r) : 'sem resposta';
+      alert('Resultado do teste:\n\n'+msg);
+    })
+    .withFailureHandler(function(e){
+      alert('ERRO na conexão:\n\n'+e.message);
+    })
+    .testarSalvamento();
 }
 
 function salvarDesp(){
