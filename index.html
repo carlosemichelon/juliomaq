@@ -1979,7 +1979,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div id="ldFotoNome" style="font-size:9px;color:rgba(255,255,255,.6);margin-top:4px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-height:12px"></div>
     <div id="ldFotoPct" style="font-size:10px;color:rgba(255,255,255,.7);text-align:center;margin-top:2px">0%</div>
   </div>
-  <!-- Indicador de conexão -->
+  <!-- Botão de escape se travado -->
+  <button onclick="hideLoad()" style="margin-top:16px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.8);border-radius:8px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;display:none" id="ldEscBtn">✕ Fechar</button>
   <div id="ldConn" style="display:none;margin-top:12px;display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.75)">
     <div id="ldConnDot" style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
     <span id="ldConnTxt">Conectado</span>
@@ -2007,10 +2008,15 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         return function(){
           var args=Array.from(arguments);
           var s=_s,f=_f;
-          fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args})})
-            .then(function(r){return r.json();})
+          var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+          var timer=setTimeout(function(){
+            if(ctrl) ctrl.abort();
+            if(f) f(new Error('Tempo esgotado (45s) — tente novamente'));
+          },45000);
+          fetch(GAS_URL,{method:'POST',body:JSON.stringify({fn:prop,args:args}),signal:ctrl?ctrl.signal:undefined})
+            .then(function(r){clearTimeout(timer);return r.json();})
             .then(function(d){if(d.success!==false&&s)s(d.result!==undefined?d.result:d);else if(d.success===false&&f)f(new Error(d.error||'Erro no servidor'));})
-            .catch(function(e){if(f)f(e);});
+            .catch(function(e){clearTimeout(timer);if(f)f(e);});
         };
       }
     });
@@ -3835,8 +3841,14 @@ function showLoad(t,sub){
   var lt=document.getElementById('ldtxt');if(lt)lt.textContent=t||'Aguarde...';
   var ls=document.getElementById('ldSub');if(ls){ls.textContent=sub||'';ls.style.display=sub?'block':'none';}
   var lb=document.getElementById('ldbar');if(lb)lb.style.display='none';
+  var esc=document.getElementById('ldEscBtn');if(esc)esc.style.display='none';
   _monitorarConexao();
   var lf=document.getElementById('ldbarFill');if(lf)lf.style.width='0%';
+  // Mostra botão de escape após 15s se ainda estiver carregando
+  if(window._ldEscTimer) clearTimeout(window._ldEscTimer);
+  window._ldEscTimer=setTimeout(function(){
+    var e2=document.getElementById('ldEscBtn');if(e2)e2.style.display='block';
+  },15000);
 }
 function setProgress(pct,txt,sub){
   var lb=document.getElementById('ldbar');if(lb)lb.style.display='block';
@@ -3845,10 +3857,13 @@ function setProgress(pct,txt,sub){
   if(sub!==undefined){var ls=document.getElementById('ldSub');if(ls){ls.textContent=sub||'';ls.style.display=sub?'block':'none';}}
 }
 function hideLoad(){
+  if(window._ldEscTimer){clearTimeout(window._ldEscTimer);window._ldEscTimer=null;}
   var l=document.getElementById('load');if(l)l.className='';
   var lb=document.getElementById('ldbar');if(lb)lb.style.display='none';
   var lf=document.getElementById('ldbarFill');if(lf)lf.style.width='0%';
   var ls=document.getElementById('ldSub');if(ls){ls.textContent='';ls.style.display='none';}
+  var esc=document.getElementById('ldEscBtn');if(esc)esc.style.display='none';
+  var fb=document.getElementById('ldFotoBox');if(fb)fb.style.display='none';
 }
 
 // ── Progresso padronizado para salvamentos ────────────────────
