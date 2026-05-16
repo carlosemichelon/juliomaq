@@ -5222,27 +5222,26 @@ function _autoSalvarDesp(){
 }
 
 function _testarEscritaDireta(){
-  toast('Testando escrita na planilha...','ok',3000);
+  toast('Testando...','ok',2000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(r&&r.success){
-        var msg='✅ Backend retornou SUCESSO\n\n';
-        msg+='📋 Planilha: '+r.ssName+'\n';
-        msg+='🔑 ID: '+r.ssId+'\n\n';
-        msg+='Linhas antes: '+r.antesRow+'\n';
-        msg+='Linhas depois: '+r.depoisRow+'\n\n';
-        msg+='📝 Linha escrita:\n'+JSON.stringify(r.linhaEscrita)+'\n\n';
-        msg+=r.antesRow===r.depoisRow
-          ? '⚠️ PROBLEMA: linha não foi adicionada (antes=depois)!'
-          : '✅ Linha adicionada! Vá para a aba Despesas e role até a linha '+r.depoisRow;
-        alert(msg);
-      } else {
-        alert('❌ ERRO: '+(r&&r.error||'resposta vazia'));
-      }
+      if(!r){alert('❌ Resposta vazia — backend não respondeu corretamente');return;}
+      var linhas=[
+        '🔖 Versão function: '+(r.versao||'NÃO VEIO — Code.gs antigo ainda deployado!'),
+        '',
+        '📋 Planilha: '+(r.ssName||'undefined'),
+        '🔑 ID: '+(r.ssId||'undefined'),
+        '',
+        '📊 Linhas antes: '+r.antes+' → depois: '+r.depois,
+        '✍️ Marca escrita: '+(r.marcaEscrita||'undefined'),
+        '📖 Marca lida back: '+(r.marcaLida||'undefined'),
+        '',
+        r.escreveu==='true'||r.escreveu===true ? '✅ ESCRITA CONFIRMADA!' : '⚠️ Linha antes=depois — NÃO escreveu'
+      ];
+      if(r.error) linhas.push('\n❌ ERRO: '+r.error);
+      alert(linhas.join('\n'));
     })
-    .withFailureHandler(function(e){
-      alert('❌ FALHA NA COMUNICAÇÃO:\n'+e.message);
-    })
+    .withFailureHandler(function(e){alert('❌ Falha: '+e.message);})
     .escreverLinhaTesteDireto();
 }
 
