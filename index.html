@@ -2893,7 +2893,7 @@ function saveVei(){
       }
     })
     .withFailureHandler(function(e){hideLoad();if(btn)btn.disabled=false;toast('Erro: '+e.message,'err');})
-    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),assinatura:vmSigData||''});
+    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),assinatura:''});
 }
 
 var _veiData=[];var _veiFiltroVei='';var _veiFiltroTipo='';
@@ -5267,43 +5267,73 @@ function salvarDesp(){
   }
   var btn=document.getElementById('dSalvarBtn');
   btn.disabled=true; btn.textContent='Salvando...';
-  _iniciarProgresso('💰 Despesa',[{pct:10,label:'Validando dados...'},{pct:35,label:'Enviando foto...'},{pct:65,label:'Salvando na planilha...'}]);
+  _iniciarProgresso('💰 Despesa',[
+    {pct:20,label:'Salvando registro...'},
+    {pct:60,label:'Enviando foto...'},
+    {pct:90,label:'Finalizando...'}
+  ]);
+  // Guarda foto/assinatura localmente ANTES de limpar
+  var fotoB64=_despFotoB64||'';
+  var fotoMime=_despFotoMime||'image/jpeg';
+  var sigData=_despSigData||'';
+
+  // 1. Salva APENAS os dados textuais (sem base64) — payload pequeno
   var dados={
     data:dt, comprador:comp, cnpj:g('dCNPJ')||'',
     fornecedor:forn, descricao:desc, categoria:cat,
     valor:parseFloat(valor)||0, formaPgto:pgto,
-    fotoB64:_despFotoB64||'',
-    fotoMime:_despFotoMime||'image/jpeg',
-    assinatura:_despSigData ? _despSigData.split(',')[1] : '',
-    assinaturaMime:'image/jpeg'
+    fotoB64:'',   // vazio — foto vai em chamada separada
+    fotoMime:fotoMime,
+    assinatura:'' // vazio — assinatura vai em chamada separada
   };
   google.script.run
     .withSuccessHandler(function(r){
-      _concluirProgresso(r&&r.success,'');
-      btn.disabled=false; btn.textContent='💾 Salvar Despesa';
       if(r&&r.success){
-        toast('Despesa '+r.num+' salva na planilha!','ok',3500);
-        _registrarUltimoSalvo('Despesa', r.num+' '+forn, {
-          num: r.num,
-          desc: desc,
-          valor: 'R$ '+parseFloat(valor||0).toFixed(2).replace('.',','),
-          foto: !!_despFotoB64,
-          sig: !!_despSigData
+        var num=r.num;
+        setProgress(50,'Registro salvo — enviando foto...');
+        // 2. Envia foto separadamente se existir
+        function enviarFoto(cb){
+          if(!fotoB64||fotoB64.length<10){cb();return;}
+          var b64=fotoB64.indexOf('data:')===0?fotoB64.split(',')[1]:fotoB64;
+          google.script.run
+            .withSuccessHandler(function(){cb();})
+            .withFailureHandler(function(){cb();}) // foto falhou mas registro foi salvo
+            .salvarMidia({numOS:'DESP-'+num,nome:num+'_nota.jpg',tipo:fotoMime,dados:b64});
+        }
+        // 3. Envia assinatura separadamente se existir
+        function enviarSig(cb){
+          if(!sigData||sigData.length<10){cb();return;}
+          var b64=sigData.indexOf('data:')===0?sigData.split(',')[1]:sigData;
+          google.script.run
+            .withSuccessHandler(function(){cb();})
+            .withFailureHandler(function(){cb();})
+            .salvarMidia({numOS:'DESP-SIG-'+num,nome:num+'_sig.jpg',tipo:'image/jpeg',dados:b64});
+        }
+        enviarFoto(function(){
+          enviarSig(function(){
+            _concluirProgresso(true,num+' salva!');
+            btn.disabled=false; btn.textContent='💾 Salvar Despesa';
+            toast('Despesa '+num+' salva!','ok',3500);
+            _registrarUltimoSalvo('Despesa',num+' '+forn,{num:num,desc:desc,valor:'R$ '+parseFloat(valor||0).toFixed(2).replace('.',','),foto:!!fotoB64,sig:!!sigData});
+            ['dDt','dComp','dCNPJ','dForn','dDesc','dValor','dPgto','dCat'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+            document.querySelectorAll('.dcat-btn').forEach(function(b){b.style.border='2px solid #e0e0e0';b.style.background='#fff';});
+            clearDespFoto();
+            _despSigData=null;
+            var dBtn=document.getElementById('dSigBtn');if(dBtn)dBtn.style.display='flex';
+            var dDone=document.getElementById('dSigDoneArea');if(dDone)dDone.style.display='none';
+            var dImg=document.getElementById('dSigImg');if(dImg)dImg.src='';
+            loadDesps();
+          });
         });
-        ['dDt','dComp','dCNPJ','dForn','dDesc','dValor','dPgto','dCat'].forEach(function(id){
-          var el=document.getElementById(id); if(el) el.value='';
-        });
-        document.querySelectorAll('.dcat-btn').forEach(function(b){b.style.border='2px solid #e0e0e0';b.style.background='#fff';});
-        clearDespFoto();
-        _despSigData=null;
-        var dBtn=document.getElementById('dSigBtn');if(dBtn)dBtn.style.display='flex';
-        var dDone=document.getElementById('dSigDoneArea');if(dDone)dDone.style.display='none';
-        var dImg=document.getElementById('dSigImg');if(dImg)dImg.src='';
-        loadDesps(); // atualiza lista
-      } else { toast('Erro ao salvar: '+(r&&r.error||'desconhecido'),'err'); }
+      } else {
+        _concluirProgresso(false,'');
+        btn.disabled=false; btn.textContent='💾 Salvar Despesa';
+        toast('Erro ao salvar: '+(r&&r.error||'desconhecido'),'err');
+      }
     })
     .withFailureHandler(function(e){
-      _concluirProgresso(false,''); btn.disabled=false; btn.textContent='💾 Salvar Despesa';
+      _concluirProgresso(false,'');
+      btn.disabled=false; btn.textContent='💾 Salvar Despesa';
       toast('Erro: '+e.message,'err');
     })
     .salvarDespesa(dados);
