@@ -1036,7 +1036,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       </div>
     </div>
     <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 4px;background:#6a1b9a">💾 Salvar Despesa</button>
-    <button onclick="_testarEscritaDireta()" style="margin:0 12px 12px;width:calc(100% - 24px);padding:8px;border:1.5px dashed #1a4a7a;border-radius:8px;background:#f0f4ff;font-size:11px;color:#1a4a7a;font-weight:700;cursor:pointer;font-family:inherit">🧪 Testar escrita na planilha</button>
+    <button onclick="_testarEscritaDireta()" style="margin:0 12px 2px;width:calc(100% - 24px);padding:7px;border:1.5px dashed #1a4a7a;border-radius:8px;background:#f0f4ff;font-size:11px;color:#1a4a7a;font-weight:700;cursor:pointer;font-family:inherit">🧪 Testar escrita direta na planilha</button>
+    <button onclick="_autoSalvarDesp()" style="margin:0 12px 12px;width:calc(100% - 24px);padding:7px;border:1.5px dashed #6a1b9a;border-radius:8px;background:#f5f0ff;font-size:11px;color:#6a1b9a;font-weight:700;cursor:pointer;font-family:inherit">🤖 Preencher e salvar dados de teste</button>
   </div>
   </div>
 
@@ -5187,6 +5188,37 @@ function _corrigirFormulas(){
     })
     .withFailureHandler(function(e){ alert('Erro: '+e.message); })
     .corrigirFormulasPlanilha();
+}
+
+function _autoSalvarDesp(){
+  // Preenche o formulário com dados de teste e salva
+  var hoje=new Date();
+  var iso=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
+  var hora=hoje.getHours()+':'+String(hoje.getMinutes()).padStart(2,'0');
+
+  // Preenche campos do formulário
+  var dDt=document.getElementById('dDt'); if(dDt) dDt.value=iso;
+  var dComp=document.getElementById('dComp'); if(dComp) dComp.value='Carlos';
+  var dCNPJ=document.getElementById('dCNPJ'); if(dCNPJ) dCNPJ.value='00.000.000/0001-00';
+  var dForn=document.getElementById('dForn'); if(dForn) dForn.value='TESTE AUTO '+hora;
+  var dDesc=document.getElementById('dDesc'); if(dDesc) dDesc.value='Registro de teste automatico '+iso+' '+hora;
+  var dValor=document.getElementById('dValor'); if(dValor) dValor.value='1.99';
+  var dPgto=document.getElementById('dPgto'); if(dPgto) dPgto.value='Juliomaq Pagou';
+
+  // Seleciona categoria Alimentação
+  var dCat=document.getElementById('dCat'); if(dCat) dCat.value='Alimentação';
+  // Tenta clicar no botão de categoria também (se for botões)
+  document.querySelectorAll('.dcat-btn').forEach(function(b){
+    if(b.textContent.indexOf('Aliment')>=0){b.click();}
+  });
+
+  toast('Formulário preenchido — salvando...','ok',2000);
+
+  // Aguarda 300ms para garantir que os valores foram setados
+  setTimeout(function(){
+    // Chama salvarDesp normalmente — mesmo fluxo que o usuário
+    salvarDesp();
+  }, 300);
 }
 
 function _testarEscritaDireta(){
