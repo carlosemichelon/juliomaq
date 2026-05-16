@@ -2153,7 +2153,10 @@ function _carregarTudo(cb){
 
       var meta = _cache._meta || {};
       setConn('g', 'Conectado — '+( meta.totalColecoes||'?')+' coleções');
-      if(meta.erros && meta.erros.length) console.warn('lerTudoPlanilha erros:', meta.erros);
+      if(meta.erros && meta.erros.length){
+        console.warn('lerTudoPlanilha erros:', meta.erros);
+        toast('Aviso: '+meta.erros.length+' erro(s) ao carregar dados — '+meta.erros[0],'warn',6000);
+      }
       if(cb) cb();
     })
     .withFailureHandler(function(e){
