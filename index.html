@@ -1035,7 +1035,8 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
         </div>
       </div>
     </div>
-    <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 12px;background:#6a1b9a">💾 Salvar Despesa</button>
+    <button class="btn" id="dSalvarBtn" onclick="salvarDesp()" style="margin:8px 12px 4px;background:#6a1b9a">💾 Salvar Despesa</button>
+    <button onclick="_testarEscritaDireta()" style="margin:0 12px 12px;width:calc(100% - 24px);padding:8px;border:1.5px dashed #1a4a7a;border-radius:8px;background:#f0f4ff;font-size:11px;color:#1a4a7a;font-weight:700;cursor:pointer;font-family:inherit">🧪 Testar escrita na planilha</button>
   </div>
   </div>
 
@@ -5186,6 +5187,26 @@ function _corrigirFormulas(){
     })
     .withFailureHandler(function(e){ alert('Erro: '+e.message); })
     .corrigirFormulasPlanilha();
+}
+
+function _testarEscritaDireta(){
+  var log=[];
+  log.push('Iniciando teste de escrita...');
+  toast('Testando escrita na planilha...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      log.push('Resposta recebida: '+JSON.stringify(r));
+      var msg=r&&r.success
+        ? '✅ SUCESSO: '+r.msg+'\n\nVerifique a aba Despesas na planilha — deve ter uma linha TESTE-DIRETO.'
+        : '❌ ERRO DO BACKEND:\n'+(r&&r.error||'resposta vazia');
+      alert(msg+'\n\nLog:\n'+log.join('\n'));
+    })
+    .withFailureHandler(function(e){
+      log.push('Failure handler: '+e.message);
+      alert('❌ ERRO NA COMUNICAÇÃO:\n'+e.message+'\n\nIsso significa que o fetch chegou mas o backend retornou erro.\n\nLog:\n'+log.join('\n'));
+    })
+    .escreverLinhaTesteDireto();
+  log.push('Chamada enviada ao backend...');
 }
 
 function _testarBackend(){
