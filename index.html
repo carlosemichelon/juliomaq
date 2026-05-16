@@ -5222,23 +5222,28 @@ function _autoSalvarDesp(){
 }
 
 function _testarEscritaDireta(){
-  var log=[];
-  log.push('Iniciando teste de escrita...');
   toast('Testando escrita na planilha...','ok',3000);
   google.script.run
     .withSuccessHandler(function(r){
-      log.push('Resposta recebida: '+JSON.stringify(r));
-      var msg=r&&r.success
-        ? '✅ SUCESSO: '+r.msg+'\n\nVerifique a aba Despesas na planilha — deve ter uma linha TESTE-DIRETO.'
-        : '❌ ERRO DO BACKEND:\n'+(r&&r.error||'resposta vazia');
-      alert(msg+'\n\nLog:\n'+log.join('\n'));
+      if(r&&r.success){
+        var msg='✅ Backend retornou SUCESSO\n\n';
+        msg+='📋 Planilha: '+r.ssName+'\n';
+        msg+='🔑 ID: '+r.ssId+'\n\n';
+        msg+='Linhas antes: '+r.antesRow+'\n';
+        msg+='Linhas depois: '+r.depoisRow+'\n\n';
+        msg+='📝 Linha escrita:\n'+JSON.stringify(r.linhaEscrita)+'\n\n';
+        msg+=r.antesRow===r.depoisRow
+          ? '⚠️ PROBLEMA: linha não foi adicionada (antes=depois)!'
+          : '✅ Linha adicionada! Vá para a aba Despesas e role até a linha '+r.depoisRow;
+        alert(msg);
+      } else {
+        alert('❌ ERRO: '+(r&&r.error||'resposta vazia'));
+      }
     })
     .withFailureHandler(function(e){
-      log.push('Failure handler: '+e.message);
-      alert('❌ ERRO NA COMUNICAÇÃO:\n'+e.message+'\n\nIsso significa que o fetch chegou mas o backend retornou erro.\n\nLog:\n'+log.join('\n'));
+      alert('❌ FALHA NA COMUNICAÇÃO:\n'+e.message);
     })
     .escreverLinhaTesteDireto();
-  log.push('Chamada enviada ao backend...');
 }
 
 function _testarBackend(){
