@@ -5225,23 +5225,22 @@ function _testarEscritaDireta(){
   toast('Testando...','ok',2000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(!r){alert('❌ Resposta vazia — backend não respondeu corretamente');return;}
+      if(!r){alert('r=null, backend sem resposta');return;}
       var linhas=[
-        '🔖 Versão function: '+(r.versao||'NÃO VEIO — Code.gs antigo ainda deployado!'),
+        'VERSAO: '+(r.versao||'SEM VERSAO = CODE.GS ANTIGO!'),
         '',
-        '📋 Planilha: '+(r.ssName||'undefined'),
-        '🔑 ID: '+(r.ssId||'undefined'),
+        '1) getActiveSpreadsheet: '+(r.activeSpreadsheet||'nao testado'),
+        '2) openById: '+(r.openById||'nao testado'),
+        '   ssId: '+(r.ssId||'-'),
+        '   Erro: '+(r.openByIdErro||'nenhum'),
         '',
-        '📊 Linhas antes: '+r.antes+' → depois: '+r.depois,
-        '✍️ Marca escrita: '+(r.marcaEscrita||'undefined'),
-        '📖 Marca lida back: '+(r.marcaLida||'undefined'),
-        '',
-        r.escreveu==='true'||r.escreveu===true ? '✅ ESCRITA CONFIRMADA!' : '⚠️ Linha antes=depois — NÃO escreveu'
+        'Linhas antes: '+r.antes+' depois: '+r.depois,
+        r.escreveu ? 'ESCREVEU! Role p/ linha '+r.depois+' na aba Despesas'
+                   : 'NAO ESCREVEU'
       ];
-      if(r.error) linhas.push('\n❌ ERRO: '+r.error);
       alert(linhas.join('\n'));
     })
-    .withFailureHandler(function(e){alert('❌ Falha: '+e.message);})
+    .withFailureHandler(function(e){alert('Falha: '+e.message);})
     .escreverLinhaTesteDireto();
 }
 
