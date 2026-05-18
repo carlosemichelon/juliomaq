@@ -9578,21 +9578,48 @@ var _sfAtivId       = null;
 var _sfOSData       = null;  // dados da OS vinculada
 
 // Carrega base CRM uma vez
+var _sfCarregando = false;
+var _sfPendingCbs = [];
+
 function _sfCarregarBase(cb){
   if(_sfBaseCRMReady){ if(cb) cb(); return; }
+  if(cb) _sfPendingCbs.push(cb);
+  if(_sfCarregando) return; // já em andamento
+  _sfCarregando = true;
+
+  // Mostra "Carregando..." no campo enquanto aguarda
+  var inp = document.getElementById('sfConta');
+  if(inp && !inp.value) inp.placeholder = 'Carregando clientes...';
+
   google.script.run
     .withSuccessHandler(function(cli){
       _sfBaseClientes = cli||[];
       google.script.run
         .withSuccessHandler(function(atv){
-          _sfBaseAtivos = atv||[];
+          _sfBaseAtivos   = atv||[];
           _sfBaseCRMReady = true;
-          if(cb) cb();
+          _sfCarregando   = false;
+          // Restaura placeholder
+          var inp2 = document.getElementById('sfConta');
+          if(inp2) inp2.placeholder = 'Pesquisar cliente...';
+          // Executa callbacks pendentes
+          _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
+          _sfPendingCbs = [];
+          // Re-executa filtro se o campo já tiver texto
+          if(inp2 && inp2.value.length >= 2) _sfFiltrarConta(inp2.value);
         })
-        .withFailureHandler(function(){ _sfBaseCRMReady=true; if(cb) cb(); })
+        .withFailureHandler(function(){
+          _sfBaseCRMReady=true; _sfCarregando=false;
+          _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
+          _sfPendingCbs=[];
+        })
         .getBaseCRMAtivos('');
     })
-    .withFailureHandler(function(){ _sfBaseCRMReady=true; if(cb) cb(); })
+    .withFailureHandler(function(){
+      _sfBaseCRMReady=true; _sfCarregando=false;
+      _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
+      _sfPendingCbs=[];
+    })
     .getBaseCRMClientes();
 }
 
@@ -9679,6 +9706,14 @@ function _sfSetConta(nome){
 function _sfFiltrarConta(q){
   var sug = document.getElementById('sfContaSug');
   if(!q||q.length<2){ sug.style.display='none'; return; }
+  // Se dados ainda não chegaram, mostra aguardando e carrega
+  if(!_sfBaseCRMReady){
+    sug.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#666">⏳ Carregando clientes...</div>';
+    sug.style.display='block';
+    sug.style.width = document.getElementById('sfConta').offsetWidth+'px';
+    _sfCarregarBase(null); // garante que está carregando
+    return;
+  }
   var qU = q.toUpperCase();
   var matches = _sfBaseClientes.filter(function(c){
     return c.conta.toUpperCase().indexOf(qU)>=0;
