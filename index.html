@@ -5856,6 +5856,13 @@ function renderAtiv(){
         html+='<div style="display:flex;align-items:center;gap:5px;margin-top:4px">'+'<span style="font-size:9px;font-weight:700;color:#888">ID:</span>'+'<span style="font-size:11px;color:#374151;font-weight:600">'+obsDisplay+'</span></div>';
       }
       if(observNota) html+='<div style="font-size:11px;color:#555;margin-top:4px;padding:4px 8px;background:#f8f9fa;border-radius:6px;line-height:1.4">'+observNota+'</div>';
+      // Descrição do evento da agenda (se vinculado)
+      if(a.evDescricao){
+        html+='<div style="background:#f0f4ff;border-radius:7px;padding:7px 10px;margin-top:5px;border-left:3px solid #5c8ee6">';
+        html+='<div style="font-size:9px;color:#5c8ee6;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">📅 Descrição do evento</div>';
+        html+='<div style="font-size:11px;color:#374151;white-space:pre-wrap;line-height:1.5">'+a.evDescricao+'</div>';
+        html+='</div>';
+      }
       // Caso SF editável (nunca mostra 'Técnicos:' aqui)
       var sfVal=casoSF&&casoSF.indexOf('Técnico')<0?casoSF:'';
       html+='<div style="display:flex;align-items:center;gap:5px;margin-top:5px">';
