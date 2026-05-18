@@ -5225,18 +5225,17 @@ function _testarEscritaDireta(){
   toast('Testando...','ok',2000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(!r){alert('r=null, backend sem resposta');return;}
+      if(!r){alert('r=null — backend sem resposta');return;}
       var linhas=[
-        'VERSAO: '+(r.versao||'SEM VERSAO = CODE.GS ANTIGO!'),
+        'VERSAO: '+(r.versao||'*** SEM VERSAO = CODE.GS ANTIGO AINDA! ***'),
         '',
-        '1) getActiveSpreadsheet: '+(r.activeSpreadsheet||'nao testado'),
-        '2) openById: '+(r.openById||'nao testado'),
-        '   ssId: '+(r.ssId||'-'),
-        '   Erro: '+(r.openByIdErro||'nenhum'),
+        'Planilha: '+(r.openById||'?')+' ('+( r.ssId||'?')+')',
+        'Erro: '+(r.openByIdErro||'nenhum'),
         '',
-        'Linhas antes: '+r.antes+' depois: '+r.depois,
-        r.escreveu ? 'ESCREVEU! Role p/ linha '+r.depois+' na aba Despesas'
-                   : 'NAO ESCREVEU'
+        '_ultimaLinhaReal: '+r.ultimaLinhaReal,
+        'getLastRow: '+r.getLastRow,
+        'Escreveu na linha: '+r.escreveuNaLinha,
+        r.success?'OK!':'FALHOU'
       ];
       alert(linhas.join('\n'));
     })
