@@ -9932,9 +9932,10 @@ function _renderDiff(sheetCli, sheetAtv){
       // Verificar alterações
       var h = htmlIdx[k];
       var diffs = [];
-      if(h.nomeContato !== c.nomeContato) diffs.push('Contato: <b>'+h.nomeContato+'</b> → <b>'+c.nomeContato+'</b>');
-      if(h.celular     !== c.celular)     diffs.push('Celular: <b>'+h.celular+'</b> → <b>'+c.celular+'</b>');
-      if(h.tipoContato !== c.tipoContato) diffs.push('Tipo: <b>'+h.tipoContato+'</b> → <b>'+c.tipoContato+'</b>');
+      // Compara como string para evitar falsos positivos (número vs string)
+      if(String(h.nomeContato) !== String(c.nomeContato)) diffs.push('Contato: <b>'+h.nomeContato+'</b> → <b>'+c.nomeContato+'</b>');
+      if(String(h.celular)     !== String(c.celular))     diffs.push('Celular: <b>'+h.celular+'</b> → <b>'+c.celular+'</b>');
+      if(String(h.tipoContato) !== String(c.tipoContato)) diffs.push('Tipo: <b>'+h.tipoContato+'</b> → <b>'+c.tipoContato+'</b>');
       if(diffs.length) alterados.push({conta: c.conta, diffs: diffs});
     }
   });
