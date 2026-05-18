@@ -2831,30 +2831,53 @@ function saveVei(){
   var btn=document.getElementById('vmSaveBtn');if(btn)btn.disabled=true;
   _iniciarProgresso('🚗 Desp. Veículos',[{pct:15,label:'Preparando registro...'},{pct:45,label:'Enviando dados...'},{pct:75,label:'Salvando na planilha...'}]);
   google.script.run
-    .withSuccessHandler(function(res){hideLoad();if(btn)btn.disabled=false;if(res&&res.success){_concluirProgresso(true,res.num+' registrado!');toast(res.num+' registrado!','ok');
-      _registrarUltimoSalvo('Desp. Veículos', vei+' — '+tp, {
-        num: res.num,
-        desc: g('vmDesc'),
-        valor: g('vmVal') ? 'R$ '+parseFloat(g('vmVal')||0).toFixed(2).replace('.',',') : '',
-        sig: !!vmSigData
-      });
-      ['vmVei','vmHodo','vmVal','vmDesc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vmDt').valueAsDate=new Date();document.getElementById('vmTipo').value='';['vmT1','vmT2','vmT3','vmT4'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});vmSigData=null;sHas=false;vmFotos=[];document.getElementById('vmFotosPrev').innerHTML='';document.getElementById('vmSigTap').style.display='flex';document.getElementById('vmSigDn').style.display='none';document.getElementById('vmSigW').classList.remove('on');resetVmTecs();loadVei();}else{_concluirProgresso(false,'');toast('Erro: '+(res?res.error:'?'),'err');}})
-    .withFailureHandler(function(e){hideLoad();if(btn)btn.disabled=false;toast('Erro: '+e.message,'err');})
-    .withSuccessHandler(function(res2){
-      if(res2&&res2.success){
-        // Upload fotos do veículo
-        var fotos=vmFotos.slice();var fi=0;var numReg=res2.num||'';
+    .withSuccessHandler(function(res){
+      hideLoad();
+      if(btn) btn.disabled=false;
+      if(res && res.success){
+        _concluirProgresso(true, res.num+' registrado!');
+        toast(res.num+' registrado!','ok');
+        _registrarUltimoSalvo('Desp. Veículos', vei+' — '+tp, {
+          num: res.num,
+          desc: g('vmDesc'),
+          valor: g('vmVal') ? 'R$ '+parseFloat(g('vmVal')||0).toFixed(2).replace('.',',') : '',
+          sig: !!vmSigData
+        });
+        // Upload fotos do veículo (se houver)
+        var fotos = vmFotos.slice();
+        var fi = 0;
+        var numReg = res.num || '';
         function nextFotoVm(){
-          if(fi>=fotos.length){toast('Registro salvo!','ok');return;}
-          var f=fotos[fi];fi++;
+          if(fi >= fotos.length) return;
+          var f = fotos[fi]; fi++;
           google.script.run
-            .withSuccessHandler(function(){nextFotoVm();})
-            .withFailureHandler(function(){nextFotoVm();})
-            .salvarMidia({numOS:'VEI-'+numReg,nome:f.nome,tipo:f.mime,dados:f.b64});
+            .withSuccessHandler(function(){ nextFotoVm(); })
+            .withFailureHandler(function(){ nextFotoVm(); })
+            .salvarMidia({numOS:'VEI-'+numReg, nome:f.nome, tipo:f.mime, dados:f.b64});
         }
         nextFotoVm();
+        // Limpa formulário
+        ['vmVei','vmHodo','vmVal','vmDesc'].forEach(function(id){
+          var el=document.getElementById(id); if(el) el.value='';
+        });
+        document.getElementById('vmDt').valueAsDate = new Date();
+        document.getElementById('vmTipo').value = '';
+        ['vmT1','vmT2','vmT3','vmT4'].forEach(function(id){
+          var el=document.getElementById(id); if(el) el.classList.remove('on');
+        });
+        vmSigData=null; sHas=false; vmFotos=[];
+        document.getElementById('vmFotosPrev').innerHTML='';
+        document.getElementById('vmSigTap').style.display='flex';
+        document.getElementById('vmSigDn').style.display='none';
+        document.getElementById('vmSigW').classList.remove('on');
+        resetVmTecs();
+        loadVei();
+      } else {
+        _concluirProgresso(false,'');
+        toast('Erro: '+(res ? res.error : '?'),'err');
       }
     })
+    .withFailureHandler(function(e){ hideLoad(); if(btn) btn.disabled=false; toast('Erro: '+e.message,'err'); })
     .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),assinatura:vmSigData||''});
 }
 var _veiData=[];var _veiFiltroVei='';var _veiFiltroTipo='';
