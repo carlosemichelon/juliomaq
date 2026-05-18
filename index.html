@@ -9551,9 +9551,13 @@ function confirmarCobrSenha(){
       <button onclick="_sfCopiarTudo()" style="flex:1;min-width:110px;padding:10px;background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
         📋 Copiar Tudo
       </button>
-      <button onclick="_sfAbrirSalesforce()" style="flex:2;min-width:150px;padding:10px;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(13,71,161,.3)">
+      <a id="sfAbrirLink"
+         href="https://stara.my.site.com/concessionariasrevendas/s/case/Case/Default"
+         target="_blank"
+         onclick="_sfSalvarDadosSheet()"
+         style="flex:2;min-width:150px;padding:10px;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(13,71,161,.3);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">
         🚀 Abrir SF e Salvar
-      </button>
+      </a>
     </div>
     <div id="sfCopyMsg" style="display:none;text-align:center;margin-top:8px;font-size:11px;color:#1b5e20;font-weight:600">✅ Copiado!</div>
 
@@ -9808,34 +9812,30 @@ function _sfCopy(fieldId){
 }
 
 function _sfCopiarTudo(){
-  var campos = [
-    'Tipo de Registro: '         + document.getElementById('sfTipoReg').value,
-    'Sub Tipos Serviços Oficina: '+ document.getElementById('sfSubTipo').value,
-    'Origem: '                   + document.getElementById('sfOrigem').value,
-    'Status: '                   + document.getElementById('sfStatus').value,
-    'Nome da Conta: '            + document.getElementById('sfConta').value,
-    'Nome do Contato: '          + document.getElementById('sfContato').value,
-    'Parceiro Responsável: '     + document.getElementById('sfParceiro').value,
-    'Ativo: '                    + document.getElementById('sfAtivo').value,
-    'Nº Série Topper: '          + document.getElementById('sfSerie').value,
-    'Descrição Máquina: '        + document.getElementById('sfDescMaquina').value,
-    'Nome do Operador: '         + document.getElementById('sfOperador').value,
-    'Assunto: '                  + document.getElementById('sfAssunto').value,
-    'Reclamação: '               + document.getElementById('sfReclamacao').value,
-  ].filter(function(l){ return !l.endsWith(': '); }).join('\n');
-
-  navigator.clipboard.writeText(campos).then(function(){
+  var linhas = [];
+  var ids = ['sfTipoReg','sfSubTipo','sfOrigem','sfStatus','sfConta','sfContato',
+             'sfParceiro','sfAtivo','sfSerie','sfDescMaquina','sfOperador','sfAssunto','sfReclamacao'];
+  var labels = ['Tipo de Registro','Sub Tipos Oficina','Origem','Status',
+                'Nome da Conta','Nome do Contato','Parceiro',
+                'Ativo','Serie Topper','Desc Maquina','Operador',
+                'Assunto','Reclamacao'];
+  ids.forEach(function(id, i){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var val = el.tagName==='SELECT' ? el.options[el.selectedIndex].value : (el.value||'');
+    if(val) linhas.push(labels[i]+': '+val);
+  });
+  var txt = '=== CASO SF ===' + '\n' + linhas.join('\n');
+  navigator.clipboard.writeText(txt).then(function(){
     var m=document.getElementById('sfCopyMsg');
-    m.textContent='✅ Todos os campos copiados!'; m.style.display='block';
-    setTimeout(function(){ m.style.display='none'; m.textContent='✅ Copiado!'; },2500);
+    m.textContent='\u2705 Todos os campos copiados!';
+    m.style.display='block';
+    setTimeout(function(){ m.style.display='none'; m.textContent='\u2705 Copiado!'; },3000);
   });
 }
 
-function _sfAbrirSalesforce(){
-  // Abre o site SF
-  window.open('https://stara.my.site.com/concessionariasrevendas/s/case/Case/Default','_blank');
-
-  // Salva dados na planilha (cols K-N da aba Atividades)
+// Chamado pelo onclick da tag <a> — só salva na planilha (a navegação é feita pelo href)
+function _sfSalvarDadosSheet(){
   if(_sfAtivId){
     var dados = {
       tipoRegistro: document.getElementById('sfTipoReg').value,
@@ -9844,14 +9844,14 @@ function _sfAbrirSalesforce(){
       serie:        document.getElementById('sfSerie').value
     };
     google.script.run
-      .withSuccessHandler(function(r){ if(r&&r.success) console.log('SF dados salvos'); })
-      .withFailureHandler(function(){})
+      .withSuccessHandler(function(r){ console.log('SF dados salvos:', r); })
+      .withFailureHandler(function(e){ console.error('Erro ao salvar SF:', e); })
       .salvarDadosSF(_sfAtivId, dados);
   }
-
-  var m=document.getElementById('sfCopyMsg');
-  m.textContent='✅ SF aberto! Use os botões 📋 para copiar os campos.';
-  m.style.display='block';
+  // Feedback visual
+  var m = document.getElementById('sfCopyMsg');
+  m.textContent = '✅ SF aberto! Copie os campos abaixo e cole no formulário do Salesforce.';
+  m.style.display = 'block';
 }
 
 function fecharModalSF(){
