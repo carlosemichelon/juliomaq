@@ -5861,6 +5861,7 @@ function renderAtiv(){
         html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';
       });
       html+='</select>';
+      html+='<button data-sfid="'+a.id+'" data-sfdesc="'+encodeURIComponent((a.descricao||a.topico||'').substring(0,500))+'" data-sftop="'+encodeURIComponent(a.topico||'')+'" data-sfref="'+encodeURIComponent(a.idRef||'')+'" data-sfcaso="'+encodeURIComponent(a.casoSF||'')+'" onclick="abrirModalSF(this)" style="font-size:9px;background:#e3f0ff;border:1px solid #90caf9;color:#0d47a1;border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">&#x2601;&#xFE0F; Caso SF</button>';
       html+='<button onclick="abrirEditAtiv(\''+a.id+'\')" style="font-size:9px;background:#f5f5f5;border:1px solid var(--bd);color:#374151;border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">✏️ Editar</button>';
       html+='</div></div></div>';
     });
@@ -9356,5 +9357,399 @@ function confirmarCobrSenha(){
 }
 // ─────────────────────────────────────────────────────────────
 </script>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- MODAL CRIAR CASO SALESFORCE                             -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="sfCaseModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;overflow-y:auto;padding:16px">
+<div style="background:#fff;border-radius:14px;max-width:520px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.22);overflow:hidden">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1565c0,#0d47a1);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+    <div style="color:#fff;font-weight:700;font-size:15px">☁️ Criar Caso Salesforce</div>
+    <button onclick="fecharModalSF()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">×</button>
+  </div>
+
+  <div style="padding:16px 18px">
+
+    <!-- Instrução -->
+    <div style="background:#e3f0ff;border-radius:8px;padding:8px 12px;font-size:11px;color:#0d47a1;margin-bottom:14px;line-height:1.5">
+      📋 Preencha os campos abaixo. Ao clicar em <b>Abrir Salesforce</b>, uma nova aba será aberta com o formulário de caso. Use o botão 📋 para copiar cada valor.
+    </div>
+
+    <!-- Tipo de Registro -->
+    <div class="sf-field-row">
+      <label class="sf-label">Tipo de Registro <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="sfTipoReg" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="Dúvida">Dúvida</option>
+          <option value="Revisão Programada">Revisão Programada</option>
+          <option value="Incidente de Produto">Incidente de Produto</option>
+          <option value="Incidente de Pedido">Incidente de Pedido</option>
+          <option value="Entrega Técnica">Entrega Técnica</option>
+          <option value="Serviços Oficina">Serviços Oficina</option>
+          <option value="Solicitação">Solicitação</option>
+          <option value="Sugestão">Sugestão</option>
+          <option value="Atendimento Laboratório Tecnologia">Atendimento Laboratório Tecnologia</option>
+        </select>
+        <button onclick="_sfCopy('sfTipoReg')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Origem -->
+    <div class="sf-field-row">
+      <label class="sf-label">Origem <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="sfOrigem" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="Telefone">Telefone</option>
+          <option value="E-mail">E-mail</option>
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Presencial">Presencial</option>
+          <option value="Web">Web</option>
+        </select>
+        <button onclick="_sfCopy('sfOrigem')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Tipo de Dúvida -->
+    <div class="sf-field-row" id="sfTipoDuvidaRow">
+      <label class="sf-label">Tipo de Dúvida <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="sfTipoDuvida" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="">— Selecione —</option>
+          <option value="Técnica">Técnica</option>
+          <option value="Comercial">Comercial</option>
+          <option value="Financeira">Financeira</option>
+          <option value="Peças">Peças</option>
+          <option value="Garantia">Garantia</option>
+          <option value="Operacional">Operacional</option>
+        </select>
+        <button onclick="_sfCopy('sfTipoDuvida')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="sf-field-row">
+      <label class="sf-label">Status <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="sfStatus" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="Aberto">Aberto</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Aguardando Cliente">Aguardando Cliente</option>
+          <option value="Fechado">Fechado</option>
+        </select>
+        <button onclick="_sfCopy('sfStatus')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Nome da Conta -->
+    <div class="sf-field-row">
+      <label class="sf-label">Nome da Conta <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center;position:relative">
+        <input id="sfConta" type="text" placeholder="Pesquisar cliente..." autocomplete="off"
+          oninput="_sfFiltrarConta(this.value)"
+          style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+        <button onclick="_sfCopy('sfConta')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+      <div id="sfContaSug" style="display:none;position:absolute;z-index:100;background:#fff;border:1px solid #e0e0e0;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:160px;overflow-y:auto;width:100%;margin-top:2px"></div>
+    </div>
+
+    <!-- Contato -->
+    <div class="sf-field-row">
+      <label class="sf-label">Nome do Contato <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="sfContato" type="text" placeholder="Auto-preenchido pelo cliente..."
+          style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;background:#f9f9f9">
+        <button onclick="_sfCopy('sfContato')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Ativo -->
+    <div class="sf-field-row">
+      <label class="sf-label">Ativo (Equipamento)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="sfAtivo" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="">— Selecione após escolher cliente —</option>
+        </select>
+        <button onclick="_sfCopy('sfAtivo')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Assunto -->
+    <div class="sf-field-row">
+      <label class="sf-label">Assunto <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="sfAssunto" type="text" placeholder="Assunto do caso..."
+          style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+        <button onclick="_sfCopy('sfAssunto')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Reclamação -->
+    <div class="sf-field-row">
+      <label class="sf-label">Reclamação do Cliente <span style="color:#c00">*</span></label>
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <textarea id="sfReclamacao" rows="3" placeholder="Descreva a reclamação do cliente..."
+          style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+        <button onclick="_sfCopy('sfReclamacao')" class="sf-copy-btn" title="Copiar" style="margin-top:2px">📋</button>
+      </div>
+    </div>
+
+    <!-- Número OS vinculada -->
+    <div class="sf-field-row">
+      <label class="sf-label">OS / Referência</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="sfOSRef" type="text" placeholder="Número da OS vinculada..."
+          style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;background:#f9f9f9">
+        <button onclick="_sfCopy('sfOSRef')" class="sf-copy-btn" title="Copiar">📋</button>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button onclick="_sfCopiarTudo()" style="flex:1;min-width:120px;padding:10px;background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+        📋 Copiar Tudo
+      </button>
+      <button onclick="_sfAbrirSalesforce()" style="flex:2;min-width:160px;padding:10px;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(13,71,161,.3)">
+        🚀 Abrir Salesforce
+      </button>
+    </div>
+
+    <!-- Feedback de cópia -->
+    <div id="sfCopyMsg" style="display:none;text-align:center;margin-top:8px;font-size:11px;color:#1b5e20;font-weight:600">✅ Copiado!</div>
+
+  </div><!-- /padding -->
+</div><!-- /card -->
+</div><!-- /modal overlay -->
+
+<style>
+.sf-field-row { margin-bottom:11px; position:relative; }
+.sf-label { display:block; font-size:11px; font-weight:700; color:#374151; margin-bottom:4px; }
+.sf-copy-btn { background:#f0f4ff; border:1px solid #c5cae9; color:#3949ab; border-radius:6px; padding:5px 7px; cursor:pointer; font-size:12px; flex-shrink:0; }
+.sf-copy-btn:active { background:#c5cae9; }
+</style>
+
+<script>
+// ── Base CRM em memória ────────────────────────────────────────
+var _sfBaseClientes = [];
+var _sfBaseAtivos   = [];
+var _sfBaseCRMReady = false;
+var _sfAtivId       = null;
+
+function _sfCarregarBase(cb){
+  if(_sfBaseCRMReady){ if(cb) cb(); return; }
+  google.script.run
+    .withSuccessHandler(function(clientes){
+      _sfBaseClientes = clientes||[];
+      google.script.run
+        .withSuccessHandler(function(ativos){
+          _sfBaseAtivos = ativos||[];
+          _sfBaseCRMReady = true;
+          if(cb) cb();
+        })
+        .withFailureHandler(function(){ _sfBaseCRMReady=true; if(cb) cb(); })
+        .getBaseCRMAtivos('');
+    })
+    .withFailureHandler(function(){ _sfBaseCRMReady=true; if(cb) cb(); })
+    .getBaseCRMClientes();
+}
+
+// Chamado ao clicar em "☁️ Caso SF" na atividade
+function abrirModalSF(btn){
+  _sfAtivId = btn.getAttribute('data-sfid');
+  var desc    = decodeURIComponent(btn.getAttribute('data-sfdesc')||'');
+  var topico  = decodeURIComponent(btn.getAttribute('data-sftop')||'');
+  var osRef   = decodeURIComponent(btn.getAttribute('data-sfref')||'');
+
+  document.getElementById('sfCaseModal').style.display='block';
+  document.body.style.overflow='hidden';
+
+  // Pré-preencher campos
+  document.getElementById('sfAssunto').value  = topico || desc.substring(0,120);
+  document.getElementById('sfReclamacao').value = desc || topico;
+  document.getElementById('sfOSRef').value = osRef;
+  document.getElementById('sfAtivo').innerHTML = '<option value="">— Selecione após escolher cliente —</option>';
+  document.getElementById('sfContaSug').style.display='none';
+  document.getElementById('sfCopyMsg').style.display='none';
+
+  // Tentar encontrar cliente pelo idRef (OS vinculada)
+  _sfCarregarBase(function(){
+    if(osRef){
+      // Busca a OS para obter o cliente
+      var osCliente = _sfBuscarClienteDaOS(osRef);
+      if(osCliente){
+        _sfSetConta(osCliente);
+      }
+    }
+  });
+}
+
+// Tenta encontrar o cliente da OS usando dados já carregados em memória
+function _sfBuscarClienteDaOS(osRef){
+  // _ATIV_CACHE ou busca rápida — usa o campo da OT se disponível
+  if(window._cachedOrdens){
+    var os = _cachedOrdens.filter(function(o){return o.num===osRef;})[0];
+    if(os && os.cliente) return os.cliente.toUpperCase();
+  }
+  return null;
+}
+
+function _sfSetConta(nome){
+  document.getElementById('sfConta').value = nome;
+  _sfPreencherContatoEAtivos(nome);
+}
+
+function _sfFiltrarConta(q){
+  var sug = document.getElementById('sfContaSug');
+  if(!q || q.length<2){ sug.style.display='none'; return; }
+  var qU = q.toUpperCase();
+  var matches = _sfBaseClientes.filter(function(c){
+    return c.conta.toUpperCase().indexOf(qU)>=0;
+  }).slice(0,8);
+  if(!matches.length){ sug.style.display='none'; return; }
+  sug.innerHTML = '';
+  matches.forEach(function(c){
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0';
+    div.innerHTML = '<b>' + c.conta + '</b><br><span style="font-size:10px;color:#777">' + c.tipoContato + ' · ' + c.celular + '</span>';
+    div.addEventListener('mouseover', function(){ this.style.background='#f0f4ff'; });
+    div.addEventListener('mouseout',  function(){ this.style.background=''; });
+    div.addEventListener('click',     function(){ _sfSelecionarConta(c.conta, c.nomeContato); });
+    sug.appendChild(div);
+  });
+  sug.style.display = 'block';
+  sug.style.width = document.getElementById('sfConta').offsetWidth + 'px';
+}
+
+function _sfSelecionarConta(conta, contato){
+  document.getElementById('sfConta').value = conta;
+  document.getElementById('sfContaSug').style.display='none';
+  _sfPreencherContatoEAtivos(conta, contato);
+}
+
+function _sfPreencherContatoEAtivos(conta, contatoHint){
+  // Contato
+  var cli = _sfBaseClientes.filter(function(c){ return c.conta.toUpperCase()===conta.toUpperCase(); })[0];
+  document.getElementById('sfContato').value = (cli&&cli.nomeContato) || contatoHint || '';
+
+  // Ativos do cliente
+  var atvsCliente = _sfBaseAtivos.filter(function(a){
+    return a.cliente.toUpperCase()===conta.toUpperCase();
+  });
+  var sel = document.getElementById('sfAtivo');
+  sel.innerHTML = '<option value="">— Sem ativo específico —</option>';
+  atvsCliente.forEach(function(a){
+    var opt = document.createElement('option');
+    opt.value = a.nome;
+    opt.textContent = a.serie + ' · ' + a.categoria + (a.status?' ('+a.status+')':'');
+    sel.appendChild(opt);
+  });
+
+  // Recarrega todos os ativos do cliente via Code.gs (versão completa)
+  if(conta && _sfBaseCRMReady){
+    google.script.run
+      .withSuccessHandler(function(lista){
+        if(!lista||!lista.length) return;
+        sel.innerHTML = '<option value="">— Sem ativo específico —</option>';
+        lista.forEach(function(a){
+          var opt = document.createElement('option');
+          opt.value = a.nome;
+          opt.textContent = a.serie + ' · ' + a.categoria + (a.status?' ('+a.status+')':'');
+          sel.appendChild(opt);
+        });
+      })
+      .getBaseCRMAtivos(conta);
+  }
+}
+
+function _sfCopy(fieldId){
+  var el = document.getElementById(fieldId);
+  var val = el.value || el.options&&el.options[el.selectedIndex]&&el.options[el.selectedIndex].value || '';
+  if(el.tagName==='SELECT') val = el.options[el.selectedIndex].value;
+  navigator.clipboard.writeText(val).then(function(){
+    var msg = document.getElementById('sfCopyMsg');
+    msg.style.display='block';
+    setTimeout(function(){ msg.style.display='none'; },1500);
+  }).catch(function(){ /* fallback */ });
+}
+
+function _sfCopiarTudo(){
+  var tipoReg  = document.getElementById('sfTipoReg').value;
+  var origem   = document.getElementById('sfOrigem').value;
+  var tipoDuv  = document.getElementById('sfTipoDuvida').value;
+  var status   = document.getElementById('sfStatus').value;
+  var conta    = document.getElementById('sfConta').value;
+  var contato  = document.getElementById('sfContato').value;
+  var ativo    = document.getElementById('sfAtivo').value;
+  var assunto  = document.getElementById('sfAssunto').value;
+  var reclam   = document.getElementById('sfReclamacao').value;
+  var osRef    = document.getElementById('sfOSRef').value;
+
+  var txt = [
+    '=== CASO SALESFORCE ===',
+    'Tipo de Registro: '  + tipoReg,
+    'Origem: '            + origem,
+    'Tipo de Dúvida: '    + tipoDuv,
+    'Status: '            + status,
+    'Conta: '             + conta,
+    'Contato: '           + contato,
+    ativo ? 'Ativo: ' + ativo : '',
+    'Assunto: '           + assunto,
+    'Reclamação: '        + reclam,
+    osRef ? 'OS/Ref: ' + osRef : ''
+  ].filter(Boolean).join('\n');
+
+  navigator.clipboard.writeText(txt).then(function(){
+    var msg = document.getElementById('sfCopyMsg');
+    msg.textContent = '✅ Todos os campos copiados!';
+    msg.style.display='block';
+    setTimeout(function(){ msg.style.display='none'; msg.textContent='✅ Copiado!'; },2500);
+  });
+}
+
+function _sfAbrirSalesforce(){
+  var assunto = document.getElementById('sfAssunto').value;
+  var status  = document.getElementById('sfStatus').value;
+  var origem  = document.getElementById('sfOrigem').value;
+  var reclam  = document.getElementById('sfReclamacao').value;
+
+  // Campos pré-preenchíveis via URL no Salesforce Lightning
+  var params = new URLSearchParams({
+    defaultFieldValues: [
+      'Subject='    + encodeURIComponent(assunto),
+      'Status='     + encodeURIComponent(status),
+      'Origin='     + encodeURIComponent(origem),
+      'Description='+ encodeURIComponent(reclam)
+    ].join(',')
+  });
+
+  var sfUrl = 'https://stara.lightning.force.com/lightning/o/Case/new?' + params.toString();
+  window.open(sfUrl, '_blank');
+
+  // Após abrir, mostrar guia de preenchimento manual
+  document.getElementById('sfCopyMsg').textContent = '✅ SF aberto! Preencha os campos manualmente usando os valores abaixo.';
+  document.getElementById('sfCopyMsg').style.display='block';
+}
+
+function fecharModalSF(){
+  document.getElementById('sfCaseModal').style.display='none';
+  document.body.style.overflow='';
+  document.getElementById('sfContaSug').style.display='none';
+}
+
+// Fecha ao clicar fora do card
+document.getElementById('sfCaseModal').addEventListener('click', function(e){
+  if(e.target===this) fecharModalSF();
+});
+
+// Fecha sugestões ao clicar fora
+document.addEventListener('click', function(e){
+  var sug = document.getElementById('sfContaSug');
+  if(sug && !sug.contains(e.target) && e.target.id!=='sfConta'){
+    sug.style.display='none';
+  }
+});
+</script>
+
 </body>
 </html>
