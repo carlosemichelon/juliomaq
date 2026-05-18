@@ -9807,23 +9807,42 @@ function _sfCopiarTudo(){
   });
 }
 
-// Chamado pelo onclick da tag <a> — só salva na planilha (a navegação é feita pelo href)
+// Chamado pelo onclick da tag <a> — salva na planilha E envia para extensão Chrome
 function _sfSalvarDadosSheet(){
+  var dadosExt = {
+    tipoRegistro: document.getElementById('sfTipoReg').value,
+    subTipo:      document.getElementById('sfSubTipo').value,
+    origem:       document.getElementById('sfOrigem').value,
+    status:       document.getElementById('sfStatus').value,
+    conta:        document.getElementById('sfConta').value,
+    contato:      document.getElementById('sfContato').value,
+    ativo:        document.getElementById('sfAtivo').value,
+    serie:        document.getElementById('sfSerie').value,
+    descMaquina:  document.getElementById('sfDescMaquina').value,
+    operador:     document.getElementById('sfOperador').value,
+    assunto:      document.getElementById('sfAssunto').value,
+    reclamacao:   document.getElementById('sfReclamacao').value
+  };
+
+  // Envia para extensão Chrome (se instalada) via postMessage
+  window.postMessage({type: 'JULIOMAQ_SF_CASE', dados: dadosExt}, '*');
+
+  // Salva cols K-N na planilha
   if(_sfAtivId){
-    var dados = {
-      tipoRegistro: document.getElementById('sfTipoReg').value,
-      subTipo:      document.getElementById('sfSubTipo').value,
-      ativo:        document.getElementById('sfAtivo').value || document.getElementById('sfSerie').value,
-      serie:        document.getElementById('sfSerie').value
-    };
     google.script.run
       .withSuccessHandler(function(r){ console.log('SF dados salvos:', r); })
       .withFailureHandler(function(e){ console.error('Erro ao salvar SF:', e); })
-      .salvarDadosSF(_sfAtivId, dados);
+      .salvarDadosSF(_sfAtivId, {
+        tipoRegistro: dadosExt.tipoRegistro,
+        subTipo:      dadosExt.subTipo,
+        ativo:        dadosExt.ativo || dadosExt.serie,
+        serie:        dadosExt.serie
+      });
   }
-  // Feedback visual
+
+  // Feedback
   var m = document.getElementById('sfCopyMsg');
-  m.textContent = '✅ SF aberto! Copie os campos abaixo e cole no formulário do Salesforce.';
+  m.textContent = '✅ SF aberto! A extensão JuliomaqSF preencherá os campos automaticamente.';
   m.style.display = 'block';
 }
 
