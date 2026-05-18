@@ -5765,8 +5765,6 @@ function salvarAtiv(){
 }
 
 function loadAtividades(){
-  // Preload clientes SF em background (silencioso, sem bloquear)
-  if(typeof _sfPreloadClientes === 'function') _sfPreloadClientes();
   google.script.run
     .withSuccessHandler(function(rows){
       _atividades=rows||[];
@@ -5829,6 +5827,15 @@ function renderAtiv(){
     html+='<span style="font-size:11px;font-weight:800;color:'+tinfo.cor+';text-transform:uppercase;letter-spacing:.5px">'+topico+'</span>';
     html+='<span style="font-size:10px;background:'+tinfo.cor+'22;color:'+tinfo.cor+';padding:1px 7px;border-radius:8px;font-weight:700">'+items.length+'</span>';
     html+='</div>';
+    // Ordena por data decrescente (mais recente em cima)
+    items.sort(function(a,b){
+      function parseBR(s){
+        if(!s) return 0;
+        var m=s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        return m ? new Date(m[3],m[2]-1,m[1]).getTime() : 0;
+      }
+      return parseBR(b.data) - parseBR(a.data);
+    });
     items.forEach(function(a){
       var stCor=_STATUS_COR[a.status]||(a.status?'#555':'#bbb');
       var vencida=a.data&&a.status!=='Encerrado'&&new Date(a.data.split('/').reverse().join('-'))<new Date();
@@ -5861,6 +5868,12 @@ function renderAtiv(){
       html+='<select onchange="atualizarStatusAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:#666;background:#fff;cursor:pointer;max-width:130px">';
       ['','Solicitado','Em análise','Aguardando retorno do item','Aguardando pagamento','Aprovado','Aprovado com retorno da peça','Reprovado','Reprovado falta de informações','Encerrado'].forEach(function(s){
         html+='<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+( s||'— Nenhum —')+'</option>';
+      });
+      html+='</select>';
+      // Dropdown Categoria
+      html+='<select onchange="atualizarCategoriaAtiv(this.dataset.id,this.value)" data-id="'+a.id+'" title="Categoria" style="font-size:9px;border:1px solid #e0e0e0;border-radius:6px;padding:2px 4px;font-family:inherit;color:'+(a.categoria?'#0d47a1':'#aaa')+';background:'+(a.categoria?'#e8f0fe':'#fff')+';cursor:pointer;max-width:130px;font-weight:'+(a.categoria?'700':'400')+'">';
+      ['','Entrega Técnica','Garantia','Serviços','Revisão'].forEach(function(cat){
+        html+='<option value="'+cat+'"'+(a.categoria===cat?' selected':'')+'>'+(cat||'— Categoria —')+'</option>';
       });
       html+='</select>';
       html+='<button data-sfid="'+a.id+'" data-sfdesc="'+encodeURIComponent((a.descricao||a.topico||'').substring(0,500))+'" data-sftop="'+encodeURIComponent(a.topico||'')+'" data-sfref="'+encodeURIComponent(a.idRef||'')+'" data-sfcaso="'+encodeURIComponent(a.casoSF||'')+'" onclick="abrirModalSF(this)" style="font-size:9px;background:#e3f0ff;border:1px solid #90caf9;color:#0d47a1;border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">&#x2601;&#xFE0F; Caso SF</button>';
@@ -5971,6 +5984,19 @@ function apagarAtiv(id){
     })
     .withFailureHandler(function(){toast('Erro ao apagar','err');})
     .apagarAtividade(id);
+}
+
+function atualizarCategoriaAtiv(id, novaCategoria){
+  // Atualiza na memória
+  var a = _atividades.find(function(x){ return x.id===id; });
+  if(a){
+    a.categoria = novaCategoria;
+    renderAtiv(); // re-renderiza para atualizar cor do dropdown
+  }
+  // Salva na planilha
+  google.script.run
+    .withFailureHandler(function(e){ console.error('Erro categoria:', e); })
+    .atualizarCategoriaAtiv(id, novaCategoria);
 }
 
 function atualizarStatusAtiv(id,novoStatus){
@@ -9563,6 +9589,28 @@ function confirmarCobrSenha(){
     </div>
     <div id="sfCopyMsg" style="display:none;text-align:center;margin-top:8px;font-size:11px;color:#1b5e20;font-weight:600">✅ Copiado!</div>
 
+    <!-- Verificar base -->
+    <div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">
+      <button onclick="abrirVerificarBase()" style="background:none;border:none;color:#888;font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline">
+        🔍 Verificar atualização da base de dados
+      </button>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL VERIFICAR BASE CRM                                   -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="baseCheckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;overflow-y:auto;padding:16px 8px">
+<div style="background:#fff;border-radius:14px;max-width:560px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.25);overflow:hidden">
+  <div style="background:linear-gradient(135deg,#37474f,#263238);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+    <div style="color:#fff;font-weight:700;font-size:14px">🔍 Verificação da Base de Dados</div>
+    <button onclick="fecharVerificarBase()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;font-family:inherit">×</button>
+  </div>
+  <div id="baseCheckBody" style="padding:16px 18px;min-height:100px">
+    <div style="text-align:center;color:#888;font-size:13px;padding:20px">⏳ Buscando dados da planilha...</div>
   </div>
 </div>
 </div>
@@ -9577,38 +9625,16 @@ function confirmarCobrSenha(){
 
 <script>
 // ── Estado do modal SF ─────────────────────────────────────────
-var _sfBaseClientes     = [];     // 104 clientes — carregado 1x ao abrir Atividades
-var _sfAtivosPorCliente = {};     // cache {cliente: [ativos]} — carregado sob demanda
-var _sfClientesReady    = false;
-var _sfClientesLoading  = false;
-var _sfClientesCbs      = [];
+// Clientes embutidos como JSON estático — instantâneo, sem chamada ao servidor
+var _sfBaseClientes     = [{"conta":"ADROALDO JOSE SANTI","celular":"55999788226","tipoContato":"PROPRIETÁRIO","nomeContato":"ADROALDO JOSÉ SANTI","categorias":"Pulverizadores"},{"conta":"ALEXANDRE QUATRIN BECK","celular":"55996131483","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"ALEXANDRE QUATRIN BECK","categorias":"Carretas Graneleiras, Distribuidores, Plantadeiras, Pulverizadores"},{"conta":"ALISSON CASTRO WOLLMEISTER","celular":"55999077175","tipoContato":"PROPRIETÁRIO","nomeContato":"ALISSON CASTRO WOLLMEISTER","categorias":"Carretas Graneleiras"},{"conta":"ALVARO DALLA FAVERA","celular":"55996149875","tipoContato":"PROPRIETÁRIO","nomeContato":"ALVORO DALLA FAVERA E OUTROS","categorias":"Plantadeiras"},{"conta":"ALVENIR ANTONIO MORO","celular":"55996823153","tipoContato":"PROPRIETÁRIO","nomeContato":"ALVENIR MORO","categorias":"Plantadeiras"},{"conta":"ANCELMO MARCOS BOTEGA FILHO","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"ANSELMO MARCOS BOTEGA","categorias":"Lâminas"},{"conta":"ANDERSON FELIN LONDERO","celular":"55999012341","tipoContato":"PROPRIETÁRIO","nomeContato":"ANDERSON FELIN LONDERO","categorias":"Carretas Graneleiras, Distribuidores, Lâminas"},{"conta":"ANDERSON QUATRIN SEGATTO","celular":"55999626341","tipoContato":"PROPRIETÁRIO","nomeContato":"ANDERSON QUATRIN SEGATTO","categorias":"Plantadeiras"},{"conta":"ANDREI MONTAGNER PIOVESAN","celular":"55999733956","tipoContato":"PROPRIETÁRIO","nomeContato":"ANDREI PIOVESAN","categorias":"Lâminas, Plantadeiras"},{"conta":"ARTUR JOSE BAGGIOTTO ROSSATO","celular":"55999636094","tipoContato":"PROPRIETÁRIO","nomeContato":"ARTUR JOSÉ ROSSATO","categorias":"Distribuidores, Lâminas"},{"conta":"AVANIR CATARINA VENTURINI CAVEDON","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"André Cavedon","categorias":"Lâminas, Plantadeiras"},{"conta":"BERNARDO QUATRIN DALLA CORTE","celular":"55999848413","tipoContato":"PROPRIETÁRIO","nomeContato":"BERNARDO DALLA CORTE","categorias":"Distribuidores, Plantadeiras, Plataformas de Milho"},{"conta":"CARLOS ALBERTO PIGATTO MANFIO JUNIOR","celular":"55999274003","tipoContato":"PROPRIETÁRIO","nomeContato":"CARLOS ALBERTO PIGATTO MANFIO JUNIOR","categorias":"Plantadeiras"},{"conta":"CARLOS ALESSANDRE WEBER","celular":"55999776805","tipoContato":"PROPRIETÁRIO","nomeContato":"CARLOS ALESSANDRE WEBER","categorias":"Distribuidores, Lâminas, Plantadeiras, Pulverizadores"},{"conta":"CARLOS AUGUSTO CLASSI","celular":"55999750511","tipoContato":"PROPRIETÁRIO","nomeContato":"CARLOS CLASSI","categorias":"Carretas Graneleiras, Plantadeiras, Pulverizadores"},{"conta":"CARLOS BORTOLUZZI BIANCHI","celular":"55996240785","tipoContato":"PROPRIETÁRIO","nomeContato":"CARLOS BORTOLUZZI BIANCHI","categorias":"Pulverizadores"},{"conta":"CELIO JOSE GARLET","celular":"55999791020","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"CELIO JOSE GARLET","categorias":"Plantadeiras"},{"conta":"CESAR AUGUSTO BURIN MONTAGNER","celular":"55999447551","tipoContato":"PROPRIETÁRIO","nomeContato":"CESAR AUGUSTO BURIN MONTAGNER","categorias":"Lâminas"},{"conta":"CEZAR LEANDRO PERIPOLLI","celular":"55999624230","tipoContato":"PROPRIETÁRIO","nomeContato":"CEZAR LEANDRO PERIPOLLI","categorias":"Carretas Graneleiras, Lâminas, Plantadeiras"},{"conta":"CLAUDINO FACCO PICCIN","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"CLAUDINO FACCO PICCIN","categorias":"Plantadeiras"},{"conta":"CLAUDIO CORADINI","celular":"55999655152","tipoContato":"PROPRIETÁRIO","nomeContato":"CLAUDIO CORADINI","categorias":"Plantadeiras"},{"conta":"CLAUDIOMIRO CECHIN","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"CLAUDIOMIRO CECHIN","categorias":"Distribuidores, Lâminas, Plantadeiras"},{"conta":"CLEMERSON BULIGON","celular":"55999188539","tipoContato":"PROPRIETÁRIO","nomeContato":"CLEMERSON BULIGON","categorias":"Plantadeiras"},{"conta":"COOPERATIVA AGRICOLA MISTA NOVA PALMA LTDA","celular":"54999999999","tipoContato":"PROPRIETÁRIO","nomeContato":"COOPERATIVA AGRICOLA MISTA NOVA PALMA LTDA","categorias":"Distribuidores"},{"conta":"COTRIJUC - COOPERATIVA AGROPECUARIA JULIO DE CASTILHOS","celular":"54999999999","tipoContato":"PROPRIETÁRIO","nomeContato":"COTRIJUC COOPERATIVA AGROPECUARIA JC","categorias":"Distribuidores"},{"conta":"DANIELA PARUSSOLO LINASSI","celular":"55996074543","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"DANIELA PARUSSOLO LINASSI","categorias":"Plantadeiras"},{"conta":"DIOVANI MAFFINI ANVERSA","celular":"55999712346","tipoContato":"PROPRIETÁRIO","nomeContato":"DIOVANI MAFFINI ANVERSA","categorias":"Distribuidores, Plantadeiras"},{"conta":"ELSA MONTAGNER PIOVESAN","celular":"55999733956","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"ANDREI PIOVESAN","categorias":"Plantadeiras"},{"conta":"EMERSON STEFANELLO","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"EMERSON STEFANELLO","categorias":"Distribuidores, Plantadeiras"},{"conta":"EUCLIDES VESTENA","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"EUCLIDES VESTENA","categorias":"Lâminas"},{"conta":"EVANDRO BOLIGON","celular":"55997070097","tipoContato":"PROPRIETÁRIO","nomeContato":"EVANDRO BULIGON","categorias":"Distribuidores, Lâminas, Plantadeiras"},{"conta":"EVERTON FILLIPIN MACHADO","celular":"55999566372","tipoContato":"PROPRIETÁRIO","nomeContato":"EVERTON PILLIPIN MACHADO","categorias":"Distribuidores"},{"conta":"FABIANO LINASSI","celular":"55996074543","tipoContato":"PROPRIETÁRIO","nomeContato":"FABIANO LINASSI","categorias":"Pulverizadores"},{"conta":"FABRICIO PIOVESAN","celular":"996135321","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"Cristiano Piovesan","categorias":"Distribuidores, Plantadeiras, Plataformas de Milho"},{"conta":"FERNANDO CAMARGO JUNIOR","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"Fernando Camargo","categorias":"Plataformas de Milho"},{"conta":"FERNANDO MONTAGNER","celular":"55999832787","tipoContato":"PROPRIETÁRIO","nomeContato":"FERNANDO MONTAGNER","categorias":"Distribuidores"},{"conta":"FLAVIO ANTONIO TURA","celular":"55981176240","tipoContato":"PROPRIETÁRIO","nomeContato":"FLAVIO ANTÔNIO TURA","categorias":"Lâminas"},{"conta":"FLAVIO LORENZONI NUNES","celular":"55996137909","tipoContato":"PROPRIETÁRIO","nomeContato":"FLAVIO LORENZONI NUNES","categorias":"Plataformas de Milho"},{"conta":"FUNDACAO ESTADUAL DE PESQUISA AGROPECUARIA","celular":"54999999999","tipoContato":"PROPRIETÁRIO","nomeContato":"FEPAGRO .","categorias":"Plantadeiras"},{"conta":"GABRIEL FREO MANFIO","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"André Manfio","categorias":"Plataformas de Milho"},{"conta":"GILMAR JOSÉ CIELO JUNIOR","celular":"55996443606","tipoContato":"PROPRIETÁRIO","nomeContato":"GILMAR JOSÉ CIELO JUNIOR","categorias":"Distribuidores"},{"conta":"GILMAR ZUCHETTO","celular":"54996553576","tipoContato":"PROPRIETÁRIO","nomeContato":"GILMAR ZUCHETTO","categorias":"Lâminas"},{"conta":"GIOVANI TOMAZETTI","celular":"55999665606","tipoContato":"PROPRIETÁRIO","nomeContato":"GIOVANE TOMAZETTI","categorias":"Lâminas, Plantadeiras"},{"conta":"GUILHERME DE ALMEIDA RUBIN","celular":"55996366580","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"GUILHERME DE ALMEIDA RUBIN","categorias":"Lâminas"},{"conta":"GUSTAVO BULIGON","celular":"55999618270","tipoContato":"PROPRIETÁRIO","nomeContato":"Clemersom buligom","categorias":"Plantadeiras"},{"conta":"GUSTAVO GARLET BECK","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"GUSTAVO BECK","categorias":"Distribuidores, Lâminas, Plantadeiras, Plataformas de Milho"},{"conta":"HERIBERTO JOSE FACCO","celular":"55999626571","tipoContato":"PROPRIETÁRIO","nomeContato":"HERIBERTO JOSE FACCO","categorias":"Distribuidores, Plantadeiras"},{"conta":"HERICA FREDI COCCO","celular":"55996244035","tipoContato":"PROPRIETÁRIO","nomeContato":"HERICA FREDI COCCO","categorias":"Plataformas de Milho, Pulverizadores"},{"conta":"ILARIO GARLET","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"ILARIO GARLET","categorias":"Lâminas"},{"conta":"ISABEL BIAVASCHI BITTENCOURT","celular":"55996444444","tipoContato":"PROPRIETÁRIO","nomeContato":"Isabel Biavaschi Bitencourt","categorias":"Distribuidores, Pulverizadores"},{"conta":"JAIR RIGO","celular":"55999782021","tipoContato":"PROPRIETÁRIO","nomeContato":"JAIR RIGO","categorias":"Lâminas"},{"conta":"JANIO STEFANELLO","celular":"55999474731","tipoContato":"PROPRIETÁRIO","nomeContato":"JANIO STEFANELLO","categorias":"Lâminas"},{"conta":"JERI ADRIANO FACCO","celular":"55996467938","tipoContato":"PROPRIETÁRIO","nomeContato":"JERRI ADRIANO FACCO","categorias":"Distribuidores"},{"conta":"JOAO DELFINO GONCALVES VIEIRA","celular":"55999814838","tipoContato":"PROPRIETÁRIO","nomeContato":"JOÃO DELFINO VIEIRA","categorias":"Carretas Graneleiras"},{"conta":"JOSE ANTONIO POSSER DALCIN","celular":"55999350867","tipoContato":"PROPRIETÁRIO","nomeContato":"JOSE ANTONIO POSSER DALCIN","categorias":"Distribuidores, Lâminas"},{"conta":"JOSE CARLOS ZEN","celular":"55999864151","tipoContato":"PROPRIETÁRIO","nomeContato":"JOSÉ CARLOS ZEN","categorias":"Lâminas, Plantadeiras, Pulverizadores"},{"conta":"JOSE LUIZ FACCO","celular":"55999743101","tipoContato":"PROPRIETÁRIO","nomeContato":"JOSE LUIZ FACCO","categorias":"Plataformas de Milho"},{"conta":"JOSE PAULO BACKES","celular":"55996920832","tipoContato":"PROPRIETÁRIO","nomeContato":"JOSÉ PAULO BACKES","categorias":"Distribuidores"},{"conta":"JULIOMAQ COMERCIO E REPR. LTDA_JULIO DE CASTILHOS","celular":"","tipoContato":"GERENTE CONCESSIONÁRIA/REVENDA","nomeContato":"ARGEU PIOVESAN","categorias":"Carretas Graneleiras, Distribuidores, Lâminas, Plantadeiras, Plataformas de Milho, Pulverizadores"},{"conta":"LAIRTON VILMAR KREIN","celular":"55999482681","tipoContato":"PROPRIETÁRIO","nomeContato":"Lairtom Vilmar","categorias":"Carretas Graneleiras, Lâminas"},{"conta":"LAURO CARGNIN","celular":"55999331159","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"ELOI JOSE CARGNIN","categorias":"Lâminas, Plantadeiras"},{"conta":"LIZ HELENA PIGATTO","celular":"55999060153","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"LIZ ELENA PIGATTO","categorias":"Plantadeiras"},{"conta":"LUCAS WEBER STEFANELLO","celular":"55997124874","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"LUCAS STEFANELLO","categorias":"Plantadeiras"},{"conta":"LUCIANO VERISSIMO CEOLIN","celular":"51996120333","tipoContato":"PROPRIETÁRIO","nomeContato":"Luciano Verissimo Ceolin","categorias":"Lâminas"},{"conta":"LUIS ALBERTO CASTILHOS WAIHRICH","celular":"55999716392","tipoContato":"PROPRIETÁRIO","nomeContato":"LUIS ALBERTO WAIHRICH","categorias":"Distribuidores"},{"conta":"LUIZ AUGUSTO PIGATTO","celular":"55999060153","tipoContato":"PROPRIETÁRIO","nomeContato":"LUIZ AUGUSTO PIGATTO","categorias":"Distribuidores, Plantadeiras"},{"conta":"LUIZ CARLOS FACCO","celular":"55999774466","tipoContato":"PROPRIETÁRIO","nomeContato":"LUIZ CARLOS FACCO","categorias":"Plantadeiras"},{"conta":"LUIZ CELITO FACCO PIOVESAN","celular":"55991435218","tipoContato":"PROPRIETÁRIO","nomeContato":"LUIZ CELITO FACCO PIOVESAN","categorias":"Carretas Graneleiras"},{"conta":"LUIZ JACOB PEROBELLI CEOLIN","celular":"55999716040","tipoContato":"PROPRIETÁRIO","nomeContato":"LUIZ JACOB PEROBELLI CEOLIN","categorias":"Carretas Graneleiras"},{"conta":"LUIZ PAULO PIGATTO","celular":"55999713155","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"AUGUSTO PIGATTO","categorias":"Carretas Graneleiras, Lâminas"},{"conta":"LUIZINHO BULIGON","celular":"55999415538","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"CESAR BULIGON","categorias":"Pulverizadores"},{"conta":"MARCIANO LINASSI","celular":"55996036962","tipoContato":"PROPRIETÁRIO","nomeContato":"MARCIANO LINASSI","categorias":"Lâminas, Pulverizadores"},{"conta":"MARCIANO LUCION","celular":"55996718857","tipoContato":"PROPRIETÁRIO","nomeContato":"MARCIANO LUCION","categorias":"Plantadeiras"},{"conta":"MARCOS ANTONIO MILLANI","celular":"55999774552","tipoContato":"PROPRIETÁRIO","nomeContato":"Guilherme Milani","categorias":"Plataformas de Milho"},{"conta":"MARIA BEATRIZ ZIMPEL","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"MARIA BEATRIZ ZIMPEL","categorias":"Distribuidores, Lâminas"},{"conta":"MARIA CRISTINA PEREIRA BANOLAS","celular":"55999999556","tipoContato":"PROPRIETÁRIO","nomeContato":"MARIA CRISTINA PEREIRA BAÑOLAS","categorias":"Distribuidores"},{"conta":"MARIO JOSE SAENGER ROSA","celular":"55999721971","tipoContato":"PROPRIETÁRIO","nomeContato":"MARIO JOSE SAENGER ROSA","categorias":"Distribuidores, Lâminas"},{"conta":"MAURO LUIZ ANVERSA","celular":"55996314764","tipoContato":"PROPRIETÁRIO","nomeContato":"MAURO LUIZ ANVERSA","categorias":"Distribuidores"},{"conta":"MAURO MACHADO DA SILVA","celular":"55999794817","tipoContato":"PROPRIETÁRIO","nomeContato":"Clodoaldo Henks","categorias":"Plantadeiras"},{"conta":"MIGUEL WAIHRICH SALLES","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"Miguel Waihrich Salles","categorias":"Plantadeiras"},{"conta":"NEURI HARTI SCHEFFLER","celular":"55996755264","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"DAVI SHEFFLLER","categorias":"Plantadeiras"},{"conta":"OSVALDO ARNO STRECK","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"Osvaldo Arno Streck","categorias":"Plantadeiras"},{"conta":"P R A AGROINDUSTRIAL LTDA","celular":"54999999999","tipoContato":"PROPRIETÁRIO","nomeContato":"P.R.A AGROINDUSTRIA LTDA","categorias":"Lâminas"},{"conta":"PAULO CILON MELLO DA ROSA","celular":"55997151312","tipoContato":"PROPRIETÁRIO","nomeContato":"PAULO CILON MELLO DA ROSA","categorias":"Carretas Graneleiras, Distribuidores"},{"conta":"PAULO MARCIO CARDOSO MAGALHAES","celular":"55999712018","tipoContato":"PROPRIETÁRIO","nomeContato":"PAULO MARCIO CARDOSO MAGALHAES","categorias":"Plantadeiras"},{"conta":"PAULO SERGIO CEOLIN","celular":"51989618339","tipoContato":"SÓCIO PROPRIETÁRIO","nomeContato":"JOÃO RICARDO ANDRES","categorias":"Plantadeiras"},{"conta":"RENATO MAXIMIANO PEROBELLI CEOLIN","celular":"55999746567","tipoContato":"PROPRIETÁRIO","nomeContato":"RENATO MAXIMIANO PEROBELLI CEOLIN","categorias":"Carretas Graneleiras, Lâminas, Plantadeiras"},{"conta":"RICARDO CORADINI","celular":"55999986521","tipoContato":"PROPRIETÁRIO","nomeContato":"RICARDO CORADINI","categorias":"Plantadeiras, Plataformas de Milho"},{"conta":"RODINEI BARBIERI","celular":"55996406747","tipoContato":"PROPRIETÁRIO","nomeContato":"RODINEI BARBIERI","categorias":"Lâminas"},{"conta":"RODRIGO BOLIGON","celular":"0","tipoContato":"PROPRIETÁRIO","nomeContato":"RODRIGO BOLIGON","categorias":"Distribuidores, Lâminas"},{"conta":"RODRIGO CANCIAN DALCIN","celular":"55997124874","tipoContato":"PROPRIETÁRIO","nomeContato":"RODRIGO CANCIANDALCIN","categorias":"Lâminas, Plantadeiras"},{"conta":"ROGERIO CECHIN","celular":"55991435218","tipoContato":"PROPRIETÁRIO","nomeContato":"ROGERIO CECHIN","categorias":"Carretas Graneleiras, Distribuidores, Plataformas de Milho"},{"conta":"RONALDO DA ROSA MICHELON","celular":"55999973796","tipoContato":"PROPRIETÁRIO","nomeContato":"RONALDO DA ROSA MICHELON","categorias":"Distribuidores, Plantadeiras, Plataformas de Milho"},{"conta":"RUDIMAR CECHIN","celular":"55999774464","tipoContato":"PROPRIETÁRIO","nomeContato":"ROGÉRIO CECHIN","categorias":"Carretas Graneleiras, Plantadeiras"},{"conta":"SERGIO CORADINI NEVES","celular":"55996288841","tipoContato":"PROPRIETÁRIO","nomeContato":"SERGIO CORADINI NEVES","categorias":"Pulverizadores"},{"conta":"SERGIO DE ASSIS LIBRELOTTO RUBIN","celular":"55999716619","tipoContato":"PROPRIETÁRIO","nomeContato":"SERGIO DE ASSIS LIBRELOTTO RUBIN","categorias":"Distribuidores, Plantadeiras"},{"conta":"TARCISIO VENTURINI","celular":"55996325718","tipoContato":"PROPRIETÁRIO","nomeContato":"Juliano Venturini","categorias":"Distribuidores, Plantadeiras, Plataformas de Milho"},{"conta":"TIAGO MACHADO DE OLIVEIRA","celular":"55999791101","tipoContato":"PROPRIETÁRIO","nomeContato":"TIAGO MACHADO DE OLIVEIRA","categorias":"Lâminas"},{"conta":"TOTAL CLIENTES","celular":"","tipoContato":"","nomeContato":"","categorias":""},{"conta":"VALMIR MAFFINI COPETTI","celular":"55999077615","tipoContato":"PROPRIETÁRIO","nomeContato":"VALMIR MAFFINI COPETTI","categorias":"Lâminas"},{"conta":"VALTER PIGATTO CIOCCARI","celular":"55999612333","tipoContato":"PROPRIETÁRIO","nomeContato":"VALTER CIOCARI","categorias":"Distribuidores, Lâminas, Plataformas de Milho"},{"conta":"VERA LUCIA MACHADO DA SILVA","celular":"55999679393","tipoContato":"PROPRIETÁRIO","nomeContato":"VERA LUCIA MACHADO DA SILVA","categorias":"Pulverizadores"},{"conta":"VITOR ALEXANDRE CEOLIN","celular":"51999666974","tipoContato":"PROPRIETÁRIO","nomeContato":"VITOR ALEXANDRE CEOLIN","categorias":"Plataformas de Milho"},{"conta":"VITOR WEBER STEFANELLO","celular":"55999616903","tipoContato":"PROPRIETÁRIO","nomeContato":"VITOR WEBER STEFANELLO","categorias":"Lâminas, Plataformas de Milho"}];
+var _sfClientesReady    = true;  // já prontos
+var _sfAtivosPorCliente = {};    // cache {cliente: [ativos]} — carregado sob demanda
 var _sfAtivId           = null;
 var _sfOSData           = null;
 
-// Carrega SOMENTE clientes (chamado ao abrir aba Atividades)
-function _sfPreloadClientes(){
-  if(_sfClientesReady || _sfClientesLoading) return;
-  _sfClientesLoading = true;
-  google.script.run
-    .withSuccessHandler(function(cli){
-      _sfBaseClientes    = cli||[];
-      _sfClientesReady   = true;
-      _sfClientesLoading = false;
-      _sfClientesCbs.forEach(function(f){ try{f();}catch(e){} });
-      _sfClientesCbs = [];
-    })
-    .withFailureHandler(function(){
-      _sfClientesLoading = false;
-    })
-    .getBaseCRMClientes();
-}
-
-// Garante clientes carregados e chama cb
-function _sfEnsureClientes(cb){
-  if(_sfClientesReady){ if(cb) cb(); return; }
-  if(cb) _sfClientesCbs.push(cb);
-  _sfPreloadClientes();
-}
+// Clientes embutidos estaticamente — _sfEnsureClientes chama cb direto
+function _sfPreloadClientes(){ /* no-op: dados já embutidos */ }
+function _sfEnsureClientes(cb){ if(cb) cb(); }
 
 // Carrega ativos de UM cliente — com cache
 function _sfCarregarAtivosCliente(conta, cb){
@@ -9646,8 +9672,7 @@ function abrirModalSF(btn){
   document.getElementById('sfCaseModal').style.display='block';
   document.body.style.overflow='hidden';
 
-  // Clientes já devem estar carregados (preload ao abrir aba Atividades)
-  // Busca OS se houver referência
+  // Clientes prontos (JSON estático embutido) — busca OS se houver referência
   _sfEnsureClientes(function(){
     if(osRef && osRef.indexOf('OS-')===0){
       google.script.run
@@ -9706,14 +9731,7 @@ function _sfSetConta(nome){
 function _sfFiltrarConta(q){
   var sug = document.getElementById('sfContaSug');
   if(!q||q.length<2){ sug.style.display='none'; return; }
-  // Se clientes ainda não chegaram, mostra aguardando e agenda retry
-  if(!_sfClientesReady){
-    sug.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#666">&#9203; Carregando clientes...</div>';
-    sug.style.display='block';
-    sug.style.width = document.getElementById('sfConta').offsetWidth+'px';
-    _sfEnsureClientes(function(){ _sfFiltrarConta(document.getElementById('sfConta').value); });
-    return;
-  }
+  // Dados sempre prontos (JSON estático embutido)
   var qU = q.toUpperCase();
   var matches = _sfBaseClientes.filter(function(c){
     return c.conta.toUpperCase().indexOf(qU)>=0;
@@ -9850,6 +9868,149 @@ function fecharModalSF(){
   document.getElementById('sfCaseModal').style.display='none';
   document.body.style.overflow='';
   document.getElementById('sfContaSug').style.display='none';
+}
+
+// ── Verificar Base CRM ─────────────────────────────────────────
+function abrirVerificarBase(){
+  document.getElementById('baseCheckModal').style.display='block';
+  document.getElementById('baseCheckBody').innerHTML =
+    '<div style="text-align:center;color:#888;font-size:13px;padding:20px">&#9203; Buscando dados da planilha...</div>';
+
+  // Busca clientes E ativos da planilha em paralelo
+  var sheetCli = null, sheetAtv = null;
+
+  function tentarComparar(){
+    if(sheetCli === null || sheetAtv === null) return; // aguarda os dois
+    _renderDiff(sheetCli, sheetAtv);
+  }
+
+  google.script.run
+    .withSuccessHandler(function(cli){ sheetCli = cli||[]; tentarComparar(); })
+    .withFailureHandler(function(e){
+      sheetCli = [];
+      document.getElementById('baseCheckBody').innerHTML =
+        '<div style="color:#c00;padding:16px">&#10060; Erro ao ler BaseCRM_Clientes: '+(e||'desconhecido')+'</div>';
+    })
+    .getBaseCRMClientes();
+
+  google.script.run
+    .withSuccessHandler(function(atv){ sheetAtv = atv||[]; tentarComparar(); })
+    .withFailureHandler(function(){ sheetAtv = []; tentarComparar(); })
+    .getBaseCRMAtivos('');
+}
+
+function fecharVerificarBase(){
+  document.getElementById('baseCheckModal').style.display='none';
+}
+
+function _renderDiff(sheetCli, sheetAtv){
+  var htmlCli = _sfBaseClientes; // JSON embutido no HTML
+
+  // Índices por nome de conta
+  var htmlIdx = {};
+  htmlCli.forEach(function(c){ htmlIdx[c.conta.toUpperCase()] = c; });
+  var sheetIdx = {};
+  sheetCli.forEach(function(c){ sheetIdx[c.conta.toUpperCase()] = c; });
+
+  var novos    = [];
+  var removidos= [];
+  var alterados= [];
+
+  // Novos na planilha (não estão no HTML)
+  sheetCli.forEach(function(c){
+    var k = c.conta.toUpperCase();
+    if(!htmlIdx[k]){
+      novos.push(c);
+    } else {
+      // Verificar alterações
+      var h = htmlIdx[k];
+      var diffs = [];
+      if(h.nomeContato !== c.nomeContato) diffs.push('Contato: <b>'+h.nomeContato+'</b> → <b>'+c.nomeContato+'</b>');
+      if(h.celular     !== c.celular)     diffs.push('Celular: <b>'+h.celular+'</b> → <b>'+c.celular+'</b>');
+      if(h.tipoContato !== c.tipoContato) diffs.push('Tipo: <b>'+h.tipoContato+'</b> → <b>'+c.tipoContato+'</b>');
+      if(diffs.length) alterados.push({conta: c.conta, diffs: diffs});
+    }
+  });
+
+  // Removidos (no HTML mas não na planilha)
+  htmlCli.forEach(function(c){
+    if(!sheetIdx[c.conta.toUpperCase()]) removidos.push(c);
+  });
+
+  // Resumo ativos por categoria
+  var catCount = {};
+  sheetAtv.forEach(function(a){
+    catCount[a.categoria] = (catCount[a.categoria]||0) + 1;
+  });
+
+  // Clientes com ativos na planilha
+  var comAtivos = {};
+  sheetAtv.forEach(function(a){ comAtivos[a.cliente] = true; });
+  var semAtivos = sheetCli.filter(function(c){ return !comAtivos[c.conta]; });
+
+  // ── Render ──
+  var html = '';
+
+  // Status geral
+  var ok = novos.length===0 && removidos.length===0 && alterados.length===0;
+  html += '<div style="background:'+(ok?'#e8f5e9':'#fff8e1')+';border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">';
+  if(ok){
+    html += '&#9989; <b>Clientes sincronizados</b> — HTML e planilha idênticos ('+htmlCli.length+' clientes)';
+  } else {
+    html += '&#9888;&#65039; <b>Diferenças encontradas</b> — HTML tem '+htmlCli.length+' clientes, planilha tem '+sheetCli.length;
+  }
+  html += '</div>';
+
+  // Novos
+  if(novos.length){
+    html += _bloco('🆕 Novos na planilha (não estão no HTML)', '#e3f0ff', '#1565c0',
+      novos.map(function(c){ return '<b>'+c.conta+'</b> <span style="color:#777;font-size:10px">'+c.tipoContato+'</span>'; }));
+  }
+
+  // Removidos
+  if(removidos.length){
+    html += _bloco('🗑️ No HTML mas não na planilha', '#fce4ec', '#c62828',
+      removidos.map(function(c){ return '<b>'+c.conta+'</b>'; }));
+  }
+
+  // Alterados
+  if(alterados.length){
+    html += _bloco('✏️ Dados diferentes', '#fff8e1', '#e65100',
+      alterados.map(function(a){
+        return '<b>'+a.conta+'</b><br><span style="font-size:10px;color:#555">'+a.diffs.join(' | ')+'</span>';
+      }));
+  }
+
+  // Ativos
+  html += '<div style="margin-top:14px">';
+  html += '<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Ativos na planilha ('+sheetAtv.length+' total)</div>';
+  var catHtml = Object.keys(catCount).sort().map(function(k){
+    return '<span style="background:#f0f4ff;border-radius:6px;padding:2px 8px;font-size:11px;margin:2px;display:inline-block">'+k+': <b>'+catCount[k]+'</b></span>';
+  }).join('');
+  html += '<div>'+catHtml+'</div>';
+  if(semAtivos.length){
+    html += '<div style="margin-top:8px;font-size:11px;color:#888">&#9888;&#65039; '+semAtivos.length+' cliente(s) sem ativos cadastrados</div>';
+  }
+  html += '</div>';
+
+  // Instruções se houver diff
+  if(!ok){
+    html += '<div style="margin-top:14px;background:#f8f9fa;border-radius:8px;padding:10px 14px;font-size:11px;color:#374151;line-height:1.6">';
+    html += '<b>Para atualizar o HTML:</b> envie o Excel atualizado no chat com o Claude e peço para regenerar o JSON embutido.';
+    html += '</div>';
+  }
+
+  document.getElementById('baseCheckBody').innerHTML = html;
+}
+
+function _bloco(titulo, bg, cor, itens){
+  return '<div style="background:'+bg+';border-radius:8px;padding:10px 14px;margin-bottom:10px">'
+    +'<div style="font-size:11px;font-weight:700;color:'+cor+';margin-bottom:6px">'+titulo+' ('+itens.length+')</div>'
+    +'<div style="display:flex;flex-direction:column;gap:4px">'
+    +itens.map(function(i){
+      return '<div style="font-size:12px;background:rgba(255,255,255,.6);border-radius:5px;padding:4px 8px">'+i+'</div>';
+    }).join('')
+    +'</div></div>';
 }
 
 document.getElementById('sfCaseModal').addEventListener('click',function(e){
