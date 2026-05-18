@@ -5765,6 +5765,8 @@ function salvarAtiv(){
 }
 
 function loadAtividades(){
+  // Preload clientes SF em background (silencioso, sem bloquear)
+  if(typeof _sfPreloadClientes === 'function') _sfPreloadClientes();
   google.script.run
     .withSuccessHandler(function(rows){
       _atividades=rows||[];
@@ -9575,59 +9577,52 @@ function confirmarCobrSenha(){
 
 <script>
 // ── Estado do modal SF ─────────────────────────────────────────
-var _sfBaseClientes = [];
-var _sfBaseAtivos   = [];
-var _sfBaseCRMReady = false;
-var _sfAtivId       = null;
-var _sfOSData       = null;  // dados da OS vinculada
+var _sfBaseClientes     = [];     // 104 clientes — carregado 1x ao abrir Atividades
+var _sfAtivosPorCliente = {};     // cache {cliente: [ativos]} — carregado sob demanda
+var _sfClientesReady    = false;
+var _sfClientesLoading  = false;
+var _sfClientesCbs      = [];
+var _sfAtivId           = null;
+var _sfOSData           = null;
 
-// Carrega base CRM uma vez
-var _sfCarregando = false;
-var _sfPendingCbs = [];
-
-function _sfCarregarBase(cb){
-  if(_sfBaseCRMReady){ if(cb) cb(); return; }
-  if(cb) _sfPendingCbs.push(cb);
-  if(_sfCarregando) return; // já em andamento
-  _sfCarregando = true;
-
-  // Mostra "Carregando..." no campo enquanto aguarda
-  var inp = document.getElementById('sfConta');
-  if(inp && !inp.value) inp.placeholder = 'Carregando clientes...';
-
+// Carrega SOMENTE clientes (chamado ao abrir aba Atividades)
+function _sfPreloadClientes(){
+  if(_sfClientesReady || _sfClientesLoading) return;
+  _sfClientesLoading = true;
   google.script.run
     .withSuccessHandler(function(cli){
-      _sfBaseClientes = cli||[];
-      google.script.run
-        .withSuccessHandler(function(atv){
-          _sfBaseAtivos   = atv||[];
-          _sfBaseCRMReady = true;
-          _sfCarregando   = false;
-          // Restaura placeholder
-          var inp2 = document.getElementById('sfConta');
-          if(inp2) inp2.placeholder = 'Pesquisar cliente...';
-          // Executa callbacks pendentes
-          _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
-          _sfPendingCbs = [];
-          // Re-executa filtro se o campo já tiver texto
-          if(inp2 && inp2.value.length >= 2) _sfFiltrarConta(inp2.value);
-        })
-        .withFailureHandler(function(){
-          _sfBaseCRMReady=true; _sfCarregando=false;
-          _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
-          _sfPendingCbs=[];
-        })
-        .getBaseCRMAtivos('');
+      _sfBaseClientes    = cli||[];
+      _sfClientesReady   = true;
+      _sfClientesLoading = false;
+      _sfClientesCbs.forEach(function(f){ try{f();}catch(e){} });
+      _sfClientesCbs = [];
     })
     .withFailureHandler(function(){
-      _sfBaseCRMReady=true; _sfCarregando=false;
-      _sfPendingCbs.forEach(function(f){ try{f();}catch(e){} });
-      _sfPendingCbs=[];
+      _sfClientesLoading = false;
     })
     .getBaseCRMClientes();
 }
 
-// Abre o modal — chamado pelo botão no card da atividade
+// Garante clientes carregados e chama cb
+function _sfEnsureClientes(cb){
+  if(_sfClientesReady){ if(cb) cb(); return; }
+  if(cb) _sfClientesCbs.push(cb);
+  _sfPreloadClientes();
+}
+
+// Carrega ativos de UM cliente — com cache
+function _sfCarregarAtivosCliente(conta, cb){
+  var key = conta.toUpperCase();
+  if(_sfAtivosPorCliente[key]){ if(cb) cb(_sfAtivosPorCliente[key]); return; }
+  google.script.run
+    .withSuccessHandler(function(lista){
+      _sfAtivosPorCliente[key] = lista||[];
+      if(cb) cb(_sfAtivosPorCliente[key]);
+    })
+    .withFailureHandler(function(){ if(cb) cb([]); })
+    .getBaseCRMAtivos(conta);
+}
+
 function abrirModalSF(btn){
   _sfAtivId  = btn.getAttribute('data-sfid');
   _sfOSData  = null;
@@ -9651,8 +9646,9 @@ function abrirModalSF(btn){
   document.getElementById('sfCaseModal').style.display='block';
   document.body.style.overflow='hidden';
 
-  // Carrega base CRM e busca OS se houver referência
-  _sfCarregarBase(function(){
+  // Clientes já devem estar carregados (preload ao abrir aba Atividades)
+  // Busca OS se houver referência
+  _sfEnsureClientes(function(){
     if(osRef && osRef.indexOf('OS-')===0){
       google.script.run
         .withSuccessHandler(function(os){
@@ -9710,12 +9706,12 @@ function _sfSetConta(nome){
 function _sfFiltrarConta(q){
   var sug = document.getElementById('sfContaSug');
   if(!q||q.length<2){ sug.style.display='none'; return; }
-  // Se dados ainda não chegaram, mostra aguardando e carrega
-  if(!_sfBaseCRMReady){
-    sug.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#666">⏳ Carregando clientes...</div>';
+  // Se clientes ainda não chegaram, mostra aguardando e agenda retry
+  if(!_sfClientesReady){
+    sug.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#666">&#9203; Carregando clientes...</div>';
     sug.style.display='block';
     sug.style.width = document.getElementById('sfConta').offsetWidth+'px';
-    _sfCarregarBase(null); // garante que está carregando
+    _sfEnsureClientes(function(){ _sfFiltrarConta(document.getElementById('sfConta').value); });
     return;
   }
   var qU = q.toUpperCase();
@@ -9744,60 +9740,37 @@ function _sfSelecionarConta(conta, contato){
 }
 
 function _sfPreencherContatoEAtivos(conta, contatoHint){
+  // Preenche contato do cache de clientes
   var cli = _sfBaseClientes.filter(function(c){
     return c.conta.toUpperCase()===conta.toUpperCase();
   })[0];
   if(!document.getElementById('sfContato').value)
     document.getElementById('sfContato').value = (cli&&cli.nomeContato)||contatoHint||'';
 
-  // Ativos do cliente (do cache local)
-  var atvs = _sfBaseAtivos.filter(function(a){
-    return a.cliente.toUpperCase()===conta.toUpperCase();
-  });
+  // Mostra loading no select de ativos
   var sel = document.getElementById('sfAtivo');
-  sel.innerHTML='<option value="">— Sem ativo específico —</option>';
-  atvs.forEach(function(a){
-    var opt=document.createElement('option');
-    opt.value = a.nome;
-    opt.setAttribute('data-serie', a.serie);
-    opt.setAttribute('data-cat', a.categoria);
-    opt.textContent = a.serie+' · '+a.categoria+(a.status?' ('+a.status+')':'');
-    sel.appendChild(opt);
-  });
-  // Tenta selecionar o ativo da OS vinculada automaticamente
-  if(_sfOSData && _sfOSData.serie){
-    for(var i=0;i<sel.options.length;i++){
-      if(sel.options[i].getAttribute('data-serie')===_sfOSData.serie){
-        sel.selectedIndex=i;
-        _sfOnAtivoChange();
-        break;
-      }
-    }
-  }
-  // Busca completa via Code.gs (caso base local desatualizada)
-  google.script.run
-    .withSuccessHandler(function(lista){
-      if(!lista||!lista.length) return;
-      sel.innerHTML='<option value="">— Sem ativo específico —</option>';
-      lista.forEach(function(a){
-        var opt=document.createElement('option');
-        opt.value=a.nome;
-        opt.setAttribute('data-serie',a.serie);
-        opt.setAttribute('data-cat',a.categoria);
-        opt.textContent=a.serie+' · '+a.categoria+(a.status?' ('+a.status+')':'');
-        sel.appendChild(opt);
-      });
-      // Re-seleciona após reload
-      if(_sfOSData&&_sfOSData.serie){
-        for(var i=0;i<sel.options.length;i++){
-          if(sel.options[i].getAttribute('data-serie')===_sfOSData.serie){
-            sel.selectedIndex=i; _sfOnAtivoChange(); break;
-          }
+  sel.innerHTML='<option value="">&#9203; Carregando ativos...</option>';
+
+  // Carrega ativos só deste cliente (com cache)
+  _sfCarregarAtivosCliente(conta, function(lista){
+    sel.innerHTML='<option value="">— Sem ativo específico —</option>';
+    lista.forEach(function(a){
+      var opt=document.createElement('option');
+      opt.value=a.nome;
+      opt.setAttribute('data-serie',a.serie||'');
+      opt.setAttribute('data-cat',a.categoria||'');
+      opt.textContent=(a.serie?a.serie+' · ':'')+a.categoria+(a.status?' ('+a.status+')':'');
+      sel.appendChild(opt);
+    });
+    // Auto-seleciona ativo da OS se houver
+    if(_sfOSData&&_sfOSData.serie){
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].getAttribute('data-serie')===_sfOSData.serie){
+          sel.selectedIndex=i; _sfOnAtivoChange(); break;
         }
       }
-    })
-    .withFailureHandler(function(){})
-    .getBaseCRMAtivos(conta);
+    }
+  });
 }
 
 function _sfCopy(fieldId){
