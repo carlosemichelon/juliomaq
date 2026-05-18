@@ -5228,7 +5228,7 @@ function renderDesps(){
     if(d.cnpj) html+='<div style="font-size:10px;color:var(--mu)">CNPJ: '+d.cnpj+'</div>';
     html+='<div style="font-size:12px;margin-top:4px;line-height:1.4;border-left:3px solid '+cor+';padding-left:6px">'+d.descricao+'</div>';
     if(d.fotoUrl) html+='<div style="margin-top:6px"><img src="'+driveThumb(d.fotoUrl,'w300')+'" style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid var(--bd);cursor:pointer" onerror="this.style.display=\'none\'" onclick="window.open(\''+d.fotoUrl+'\',\'_blank\')"></div>';
-    if(d.assinatura||d.sigUrl){var sUrl=d.assinatura||d.sigUrl;html+='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)"><div style="font-size:9px;color:var(--mu);font-weight:700;text-transform:uppercase;margin-bottom:3px">Assinatura</div><img src="'+sUrl+'" style="max-height:50px;max-width:160px;border:1px solid var(--bd);border-radius:4px;padding:2px"></div>';}
+    if(d.assinaturaUrl&&d.assinaturaUrl.indexOf('http')===0){var sUrl=d.assinaturaUrl;html+='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)"><div style="font-size:9px;color:var(--mu);font-weight:700;text-transform:uppercase;margin-bottom:3px">Assinatura</div><img src="'+sUrl+'" style="max-height:50px;max-width:160px;border:1px solid var(--bd);border-radius:4px;padding:2px"></div>';}
     html+='</div>';
   });
   if(list) list.innerHTML=html;
