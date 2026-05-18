@@ -7462,12 +7462,8 @@ function autoFillCobrOS(num){
 
 // ══ MARKETING E EVENTOS ══════════════════════════════════════
 var _mktCfg = {
-  eventos:  {ids:['evDt','evNome','evLocal','evPublico','evResp','evResult','evObs'],   listId:'evList',
-             fields:['data','nome','local','publico','responsavel','resultado','obs']},
-  campanhas:{ids:['campTipo','campNome','campDtIni','campDtFim','campCanal','campOrc','campStatus','campResp','campObs'],   listId:'campList',
-             fields:['nome','canal','orcamento','status','responsavel','obs']},
-  leads:    {ids:['leadNome','leadTel','leadInt','leadStatus','leadResp','leadObs'],    listId:'leadList',
-             fields:['nome','telefone','interesse','status','responsavel','obs']}
+  campanhas:{ids:['campTipo','campNome','campDtIni','campDtFim','campCanal','campOrc','campStatus','campResp','campObs'], listId:'campList',
+             fields:['nome','canal','orcamento','status','responsavel','obs']}
 };
 
 // ── Posts e Campanhas — toggle tipo ──────────────────────────
@@ -7539,16 +7535,8 @@ function _renderMkt(listId, rows, sec){
     var title=r.nome||r.contato||'--';
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
     html+='<div style="flex:1"><div style="font-size:12px;font-weight:700">'+title+'</div>';
-    if(sec==='eventos'){
-      if(r.data) html+='<div style="font-size:10px;color:#999">'+r.data+(r.local?' · '+r.local:'')+'</div>';
-      if(r.publico) html+='<div style="font-size:10px;color:#999">👥 '+r.publico+' pessoas</div>';
-      if(r.resultado) html+='<div style="font-size:11px;color:#555;margin-top:2px">'+r.resultado+'</div>';
-    }
     if(sec==='campanhas'){
       if(r.canal) html+='<div style="font-size:10px;color:#999">'+r.canal+(r.orcamento?' · R$ '+parseFloat(r.orcamento).toFixed(2).replace('.',','):'')+'</div>';
-    }
-    if(sec==='leads'){
-      if(r.telefone) html+='<div style="font-size:10px;color:#999">'+r.telefone+(r.interesse?' · '+r.interesse:'')+'</div>';
     }
     if(r.obs) html+='<div style="font-size:10px;color:#888;font-style:italic">'+r.obs+'</div>';
     html+='</div>';
