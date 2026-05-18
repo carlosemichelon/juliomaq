@@ -5225,19 +5225,8 @@ function _testarEscritaDireta(){
   toast('Testando...','ok',2000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(!r){alert('r=null — backend sem resposta');return;}
-      var linhas=[
-        'VERSAO: '+(r.versao||'*** SEM VERSAO = CODE.GS ANTIGO AINDA! ***'),
-        '',
-        'Planilha: '+(r.openById||'?')+' ('+( r.ssId||'?')+')',
-        'Erro: '+(r.openByIdErro||'nenhum'),
-        '',
-        '_ultimaLinhaReal: '+r.ultimaLinhaReal,
-        'getLastRow: '+r.getLastRow,
-        'Escreveu na linha: '+r.escreveuNaLinha,
-        r.success?'OK!':'FALHOU'
-      ];
-      alert(linhas.join('\n'));
+      var txt=JSON.stringify(r||{});
+      alert('Resposta completa:\n\n'+txt);
     })
     .withFailureHandler(function(e){alert('Falha: '+e.message);})
     .escreverLinhaTesteDireto();
