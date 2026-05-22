@@ -5922,6 +5922,7 @@ function renderAtiv(){
         +' data-sfassunto="'+encodeURIComponent(a.sfAssunto||'')+'"'
         +' data-sfreclam="'+encodeURIComponent((a.sfReclamacao||'').substring(0,500))+'"'
         +' data-sfdescmaq="'+encodeURIComponent(a.sfDescMaquina||'')+'"'
+        +' data-sfevdesc="'+encodeURIComponent((a.evDescricao||'').substring(0,500))+'"'
         +' onclick="abrirModalSF(this)"'
         +' style="font-size:9px;background:'+(a.sfAssunto?'#c8e6c9':'#e3f0ff')+';border:1px solid '+(a.sfAssunto?'#81c784':'#90caf9')+';color:'+(a.sfAssunto?'#1b5e20':'#0d47a1')+';border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">'
         +(a.sfAssunto?'&#x2705;':'&#x2601;&#xFE0F;')+' Caso SF</button>';
@@ -9481,18 +9482,49 @@ function confirmarCobrSenha(){
       <div class="sf-field-row" id="sfSubTipoRow">
         <label class="sf-label">Sub Tipos de Serviços Oficina <span style="color:#c00">*</span></label>
         <div style="display:flex;gap:6px">
-          <select id="sfSubTipo" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <select id="sfSubTipo" onchange="_sfOnSubTipoChange()" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
             <option value="">— Selecione —</option>
-            <option value="Revisão Programada">Revisão Programada</option>
-            <option value="Revisão Não Programada">Revisão Não Programada</option>
-            <option value="Corretiva">Corretiva</option>
-            <option value="Garantia">Garantia</option>
-            <option value="Pós-Venda">Pós-Venda</option>
-            <option value="Inspeção">Inspeção</option>
-            <option value="Instalação">Instalação</option>
-            <option value="Outro">Outro</option>
+            <option value="Demonstração">Demonstração</option>
+            <option value="Entrega Técnica">Entrega Técnica</option>
+            <option value="Montagem de Máquina">Montagem de Máquina</option>
+            <option value="Revisão">Revisão</option>
+            <option value="Serviços Gerais">Serviços Gerais</option>
+            <option value="Serviços Máquinas Usadas">Serviços Máquinas Usadas</option>
           </select>
           <button onclick="_sfCopy('sfSubTipo')" class="sf-copy-btn">📋</button>
+        </div>
+      </div>
+
+      <!-- Subtipo Revisão — aparece só quando Sub Tipo = Revisão -->
+      <div class="sf-field-row" id="sfSubTipoRevisaoRow" style="display:none">
+        <label class="sf-label">Subtipo Revisão <span style="color:#c00">*</span></label>
+        <div style="display:flex;gap:6px">
+          <select id="sfSubTipoRevisao" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="">— Selecione —</option>
+            <option value="Revisão Zero Hora">Revisão Zero Hora</option>
+            <option value="Revisão 6 meses">Revisão 6 meses</option>
+            <option value="Revisão Programada 50 horas">Revisão Programada 50 horas</option>
+            <option value="Revisão Programada 100 horas">Revisão Programada 100 horas</option>
+            <option value="Revisão Programada 250 horas">Revisão Programada 250 horas</option>
+            <option value="Revisão Programada 500 horas">Revisão Programada 500 horas</option>
+            <option value="Revisão Programada 750 horas">Revisão Programada 750 horas</option>
+            <option value="Revisão Programada 1000 horas">Revisão Programada 1000 horas</option>
+            <option value="Revisão Programada 1250 horas">Revisão Programada 1250 horas</option>
+            <option value="Revisão Programada 1500 horas">Revisão Programada 1500 horas</option>
+            <option value="Revisão Programada 1750 horas">Revisão Programada 1750 horas</option>
+            <option value="Revisão Programada 2000 horas">Revisão Programada 2000 horas</option>
+            <option value="Revisão Programada 2500 horas">Revisão Programada 2500 horas</option>
+            <option value="Revisão Programada 3000 horas">Revisão Programada 3000 horas</option>
+            <option value="Revisão Programada 4000 horas">Revisão Programada 4000 horas</option>
+            <option value="Revisão Programada 5000 horas">Revisão Programada 5000 horas</option>
+            <option value="Revisão Programada 6000 horas">Revisão Programada 6000 horas</option>
+            <option value="Revisão Programada 7000 horas">Revisão Programada 7000 horas</option>
+            <option value="Revisão Programada 8000 horas">Revisão Programada 8000 horas</option>
+            <option value="Revisão Programada 9000 horas">Revisão Programada 9000 horas</option>
+            <option value="Revisão Programada 10000 horas">Revisão Programada 10000 horas</option>
+            <option value="Revisão Término Garantia Autopropelidos">Revisão Término Garantia Autopropelidos</option>
+          </select>
+          <button onclick="_sfCopy('sfSubTipoRevisao')" class="sf-copy-btn">📋</button>
         </div>
       </div>
 
@@ -9715,11 +9747,13 @@ function abrirModalSF(btn){
   var sfAssunto = decodeURIComponent(btn.getAttribute('data-sfassunto')||'');
   var sfReclam  = decodeURIComponent(btn.getAttribute('data-sfreclam')||'');
   var sfDescMaq = decodeURIComponent(btn.getAttribute('data-sfdescmaq')||'');
+  var evDescricao= decodeURIComponent(btn.getAttribute('data-sfevdesc')||'');
   var jaPreenchido = !!sfAssunto; // indica que já foi aberto antes
 
-  // Pré-preenche com dados salvos (se existirem) ou com dados da atividade
-  document.getElementById('sfAssunto').value     = sfAssunto || topico;
-  document.getElementById('sfReclamacao').value  = sfReclam  || desc;
+  // Assunto → título da atividade (descricao do card)
+  // Reclamação → descrição do evento da agenda vinculado
+  document.getElementById('sfAssunto').value     = sfAssunto || desc;
+  document.getElementById('sfReclamacao').value  = sfReclam  || evDescricao || desc;
   document.getElementById('sfConta').value       = sfConta;
   document.getElementById('sfContato').value     = sfContato;
   document.getElementById('sfSerie').value       = sfSerie;
@@ -9739,6 +9773,7 @@ function abrirModalSF(btn){
     for(var i=0;i<selSub.options.length;i++){
       if(selSub.options[i].value===sfSubTipo){ selSub.selectedIndex=i; break; }
     }
+    _sfOnSubTipoChange();
   }
   if(sfOrigem){
     var selOri = document.getElementById('sfOrigem');
@@ -9805,6 +9840,13 @@ function _sfOnTipoChange(){
   var tipo = document.getElementById('sfTipoReg').value;
   var subRow = document.getElementById('sfSubTipoRow');
   subRow.style.display = (tipo==='Serviços Oficina') ? 'block' : 'none';
+  _sfOnSubTipoChange();
+}
+
+function _sfOnSubTipoChange(){
+  var sub = document.getElementById('sfSubTipo').value;
+  var revRow = document.getElementById('sfSubTipoRevisaoRow');
+  if(revRow) revRow.style.display = (sub==='Revisão') ? 'block' : 'none';
 }
 
 function _sfOnAtivoChange(){
@@ -9904,7 +9946,7 @@ function _sfCopy(fieldId){
 
 function _sfCopiarTudo(){
   var linhas = [];
-  var ids = ['sfTipoReg','sfSubTipo','sfOrigem','sfStatus','sfConta','sfContato',
+  var ids = ['sfTipoReg','sfSubTipo','sfSubTipoRevisao','sfOrigem','sfStatus','sfConta','sfContato',
              'sfParceiro','sfAtivo','sfSerie','sfDescMaquina','sfOperador','sfAssunto','sfReclamacao'];
   var labels = ['Tipo de Registro','Sub Tipos Oficina','Origem','Status',
                 'Nome da Conta','Nome do Contato','Parceiro',
@@ -9930,6 +9972,7 @@ function _sfSalvarDadosSheet(){
   var dadosExt = {
     tipoRegistro: document.getElementById('sfTipoReg').value,
     subTipo:      document.getElementById('sfSubTipo').value,
+    subTipoRevisao: document.getElementById('sfSubTipoRevisao') ? document.getElementById('sfSubTipoRevisao').value : '',
     origem:       document.getElementById('sfOrigem').value,
     status:       document.getElementById('sfStatus').value,
     conta:        document.getElementById('sfConta').value,
