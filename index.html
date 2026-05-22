@@ -5954,7 +5954,7 @@ function abrirEditAtiv(id){
   var observNotaEdit=a.observacao||'';
   var obsDisplay=a.idRef||'';
   var evId2=a.evId||'';
-  var evIdOculto=evIdMatch?evIdMatch[1]:'';
+  var evIdOculto=evId2||'';
   var old2=document.getElementById('ativEditModal');if(old2)document.body.removeChild(old2);
   var modal=document.createElement('div');
   modal.id='ativEditModal';
