@@ -5985,6 +5985,8 @@ function renderAtiv(){
         +' data-sfnumOT="'+encodeURIComponent(a.sfNumOT||'')+'"'
         +' data-sfhorimetro="'+encodeURIComponent(a.sfHorimetro||'')+'"'
         +' data-sftecnicos="'+encodeURIComponent(a.observacao||'')+'"'
+        +' data-sftipoduvida="'+encodeURIComponent(a.sfTipoDuvida||'')+'"'
+        +' data-sftiposo="'+encodeURIComponent(a.sfTipoSolicitacao||'')+'"'
         +' onclick="abrirModalSF(this)"'
         +' style="font-size:9px;background:'+(a.sfAssunto?'#c8e6c9':'#e3f0ff')+';border:1px solid '+(a.sfAssunto?'#81c784':'#90caf9')+';color:'+(a.sfAssunto?'#1b5e20':'#0d47a1')+';border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">'
         +(a.sfAssunto?'&#x2705;':'&#x2601;&#xFE0F;')+' Caso SF</button>';
@@ -9573,6 +9575,54 @@ function confirmarCobrSenha(){
         </div>
       </div>
 
+      <!-- Tipo de Dúvida — aparece só quando Tipo de Registro = Dúvida -->
+      <div class="sf-field-row" id="sfTipoDuvidaRow" style="display:none">
+        <label class="sf-label">Tipo de Dúvida <span style="color:#c00">*</span></label>
+        <div style="display:flex;gap:6px">
+          <select id="sfTipoDuvida" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="">— Selecione —</option>
+            <option value="Calibração">Calibração</option>
+            <option value="Conecta">Conecta</option>
+            <option value="Eletrônico">Eletrônico</option>
+            <option value="Estrutural">Estrutural</option>
+            <option value="Hidráulico">Hidráulico</option>
+            <option value="Processos">Processos</option>
+            <option value="Site">Site</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tipo de Solicitação — aparece só quando Tipo de Registro = Solicitação -->
+      <div class="sf-field-row" id="sfTipoSolicitacaoRow" style="display:none">
+        <label class="sf-label">Tipo de Solicitação</label>
+        <div style="display:flex;gap:6px">
+          <select id="sfTipoSolicitacao" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="">— Selecione —</option>
+            <option value="Conferência Nota Fiscal">Conferência Nota Fiscal</option>
+            <option value="Liberação Sinal">Liberação Sinal</option>
+            <option value="Liberação Sinal Teste">Liberação Sinal Teste</option>
+            <option value="Prazo Entrega Ordem Venda CS">Prazo Entrega Ordem Venda CS</option>
+            <option value="Prazo de Pagamento Remuneração">Prazo de Pagamento Remuneração</option>
+            <option value="Prazo Resposta CS">Prazo Resposta CS</option>
+            <option value="Renovação Sinal">Renovação Sinal</option>
+            <option value="Sistema">Sistema</option>
+            <option value="Transferência de Sinal">Transferência de Sinal</option>
+            <option value="Topper Maps">Topper Maps</option>
+            <option value="Visita">Visita</option>
+            <option value="Zero Amassamento">Zero Amassamento</option>
+            <option value="Telemetria">Telemetria</option>
+            <option value="Integracoes_Can">Integrações/Can</option>
+            <option value="Cancelar Zero Amassamento">Cancelar Zero Amassamento</option>
+            <option value="Demonstração Zero Amassamento">Demonstração Zero Amassamento</option>
+            <option value="Monitoramento Stara">Monitoramento Stara</option>
+            <option value="Integrações/API">Integrações/API</option>
+            <option value="Telemetria/Monitoramento de Máquinas">Telemetria/Monitoramento de Máquinas</option>
+            <option value="Correção de Sinal">Correção de Sinal</option>
+            <option value="LandSpace">Land Space</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Subtipo Revisão — aparece só quando Sub Tipo = Revisão -->
       <div class="sf-field-row" id="sfSubTipoRevisaoRow" style="display:none">
         <label class="sf-label">Subtipo Revisão <span style="color:#c00">*</span></label>
@@ -9949,6 +9999,17 @@ function abrirModalSF(btn){
     }
     _sfOnSubTipoChange();
   }
+  // Restore Tipo de Dúvida
+  var sfTipoDuvida = decodeURIComponent(btn.getAttribute('data-sftipoduvida')||'');
+  if(sfTipoDuvida){
+    var selDuv2=document.getElementById('sfTipoDuvida');
+    if(selDuv2){ for(var i=0;i<selDuv2.options.length;i++){ if(selDuv2.options[i].value===sfTipoDuvida){ selDuv2.selectedIndex=i; break; } } }
+  }
+  var sfTipoSolicitacao = decodeURIComponent(btn.getAttribute('data-sftiposo')||'');
+  if(sfTipoSolicitacao){
+    var selSol2=document.getElementById('sfTipoSolicitacao');
+    if(selSol2){ for(var i=0;i<selSol2.options.length;i++){ if(selSol2.options[i].value===sfTipoSolicitacao){ selSol2.selectedIndex=i; break; } } }
+  }
   if(sfOrigem){
     var selOri = document.getElementById('sfOrigem');
     for(var i=0;i<selOri.options.length;i++){
@@ -10018,8 +10079,17 @@ function abrirModalSF(btn){
 
 function _sfOnTipoChange(){
   var tipo = document.getElementById('sfTipoReg').value;
+  // Sub Tipos Oficina: só para Serviços Oficina
   var subRow = document.getElementById('sfSubTipoRow');
   subRow.style.display = (tipo==='Serviços Oficina') ? 'block' : 'none';
+  // Tipo de Dúvida: só para Dúvida
+  var duvRow = document.getElementById('sfTipoDuvidaRow');
+  if(duvRow) duvRow.style.display = (tipo==='Dúvida') ? 'block' : 'none';
+  if(tipo!=='Dúvida'){ var selDuv=document.getElementById('sfTipoDuvida'); if(selDuv) selDuv.value=''; }
+  // Tipo de Solicitação: só para Solicitação
+  var solRow = document.getElementById('sfTipoSolicitacaoRow');
+  if(solRow) solRow.style.display = (tipo==='Solicitação') ? 'block' : 'none';
+  if(tipo!=='Solicitação'){ var selSol=document.getElementById('sfTipoSolicitacao'); if(selSol) selSol.value=''; }
   _sfOnSubTipoChange();
 }
 
@@ -10136,7 +10206,7 @@ function _sfCopy(fieldId){
 
 function _sfCopiarTudo(){
   var linhas = [];
-  var ids = ['sfTipoReg','sfSubTipo','sfSubTipoRevisao','sfOrigem','sfStatus','sfConta','sfContato',
+  var ids = ['sfTipoReg','sfSubTipo','sfSubTipoRevisao','sfTipoDuvida','sfOrigem','sfStatus','sfConta','sfContato',
              'sfParceiro','sfAtivo','sfSerie','sfDescMaquina','sfOperador','sfAssunto','sfReclamacao'];
   var labels = ['Tipo de Registro','Sub Tipos Oficina','Origem','Status',
                 'Nome da Conta','Nome do Contato','Parceiro',
@@ -10174,6 +10244,8 @@ function _sfSalvarDadosSheet(){
     assunto:      document.getElementById('sfAssunto').value,
     reclamacao:   document.getElementById('sfReclamacao').value,
     tipoIncidente:  document.getElementById('sfTipoIncidente').value,
+    tipoDuvida:       document.getElementById('sfTipoDuvida')?document.getElementById('sfTipoDuvida').value:'',
+    tipoSolicitacao:  document.getElementById('sfTipoSolicitacao')?document.getElementById('sfTipoSolicitacao').value:'',
     produto:        document.getElementById('sfProduto').value,
     descricao:      document.getElementById('sfDescricao').value,
     causaProblema:  document.getElementById('sfCausaProblema').value,
