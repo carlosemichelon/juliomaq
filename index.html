@@ -2274,7 +2274,7 @@ function loadOrdens(){
       setConn('g','Google Sheets · v5.27');
       _buildEvOSMap();
       var sl=document.getElementById('shLnk'); if(sl) sl.style.display='inline';
-      document.getElementById('ordBadge').textContent='OS-'+pad(ordens.length+1);
+      var _ob=document.getElementById('ordBadge'); if(_ob) _ob.textContent='OS-'+pad(ordens.length+1);
       var h=document.getElementById('histTab');
       if(h&&h.style.display!=='none') renderHistFiltrado();
       loadAssinaturas();
