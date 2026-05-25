@@ -439,9 +439,13 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div class="f"><label class="fl">Valor Total (R$)</label><input class="fi" id="vmVal" type="number" step="0.01" placeholder="Ex: 250.00" oninput="_calcCombustivel()"></div>
     <div class="f"><label class="fl">Descricao</label><textarea class="fi" id="vmDesc" style="height:50px" placeholder="Detalhes..."></textarea></div>
+    <div class="f"><label class="fl">Local de Compra</label><input class="fi" id="vmLocal" type="text" placeholder="Ex: Posto Ipiranga, Auto Peças Silva..."></div>
+    <div class="f"><label class="fl">CNPJ do Fornecedor</label><input class="fi" id="vmCNPJ" type="text" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCNPJ(this)"></div>
     <div style="padding:4px 0 8px">
-      <button type="button" class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('vmFotoInp').click()">📷 Anexar Foto</button>
+      <button type="button" class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('vmFotoInp').click()">📁 Galeria</button>
+      <button type="button" class="opbtn" style="background:#4a148c" onclick="document.getElementById('vmFotoCamera').click()">📷 Câmera</button>
       <input id="vmFotoInp" type="file" accept="image/*,.heic,.heif,.pdf" multiple style="display:none" onchange="vmAddFotos(this)">
+      <input id="vmFotoCamera" type="file" accept="image/*" capture="environment" style="display:none" onchange="vmAddFotos(this)">
       <div id="vmFotosPrev" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
   </div>
@@ -1021,8 +1025,10 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     <div class="f">
       <label class="fl">Foto da Nota / Cupom Fiscal</label>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('dFotoInp').click()">📷 Anexar Foto</button>
+        <button class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('dFotoInp').click()">📁 Galeria</button>
+        <button class="opbtn" style="background:#4a148c" onclick="document.getElementById('dFotoCamera').click()">📷 Câmera</button>
         <input type="file" id="dFotoInp" accept="image/*,.heic,.heif" style="display:none" onchange="previewDespFoto(this)">
+        <input type="file" id="dFotoCamera" accept="image/*" capture="environment" style="display:none" onchange="previewDespFoto(this)">
         <span id="dFotoNome" style="font-size:11px;color:var(--mu)">Nenhuma foto</span>
       </div>
       <div id="dFotoPreview" style="margin-top:8px;display:none">
@@ -2887,6 +2893,8 @@ function saveVei(){
         _registrarUltimoSalvo('Desp. Veículos', vei+' — '+tp, {
           num: res.num,
           desc: g('vmDesc'),
+          local: g('vmLocal'),
+          cnpj: g('vmCNPJ'),
           valor: g('vmVal') ? 'R$ '+parseFloat(g('vmVal')||0).toFixed(2).replace('.',',') : '',
           sig: !!vmSigData
         });
@@ -2904,7 +2912,7 @@ function saveVei(){
         }
         nextFotoVm();
         // Limpa formulário
-        ['vmVei','vmHodo','vmVal','vmDesc','vmLitros','vmPrecoLitro'].forEach(function(id){
+        ['vmVei','vmHodo','vmVal','vmDesc','vmLitros','vmPrecoLitro','vmLocal','vmCNPJ'].forEach(function(id){
           var el=document.getElementById(id); if(el) el.value='';
         });
         document.getElementById('vmDt').valueAsDate = new Date();
@@ -2915,6 +2923,8 @@ function saveVei(){
         });
         vmSigData=null; sHas=false; vmFotos=[];
         document.getElementById('vmFotosPrev').innerHTML='';
+        var _vmL=document.getElementById('vmLocal');if(_vmL)_vmL.value='';
+        var _vmC=document.getElementById('vmCNPJ');if(_vmC)_vmC.value='';
         document.getElementById('vmSigTap').style.display='flex';
         document.getElementById('vmSigDn').style.display='none';
         document.getElementById('vmSigW').classList.remove('on');
@@ -2926,7 +2936,7 @@ function saveVei(){
       }
     })
     .withFailureHandler(function(e){ hideLoad(); if(btn) btn.disabled=false; toast('Erro: '+e.message,'err'); })
-    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),assinatura:vmSigData||''});
+    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),local:g('vmLocal'),cnpj:g('vmCNPJ'),assinatura:vmSigData||''});
 }
 var _veiData=[];var _veiFiltroVei='';var _veiFiltroTipo='';
 function setVeiFiltro(campo,val){
@@ -5427,15 +5437,15 @@ function setRdVeiFiltroMesAtual(){
 
 function renderResumoDespesas(){
   var el=document.getElementById('dResContent');if(!el)return;
-  var filtCat=(document.getElementById('dResFiltCat')||{}).value||'';
-  var filtComp=(document.getElementById('dResFiltComp')||{}).value||'';
+  var filtCat=_rdFiltCat||(document.getElementById('dResFiltCat')||{}).value||'';
+  var filtComp=_rdFiltResp||(document.getElementById('dResFiltComp')||{}).value||'';
 
   // Popular dropdown de meses
   var sel=document.getElementById('rdFiltMes');
   if(sel){
     var meses={};
     (_despResRows||[]).forEach(function(d){if(d.data){var m=_osMes(d.data);if(m)meses[m]=true;}});
-    var curMes=sel.value||_rdFiltMes||'';
+    var curMes=_rdFiltMes||sel.value||''; // _rdFiltMes é a fonte de verdade
     var opts='<option value="">Todos os meses</option>';
     Object.keys(meses).sort().reverse().forEach(function(m){
       opts+='<option value="'+m+'"'+(m===curMes?' selected':'')+'>'+_osMesLabel(m)+'</option>';
@@ -10051,7 +10061,9 @@ function abrirModalSF(btn){
   var sfSolucao       = decodeURIComponent(btn.getAttribute('data-sfsolucao')||'');
   var sfTipoOT        = decodeURIComponent(btn.getAttribute('data-sftipoOT')||'');
   var sfNumOT         = decodeURIComponent(btn.getAttribute('data-sfnumOT')||'');
+  var sfCasoNum  = decodeURIComponent(btn.getAttribute('data-sfcaso')||'');
   var jaPreenchido = !!sfAssunto; // indica que já foi aberto antes
+  var casoCriado   = !!sfCasoNum; // caso já foi registrado no SF
 
   // Assunto → título da atividade (= "Assunto do Caso" da agenda)
   // Reclamação → campo Reclamacao da agenda (novo)
@@ -10061,6 +10073,27 @@ function abrirModalSF(btn){
   var evCausaAgenda      = decodeURIComponent(btn.getAttribute('data-sfevkcausa')||'');
   var evSolucaoAgenda    = decodeURIComponent(btn.getAttribute('data-sfevsol')||'');
   var evTecnicos         = decodeURIComponent(btn.getAttribute('data-sftecnicos')||'');
+  // ── Banner de aviso se caso já foi criado ──────────────────
+  var sfAvisoBanner = document.getElementById('sfAvisoCaso');
+  if(!sfAvisoBanner){
+    sfAvisoBanner = document.createElement('div');
+    sfAvisoBanner.id = 'sfAvisoCaso';
+    sfAvisoBanner.style.cssText='display:none;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:10px;text-align:center';
+    var sfModalBody = document.querySelector('#sfModal .sf-secao') || document.querySelector('#sfModal > div');
+    if(sfModalBody) sfModalBody.insertBefore(sfAvisoBanner, sfModalBody.firstChild);
+  }
+  if(casoCriado){
+    sfAvisoBanner.style.display = 'block';
+    sfAvisoBanner.style.background = jaPreenchido ? '#e8f5e9' : '#fff3e0';
+    sfAvisoBanner.style.color      = jaPreenchido ? '#1b5e20' : '#e65100';
+    sfAvisoBanner.style.border     = jaPreenchido ? '1px solid #a5d6a7' : '1px solid #ffcc80';
+    sfAvisoBanner.textContent = jaPreenchido
+      ? '✅ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' — dados carregados'
+      : '⚠️ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' já existe no SF — campos não salvos na planilha';
+  } else {
+    sfAvisoBanner.style.display = 'none';
+  }
+
   document.getElementById('sfAssunto').value        = sfAssunto || desc;
   document.getElementById('sfReclamacao').value     = sfReclam  || evReclamacaoAgenda || '';
   document.getElementById('sfDescricao').value      = document.getElementById('sfDescricao').value || evDescricao || '';
@@ -10197,10 +10230,21 @@ function _sfOnTipoChange(){
   // Sub Tipos Oficina: só para Serviços Oficina
   var subRow = document.getElementById('sfSubTipoRow');
   subRow.style.display = (tipo==='Serviços Oficina') ? 'block' : 'none';
-  // Subtipo Revisão: aparece para Serviços Oficina (quando Sub=Revisão) OU direto para Revisão Programada
+
+  // Subtipo Revisão:
+  // • Revisão Programada → mostra direto (independente de subTipo)
+  // • Serviços Oficina   → só mostra se Sub Tipo = Revisão (controlado por _sfOnSubTipoChange)
+  // • outros tipos       → oculta sempre
   var revRow = document.getElementById('sfSubTipoRevisaoRow');
-  if(revRow && tipo==='Revisão Programada') revRow.style.display = 'block';
-  if(revRow && tipo!=='Revisão Programada' && tipo!=='Serviços Oficina') revRow.style.display = 'none';
+  if(revRow){
+    if(tipo==='Revisão Programada'){
+      revRow.style.display = 'block';
+    } else if(tipo==='Serviços Oficina'){
+      // deixa _sfOnSubTipoChange decidir (chamado abaixo)
+    } else {
+      revRow.style.display = 'none';
+    }
+  }
   // Tipo de Dúvida: só para Dúvida
   var duvRow = document.getElementById('sfTipoDuvidaRow');
   if(duvRow) duvRow.style.display = (tipo==='Dúvida') ? 'block' : 'none';
@@ -10248,6 +10292,9 @@ function _sfOnTipoChange(){
 }
 
 function _sfOnSubTipoChange(){
+  var tipo = document.getElementById('sfTipoReg').value;
+  // Se for Revisão Programada, sfSubTipoRevisaoRow já está visível — não toca
+  if(tipo==='Revisão Programada') return;
   var sub = document.getElementById('sfSubTipo').value;
   var revRow = document.getElementById('sfSubTipoRevisaoRow');
   if(revRow) revRow.style.display = (sub==='Revisão') ? 'block' : 'none';
