@@ -5984,6 +5984,7 @@ function renderAtiv(){
         +' data-sftipoOT="'+encodeURIComponent(a.sfTipoOT||'')+'"'
         +' data-sfnumOT="'+encodeURIComponent(a.sfNumOT||'')+'"'
         +' data-sfhorimetro="'+encodeURIComponent(a.sfHorimetro||'')+'"'
+        +' data-sftecnicos="'+encodeURIComponent(a.observacao||'')+'"'
         +' onclick="abrirModalSF(this)"'
         +' style="font-size:9px;background:'+(a.sfAssunto?'#c8e6c9':'#e3f0ff')+';border:1px solid '+(a.sfAssunto?'#81c784':'#90caf9')+';color:'+(a.sfAssunto?'#1b5e20':'#0d47a1')+';border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">'
         +(a.sfAssunto?'&#x2705;':'&#x2601;&#xFE0F;')+' Caso SF</button>';
@@ -9914,6 +9915,7 @@ function abrirModalSF(btn){
   var evReclamacaoAgenda = decodeURIComponent(btn.getAttribute('data-sfevreclamacao')||'');
   var evCausaAgenda      = decodeURIComponent(btn.getAttribute('data-sfevkcausa')||'');
   var evSolucaoAgenda    = decodeURIComponent(btn.getAttribute('data-sfevsol')||'');
+  var evTecnicos         = decodeURIComponent(btn.getAttribute('data-sftecnicos')||'');
   document.getElementById('sfAssunto').value        = sfAssunto || desc;
   document.getElementById('sfReclamacao').value     = sfReclam  || evReclamacaoAgenda || '';
   document.getElementById('sfDescricao').value      = document.getElementById('sfDescricao').value || evDescricao || '';
@@ -9923,7 +9925,7 @@ function abrirModalSF(btn){
   document.getElementById('sfContato').value     = sfContato;
   document.getElementById('sfSerie').value       = sfSerie;
   document.getElementById('sfDescMaquina').value = sfDescMaq;
-  document.getElementById('sfOperador').value     = '';
+  document.getElementById('sfOperador').value     = evTecnicos||'';
   document.getElementById('sfTipoIncidente').value = sfTipoIncidente;
   document.getElementById('sfProduto').value       = sfProduto;
   document.getElementById('sfDescricao').value     = sfDescricao;
