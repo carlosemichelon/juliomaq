@@ -5984,9 +5984,15 @@ function renderAtiv(){
         +' data-sftipoOT="'+encodeURIComponent(a.sfTipoOT||'')+'"'
         +' data-sfnumOT="'+encodeURIComponent(a.sfNumOT||'')+'"'
         +' data-sfhorimetro="'+encodeURIComponent(a.sfHorimetro||'')+'"'
-        +' data-sftecnicos="'+encodeURIComponent(a.observacao||'')+'"'
+        +' data-sftecnicos="'+encodeURIComponent(a.evTecnicos||a.observacao||'')+'"'
         +' data-sftipoduvida="'+encodeURIComponent(a.sfTipoDuvida||'')+'"'
         +' data-sftiposo="'+encodeURIComponent(a.sfTipoSolicitacao||'')+'"'
+        +' data-sftipoincp="'+encodeURIComponent(a.sfTipoIncidenteProduto||'')+'"'
+        +' data-sfnrserie="'+encodeURIComponent(a.sfNrSerieMaquina||'')+'"'
+        +' data-sfdescfalha="'+encodeURIComponent(a.sfDescFalha||'')+'"'
+        +' data-sfbap="'+encodeURIComponent(a.sfBAPPeriodo||'')+'"'
+        +' data-sftipoiped="'+encodeURIComponent(a.sfTipoIncidentePedido||'')+'"'
+        +' data-sfsubiped="'+encodeURIComponent(a.sfSubtipoIncidentePedido||'')+'"'
         +' onclick="abrirModalSF(this)"'
         +' style="font-size:9px;background:'+(a.sfAssunto?'#c8e6c9':'#e3f0ff')+';border:1px solid '+(a.sfAssunto?'#81c784':'#90caf9')+';color:'+(a.sfAssunto?'#1b5e20':'#0d47a1')+';border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">'
         +(a.sfAssunto?'&#x2705;':'&#x2601;&#xFE0F;')+' Caso SF</button>';
@@ -9623,6 +9629,87 @@ function confirmarCobrSenha(){
         </div>
       </div>
 
+      <!-- Incidente de Produto — aparece só quando Tipo de Registro = Incidente de Produto -->
+      <div class="sf-field-row" id="sfIncidenteProdutoRow" style="display:none">
+        <label class="sf-label">Tipo do Incidente de Produto <span style="color:#c00">*</span></label>
+        <div style="display:flex;gap:6px">
+          <select id="sfTipoIncidenteProduto" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="">— Selecione —</option>
+            <option value="Máquina Defeito Hidráulico">Máquina Defeito Hidráulico</option>
+            <option value="Máquina Defeito Elétrico">Máquina Defeito Elétrico</option>
+            <option value="Máquina Defeito Mecânico">Máquina Defeito Mecânico</option>
+            <option value="Máquina Defeito Eletrônico">Máquina Defeito Eletrônico</option>
+            <option value="Máquina Defeito Estrutural">Máquina Defeito Estrutural</option>
+            <option value="Software">Software</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+        <label class="sf-label" style="margin-top:8px">Nº de Série Máquina <span style="font-size:10px;color:#888">(max 20 chars)</span></label>
+        <input id="sfNrSerieMaquina" type="text" maxlength="20" placeholder="Ex: IMP-CA11089"
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;margin-top:4px">
+        <label class="sf-label" style="margin-top:8px">Descrição da Falha <span style="font-size:10px;color:#888">(preencher no SF)</span></label>
+        <input id="sfDescFalha" type="text" placeholder="Referência para buscar no SF..."
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;margin-top:4px">
+        <label class="sf-label" style="margin-top:8px">Período Execução BAP</label>
+        <input id="sfBAPPeriodo" type="number" placeholder="Ex: 12"
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;margin-top:4px">
+      </div>
+
+      <!-- Incidente de Pedido — aparece só quando Tipo de Registro = Incidente de Pedido -->
+      <div class="sf-field-row" id="sfIncidentePedidoRow" style="display:none">
+        <label class="sf-label">Tipo do Incidente de Pedido <span style="color:#c00">*</span></label>
+        <select id="sfTipoIncidentePedido" onchange="_sfOnTipoIPedChange()" style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:8px">
+          <option value="">— Selecione —</option>
+          <option value="Pedido de Máquina">Pedido de Máquina</option>
+          <option value="Pedido de Peças">Pedido de Peças</option>
+        </select>
+        <label class="sf-label">Subtipo de Incidente de Pedido <span style="color:#c00">*</span></label>
+        <select id="sfSubtipoIncidentePedido" style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="">— Selecione o Tipo primeiro —</option>
+          <option value="Item Enviado Errado">Item Enviado Errado</option>
+          <option value="Item Danificado Transporte">Item Danificado Transporte</option>
+          <option value="Item Faltante">Item Faltante</option>
+        </select>
+      </div>
+
+      <!-- Sugestão — aparece só quando Tipo de Registro = Sugestão -->
+      <div class="sf-field-row" id="sfSugestaoRow" style="display:none">
+        <label class="sf-label">Tipo de Sugestão <span style="font-size:10px;color:#888">(opcional)</span></label>
+        <select id="sfTipoSugestao" style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:8px">
+          <option value="">— Selecione —</option>
+        </select>
+        <label class="sf-label">Solução Concessionária <span style="font-size:10px;color:#888">(opcional)</span></label>
+        <select id="sfSolucaoConcessionaria" style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
+          <option value="">— Selecione —</option>
+        </select>
+        <div style="font-size:10px;color:#e07800;margin-top:4px">⚠️ Opções não disponíveis — preencher manualmente no SF</div>
+      </div>
+
+      <!-- Laboratório — aparece só quando Tipo de Registro = Atendimento Laboratório Tecnologia -->
+      <div class="sf-field-row" id="sfLabRow" style="display:none">
+        <label class="sf-label">Tipo do Incidente de Produto <span style="color:#c00">*</span></label>
+        <select id="sfTipoIncidenteLab" style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:8px">
+          <option value="">— Selecione —</option>
+          <option value="Garantia Laboratório">Garantia Laboratório</option>
+          <option value="Máquina Defeito Hidráulico">Máquina Defeito Hidráulico</option>
+          <option value="Máquina Defeito Elétrico">Máquina Defeito Elétrico</option>
+          <option value="Máquina Defeito Mecânico">Máquina Defeito Mecânico</option>
+          <option value="Máquina Defeito Eletrônico">Máquina Defeito Eletrônico</option>
+          <option value="Máquina Defeito Estrutural">Máquina Defeito Estrutural</option>
+          <option value="Software">Software</option>
+          <option value="Outros">Outros</option>
+        </select>
+        <label class="sf-label">Nº de Série Máquina <span style="font-size:10px;color:#888">(max 20)</span></label>
+        <input id="sfNrSerieMaquinaLab" type="text" maxlength="20" placeholder="Ex: IMP-CA11089"
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;margin-bottom:8px">
+        <label class="sf-label">Nº de Série do Topper <span style="color:#c00">*</span> <span style="font-size:10px;color:#888">(= sfSerie)</span></label>
+        <input id="sfNrSerieTopperLab" type="text" placeholder="Ex: ASA-BG10125"
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;margin-bottom:8px">
+        <label class="sf-label">ID do Topper <span style="color:#c00">*</span> <span style="font-size:10px;color:#888">(max 50)</span></label>
+        <input id="sfIdTopperLab" type="text" maxlength="50" placeholder="Ex: 12345"
+          style="width:100%;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>
+
       <!-- Subtipo Revisão — aparece só quando Sub Tipo = Revisão -->
       <div class="sf-field-row" id="sfSubTipoRevisaoRow" style="display:none">
         <label class="sf-label">Subtipo Revisão <span style="color:#c00">*</span></label>
@@ -9787,13 +9874,21 @@ function confirmarCobrSenha(){
         <div style="display:flex;gap:6px">
           <select id="sfTipoOT" style="flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:7px;font-size:12px;font-family:inherit">
             <option value="">— Selecione —</option>
+            <option value="Entrega Técnica Remunerada Fabrica">Entrega Técnica Remunerada Fábrica</option>
+            <option value="Revisão Periódica Remunerada Fabrica">Revisão Periódica Remunerada Fábrica</option>
             <option value="Garantia Concedida Fábrica">Garantia Concedida Fábrica</option>
-            <option value="Garantia Concedida Concessionária">Garantia Concedida Concessionária</option>
-            <option value="Manutenção Preventiva">Manutenção Preventiva</option>
-            <option value="Manutenção Corretiva">Manutenção Corretiva</option>
-            <option value="Entrega Técnica">Entrega Técnica</option>
-            <option value="Revisão Programada">Revisão Programada</option>
-            <option value="Serviços Gerais">Serviços Gerais</option>
+            <option value="Garantia Concedida Comercial">Garantia Concedida Comercial</option>
+            <option value="Garantia Concedida Pós-venda">Garantia Concedida Pós-venda</option>
+            <option value="Serviços Clientes na Oficina">Serviços Clientes na Oficina</option>
+            <option value="Serviços Clientes a Campo">Serviços Clientes a Campo</option>
+            <option value="Serviço Comercial Novos">Serviço Comercial Novos</option>
+            <option value="Serviço Comercial Usados">Serviço Comercial Usados</option>
+            <option value="Serviço Interno da Oficina">Serviço Interno da Oficina</option>
+            <option value="Serviços para Administrativo da Loja">Serviços para Administrativo da Loja</option>
+            <option value="Serviço Laboratório">Serviços Laboratório</option>
+            <option value="Garantia Concedida Laboratório">Garantia Concedida Laboratório</option>
+            <option value="Aplicação Check List Comercial">Aplicação Check List Comercial</option>
+            <option value="Serviço Demonstração Comercial">Serviço Demonstração Comercial</option>
           </select>
         </div>
       </div>
@@ -10010,6 +10105,26 @@ function abrirModalSF(btn){
     var selSol2=document.getElementById('sfTipoSolicitacao');
     if(selSol2){ for(var i=0;i<selSol2.options.length;i++){ if(selSol2.options[i].value===sfTipoSolicitacao){ selSol2.selectedIndex=i; break; } } }
   }
+  // Restore Incidente de Produto
+  var sfTipoIP = decodeURIComponent(btn.getAttribute('data-sftipoincp')||'');
+  if(sfTipoIP){
+    var selIP2=document.getElementById('sfTipoIncidenteProduto');
+    if(selIP2){ for(var i=0;i<selIP2.options.length;i++){ if(selIP2.options[i].value===sfTipoIP){ selIP2.selectedIndex=i; break; } } }
+  }
+  var elNS2=document.getElementById('sfNrSerieMaquina'); if(elNS2) elNS2.value=decodeURIComponent(btn.getAttribute('data-sfnrserie')||'');
+  var elDF2=document.getElementById('sfDescFalha');     if(elDF2) elDF2.value=decodeURIComponent(btn.getAttribute('data-sfdescfalha')||'');
+  var elBAP2=document.getElementById('sfBAPPeriodo');   if(elBAP2) elBAP2.value=decodeURIComponent(btn.getAttribute('data-sfbap')||'');
+  // Restore Incidente de Pedido
+  var sfTipoIPed = decodeURIComponent(btn.getAttribute('data-sftipoiped')||'');
+  if(sfTipoIPed){
+    var selTIP2=document.getElementById('sfTipoIncidentePedido');
+    if(selTIP2){ for(var i=0;i<selTIP2.options.length;i++){ if(selTIP2.options[i].value===sfTipoIPed){ selTIP2.selectedIndex=i; break; } } }
+  }
+  var sfSubIPed = decodeURIComponent(btn.getAttribute('data-sfsubiped')||'');
+  if(sfSubIPed){
+    var selSIP2=document.getElementById('sfSubtipoIncidentePedido');
+    if(selSIP2){ for(var i=0;i<selSIP2.options.length;i++){ if(selSIP2.options[i].value===sfSubIPed){ selSIP2.selectedIndex=i; break; } } }
+  }
   if(sfOrigem){
     var selOri = document.getElementById('sfOrigem');
     for(var i=0;i<selOri.options.length;i++){
@@ -10082,6 +10197,10 @@ function _sfOnTipoChange(){
   // Sub Tipos Oficina: só para Serviços Oficina
   var subRow = document.getElementById('sfSubTipoRow');
   subRow.style.display = (tipo==='Serviços Oficina') ? 'block' : 'none';
+  // Subtipo Revisão: aparece para Serviços Oficina (quando Sub=Revisão) OU direto para Revisão Programada
+  var revRow = document.getElementById('sfSubTipoRevisaoRow');
+  if(revRow && tipo==='Revisão Programada') revRow.style.display = 'block';
+  if(revRow && tipo!=='Revisão Programada' && tipo!=='Serviços Oficina') revRow.style.display = 'none';
   // Tipo de Dúvida: só para Dúvida
   var duvRow = document.getElementById('sfTipoDuvidaRow');
   if(duvRow) duvRow.style.display = (tipo==='Dúvida') ? 'block' : 'none';
@@ -10090,6 +10209,41 @@ function _sfOnTipoChange(){
   var solRow = document.getElementById('sfTipoSolicitacaoRow');
   if(solRow) solRow.style.display = (tipo==='Solicitação') ? 'block' : 'none';
   if(tipo!=='Solicitação'){ var selSol=document.getElementById('sfTipoSolicitacao'); if(selSol) selSol.value=''; }
+  // Incidente de Produto
+  var incRow = document.getElementById('sfIncidenteProdutoRow');
+  if(incRow) incRow.style.display = (tipo==='Incidente de Produto') ? 'block' : 'none';
+  if(tipo!=='Incidente de Produto'){
+    var selIP=document.getElementById('sfTipoIncidenteProduto'); if(selIP) selIP.value='';
+    var elNS=document.getElementById('sfNrSerieMaquina'); if(elNS) elNS.value='';
+    var elDF=document.getElementById('sfDescFalha'); if(elDF) elDF.value='';
+    var elBAP=document.getElementById('sfBAPPeriodo'); if(elBAP) elBAP.value='';
+  }
+  // Incidente de Pedido
+  var ipedRow = document.getElementById('sfIncidentePedidoRow');
+  if(ipedRow) ipedRow.style.display = (tipo==='Incidente de Pedido') ? 'block' : 'none';
+  if(tipo!=='Incidente de Pedido'){
+    var selTIP=document.getElementById('sfTipoIncidentePedido'); if(selTIP) selTIP.value='';
+    var selSIP=document.getElementById('sfSubtipoIncidentePedido'); if(selSIP) selSIP.value='';
+  }
+  // Sugestão
+  var sugRow = document.getElementById('sfSugestaoRow');
+  if(sugRow) sugRow.style.display = (tipo==='Sugestão') ? 'block' : 'none';
+  if(tipo!=='Sugestão'){
+    var selTS=document.getElementById('sfTipoSugestao'); if(selTS) selTS.value='';
+    var selSC=document.getElementById('sfSolucaoConcessionaria'); if(selSC) selSC.value='';
+  }
+  // Laboratório
+  var labRow = document.getElementById('sfLabRow');
+  if(labRow) labRow.style.display = (tipo==='Atendimento Laboratório Tecnologia') ? 'block' : 'none';
+  if(tipo!=='Atendimento Laboratório Tecnologia'){
+    var elTIL=document.getElementById('sfTipoIncidenteLab'); if(elTIL) elTIL.value='';
+    var elNML=document.getElementById('sfNrSerieMaquinaLab'); if(elNML) elNML.value='';
+    var elNST=document.getElementById('sfNrSerieTopperLab'); if(elNST) elNST.value='';
+    var elIDT=document.getElementById('sfIdTopperLab'); if(elIDT) elIDT.value='';
+  } else {
+    // Pre-fill Nº Série Topper e ID Topper do ativo selecionado
+    var elSerie=document.getElementById('sfSerie'); if(elSerie&&elSerie.value){ var elNST2=document.getElementById('sfNrSerieTopperLab'); if(elNST2) elNST2.value=elSerie.value; }
+  }
   _sfOnSubTipoChange();
 }
 
@@ -10097,6 +10251,14 @@ function _sfOnSubTipoChange(){
   var sub = document.getElementById('sfSubTipo').value;
   var revRow = document.getElementById('sfSubTipoRevisaoRow');
   if(revRow) revRow.style.display = (sub==='Revisão') ? 'block' : 'none';
+}
+
+function _sfOnTipoIPedChange(){
+  var tipo = document.getElementById('sfTipoIncidentePedido').value;
+  var sel  = document.getElementById('sfSubtipoIncidentePedido');
+  if(!sel) return;
+  // Subtipo depende do tipo — por ora todas as opções válidas para ambos
+  sel.options[0].text = tipo ? '— Selecione —' : '— Selecione o Tipo primeiro —';
 }
 
 function _sfOnAtivoChange(){
@@ -10245,7 +10407,19 @@ function _sfSalvarDadosSheet(){
     reclamacao:   document.getElementById('sfReclamacao').value,
     tipoIncidente:  document.getElementById('sfTipoIncidente').value,
     tipoDuvida:       document.getElementById('sfTipoDuvida')?document.getElementById('sfTipoDuvida').value:'',
-    tipoSolicitacao:  document.getElementById('sfTipoSolicitacao')?document.getElementById('sfTipoSolicitacao').value:'',
+    tipoSolicitacao:       document.getElementById('sfTipoSolicitacao')?document.getElementById('sfTipoSolicitacao').value:'',
+    tipoIncidenteProduto:   document.getElementById('sfTipoIncidenteProduto')?document.getElementById('sfTipoIncidenteProduto').value:'',
+    tipoIncidentePedido:    document.getElementById('sfTipoIncidentePedido')?document.getElementById('sfTipoIncidentePedido').value:'',
+    subtipoIncidentePedido:  document.getElementById('sfSubtipoIncidentePedido')?document.getElementById('sfSubtipoIncidentePedido').value:'',
+    tipoSugestao:            document.getElementById('sfTipoSugestao')?document.getElementById('sfTipoSugestao').value:'',
+    solucaoConcessionaria:  document.getElementById('sfSolucaoConcessionaria')?document.getElementById('sfSolucaoConcessionaria').value:'',
+    tipoIncidenteLab:       document.getElementById('sfTipoIncidenteLab')?document.getElementById('sfTipoIncidenteLab').value:'',
+    nrSerieMaquinaLab:      document.getElementById('sfNrSerieMaquinaLab')?document.getElementById('sfNrSerieMaquinaLab').value:'',
+    nrSerieTopperLab:       document.getElementById('sfNrSerieTopperLab')?document.getElementById('sfNrSerieTopperLab').value:'',
+    idTopperLab:            document.getElementById('sfIdTopperLab')?document.getElementById('sfIdTopperLab').value:'',
+    nrSerieMaquina:       document.getElementById('sfNrSerieMaquina')?document.getElementById('sfNrSerieMaquina').value:'',
+    descFalha:            document.getElementById('sfDescFalha')?document.getElementById('sfDescFalha').value:'',
+    bapPeriodo:           document.getElementById('sfBAPPeriodo')?document.getElementById('sfBAPPeriodo').value:'',
     produto:        document.getElementById('sfProduto').value,
     descricao:      document.getElementById('sfDescricao').value,
     causaProblema:  document.getElementById('sfCausaProblema').value,
