@@ -439,7 +439,11 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div class="f"><label class="fl">Valor Total (R$)</label><input class="fi" id="vmVal" type="number" step="0.01" placeholder="Ex: 250.00" oninput="_calcCombustivel()"></div>
     <div class="f"><label class="fl">Descricao</label><textarea class="fi" id="vmDesc" style="height:50px" placeholder="Detalhes..."></textarea></div>
-    <div class="f"><label class="fl">Local de Compra</label><input class="fi" id="vmLocal" type="text" placeholder="Ex: Posto Ipiranga, Auto Peças Silva..."></div>
+    <div class="f"><label class="fl">Local de Compra</label>
+      <input class="fi" id="vmLocal" type="text" placeholder="Ex: Posto Ipiranga, Auto Peças Silva..."
+        oninput="_vmLocalInput(this)" autocomplete="off" list="vmLocalList">
+      <datalist id="vmLocalList"></datalist>
+    </div>
     <div class="f"><label class="fl">CNPJ do Fornecedor</label><input class="fi" id="vmCNPJ" type="text" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCNPJ(this)"></div>
     <div style="padding:4px 0 8px">
       <button type="button" class="opbtn" style="background:#6a1b9a" onclick="document.getElementById('vmFotoInp').click()">📁 Galeria</button>
@@ -3037,7 +3041,7 @@ function renderVeiList(ms){
   if(list)list.innerHTML=h;
 }function loadVei(){
   google.script.run
-    .withSuccessHandler(function(ms){_veiData=ms||[];renderVeiList(_veiData);loadAssinaturasVei();})
+    .withSuccessHandler(function(ms){_veiData=ms||[];renderVeiList(_veiData);loadAssinaturasVei();_vmBuildLocalMap();})
     .withFailureHandler(function(){var list=document.getElementById('vmList');if(list)list.innerHTML='<div class="empty">Erro ao carregar</div>';})
     .getManutencoes();
 }
@@ -5167,6 +5171,40 @@ function setDespCat(btn){
   document.getElementById('dCat').value=btn.getAttribute('data-val');
 }
 
+// ── Mapa local → cnpj do histórico de veículos ─────────────────
+var _vmLocalMap = {};
+
+function _vmBuildLocalMap(){
+  _vmLocalMap = {};
+  var dl = document.getElementById('vmLocalList');
+  if(dl) dl.innerHTML = '';
+  var vistos = {};
+  (_veiData||[]).forEach(function(m){
+    var loc = String(m.local||'').trim();
+    var cnpj= String(m.cnpj||'').trim();
+    if(!loc) return;
+    if(!vistos[loc]){
+      vistos[loc] = true;
+      _vmLocalMap[loc] = cnpj;
+      if(dl){
+        var opt = document.createElement('option');
+        opt.value = loc;
+        dl.appendChild(opt);
+      }
+    }
+  });
+}
+
+function _vmLocalInput(el){
+  var val = el.value.trim();
+  if(!val) return;
+  var cnpj = _vmLocalMap[val];
+  if(cnpj){
+    var elCNPJ = document.getElementById('vmCNPJ');
+    if(elCNPJ && !elCNPJ.value){ elCNPJ.value = cnpj; maskCNPJ(elCNPJ); }
+  }
+}
+
 function maskCNPJ(inp){
   var v=inp.value.replace(/\D/g,'').slice(0,14);
   v=v.replace(/^(\d{2})(\d)/,'$1.$2')
@@ -6162,35 +6200,32 @@ function _sfSincronizarComAgenda(){
   var txtOrig = btnS ? btnS.textContent : '';
   if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
   _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
-  toast('Sincronizando com a agenda...','ok',3000);
+  toast('Sincronizando...','ok',3000);
+
+  function _restaurarBtnSinc(){ if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; } }
+
+  // Timeout de segurança: restaura botão após 15s se não houver resposta
+  var _sincTimeout = setTimeout(function(){
+    _restaurarBtnSinc();
+    toast('Sem resposta — verifique o deploy','err',5000);
+  }, 15000);
+
   google.script.run
     .withSuccessHandler(function(r){
-      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      clearTimeout(_sincTimeout);
       if(r&&r.success){
-        // Mostrar sucesso no botão PRIMEIRO, restaurar depois
-        if(btnS){
-          btnS.textContent='✅ Sincronizado!';
-          btnS.disabled=false; btnS.style.opacity='1';
-          btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7';
-          setTimeout(function(){
-            btnS.textContent=txtOrig;
-            btnS.style.background=''; btnS.style.color=''; btnS.style.border='';
-          },4000);
-        }
+        if(btnS){ btnS.textContent='✅ Sincronizado!'; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7'; setTimeout(_restaurarBtnSinc,4000); }
         toast('✅ '+r.msg,'ok',4000);
-        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
+        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg,'linear-gradient(135deg,#2e7d32,#1b5e20)');
       } else {
-        if(btnS){ btnS.textContent='❌ Erro'; btnS.disabled=false; btnS.style.opacity='1';
-          btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a';
-          setTimeout(function(){ btnS.textContent=txtOrig; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; },3000);
-        }
-        toast('Erro: '+(r&&r.error||'?'),'err',5000);
-        _setStatus && _setStatus('❌ Erro ao sincronizar: '+(r&&r.error||'?'));
+        if(btnS){ btnS.textContent='❌ '+( r&&r.error?'Erro':'Nada sincronizado'); btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a'; setTimeout(_restaurarBtnSinc,3000); }
+        toast((r&&r.msg)||'Nada para sincronizar','warn',4000);
       }
     })
     .withFailureHandler(function(e){
-      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
-      toast('Erro: '+e.message,'err',5000);
+      clearTimeout(_sincTimeout);
+      _restaurarBtnSinc();
+      toast('Falha: '+e.message,'err',5000);
     })
     .sincronizarAtivComAgenda(dados);
 }
@@ -6215,35 +6250,32 @@ function sincronizarAtivAgenda(id){
   var txtOrig = btnS ? btnS.textContent : '';
   if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
   _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
-  toast('Sincronizando com a agenda...','ok',3000);
+  toast('Sincronizando...','ok',3000);
+
+  function _restaurarBtnSinc(){ if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; } }
+
+  // Timeout de segurança: restaura botão após 15s se não houver resposta
+  var _sincTimeout = setTimeout(function(){
+    _restaurarBtnSinc();
+    toast('Sem resposta — verifique o deploy','err',5000);
+  }, 15000);
+
   google.script.run
     .withSuccessHandler(function(r){
-      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      clearTimeout(_sincTimeout);
       if(r&&r.success){
-        // Mostrar sucesso no botão PRIMEIRO, restaurar depois
-        if(btnS){
-          btnS.textContent='✅ Sincronizado!';
-          btnS.disabled=false; btnS.style.opacity='1';
-          btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7';
-          setTimeout(function(){
-            btnS.textContent=txtOrig;
-            btnS.style.background=''; btnS.style.color=''; btnS.style.border='';
-          },4000);
-        }
+        if(btnS){ btnS.textContent='✅ Sincronizado!'; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7'; setTimeout(_restaurarBtnSinc,4000); }
         toast('✅ '+r.msg,'ok',4000);
-        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
+        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg,'linear-gradient(135deg,#2e7d32,#1b5e20)');
       } else {
-        if(btnS){ btnS.textContent='❌ Erro'; btnS.disabled=false; btnS.style.opacity='1';
-          btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a';
-          setTimeout(function(){ btnS.textContent=txtOrig; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; },3000);
-        }
-        toast('Erro: '+(r&&r.error||'?'),'err',5000);
-        _setStatus && _setStatus('❌ Erro ao sincronizar: '+(r&&r.error||'?'));
+        if(btnS){ btnS.textContent='❌ '+( r&&r.error?'Erro':'Nada sincronizado'); btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a'; setTimeout(_restaurarBtnSinc,3000); }
+        toast((r&&r.msg)||'Nada para sincronizar','warn',4000);
       }
     })
     .withFailureHandler(function(e){
-      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
-      toast('Erro: '+e.message,'err',5000);
+      clearTimeout(_sincTimeout);
+      _restaurarBtnSinc();
+      toast('Falha: '+e.message,'err',5000);
     })
     .sincronizarAtivComAgenda(dados);
 }
