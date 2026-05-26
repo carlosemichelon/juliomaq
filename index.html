@@ -6140,6 +6140,33 @@ function salvarEditAtiv(){
     .editarAtividade(dados);
 }
 
+function _sfSincronizarComAgenda(){
+  if(!_sfAtivId){ toast('Nenhuma atividade selecionada','warn'); return; }
+  var a=_atividades.find(function(x){return x.id===_sfAtivId;});
+  if(!a){ toast('Atividade não encontrada','warn'); return; }
+  function g(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  var dados={
+    ativId:   _sfAtivId,
+    evId:     a.evId||'',
+    reclamacao:      g('sfReclamacao'),
+    descricaoOT:     g('sfDescricao'),
+    causaProblema:   g('sfCausaProblema'),
+    solucaoAplicada: g('sfSolucaoAplicada')
+  };
+  if(!dados.evId){ toast('Esta atividade não tem evento da agenda vinculado','warn'); return; }
+  if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
+    toast('Preencha Reclamação, Descrição OT, Causa ou Solução primeiro','warn'); return;
+  }
+  toast('Sincronizando com a agenda...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success) toast('✅ '+r.msg,'ok');
+      else toast('Erro: '+(r&&r.error||'?'),'err');
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .sincronizarAtivComAgenda(dados);
+}
+
 function sincronizarAtivAgenda(id){
   var a=_atividades.find(function(x){return x.id===id;});
   if(!a||!a.evId){toast('Atividade sem evento vinculado','warn');return;}
@@ -10049,6 +10076,9 @@ function confirmarCobrSenha(){
       <button onclick="_sfCopiarTudo()" style="flex:1;min-width:110px;padding:10px;background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
         📋 Copiar Tudo
       </button>
+      <button onclick="_sfSincronizarComAgenda()" id="btnSincAgenda" style="display:none;flex:1;min-width:110px;padding:10px;background:#fff3e0;border:1px solid #ffcc80;color:#e65100;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+        🔄 Sincronizar com Agenda
+      </button>
       <a id="sfAbrirLink"
          href="https://stara.my.site.com/concessionariasrevendas/s/case/Case/Default"
          target="_blank"
@@ -10223,6 +10253,12 @@ function abrirModalSF(btn){
   // Guardar dados do evento na sessão para o sfData
   window._sfEvDuracao  = evDuracao  || '';
   window._sfEvKm       = evKm       || '';
+  // Mostrar botão Sincronizar com Agenda só se atividade tiver evId
+  var btnSinc = document.getElementById('btnSincAgenda');
+  var evIdAtiv = '';
+  var aAtiv = _atividades.find(function(x){return x.id===_sfAtivId;});
+  if(aAtiv) evIdAtiv = aAtiv.evId||'';
+  if(btnSinc) btnSinc.style.display = evIdAtiv ? 'block' : 'none';
   window._sfEvDataISO  = evDataISO  || '';
   window._sfEvHoraInicio = evHoraInicio || '';
   // Preencher campos visuais do modal
@@ -10648,19 +10684,23 @@ function _sfSalvarDadosSheet(){
 }
 
 function fecharModalSF(){
-  // Auto-salvar ao fechar — apenas campos NÃO vazios, sem postMessage para extensão
-  if(_sfAtivId){
-    var assunto = (document.getElementById('sfAssunto')||{}).value||'';
-    var conta   = (document.getElementById('sfConta')||{}).value||'';
-    if(assunto||conta) _sfSalvarSoPlanilha();
-  }
+  // Fecha PRIMEIRO — salva depois (nunca bloqueia o fechamento)
   document.getElementById('sfCaseModal').style.display='none';
   document.body.style.overflow='';
-  document.getElementById('sfContaSug').style.display='none';
+  var sug=document.getElementById('sfContaSug'); if(sug) sug.style.display='none';
+  // Auto-salvar ao fechar — apenas campos NÃO vazios, sem postMessage para extensão
+  try{
+    if(_sfAtivId){
+      var assunto = (document.getElementById('sfAssunto')||{}).value||'';
+      var conta   = (document.getElementById('sfConta')||{}).value||'';
+      if(assunto||conta) _sfSalvarSoPlanilha();
+    }
+  }catch(e){ console.error('[SF] fechar save err:',e); }
 }
 
 // Salva na planilha apenas os campos preenchidos — não sobrescreve campos vazios
 function _sfSalvarSoPlanilha(){
+  try{
   if(!_sfAtivId) return;
   // Coleta apenas campos com valor
   function g(id){ var el=document.getElementById(id); return el?el.value:''; }
@@ -10696,12 +10736,13 @@ function _sfSalvarSoPlanilha(){
     if(dados.causaProblema) a.sfCausaProblema   = dados.causaProblema;
     if(dados.solucaoAplicada) a.sfSolucaoAplicada = dados.solucaoAplicada;
     // Re-renderizar lista para atualizar data-* do botão
-    renderAtividades();
+    if(typeof renderAtiv==='function') renderAtiv();
   }
   google.script.run
     .withSuccessHandler(function(r){ if(!r||!r.success) console.error('SF save err:',r); })
     .withFailureHandler(function(e){ console.error('SF save fail:',e); })
     .salvarDadosSF(_sfAtivId, dados);
+  }catch(e){ console.error('[SF] _sfSalvarSoPlanilha err:',e); }
 }
 
 // ── Verificar Base CRM ─────────────────────────────────────────
