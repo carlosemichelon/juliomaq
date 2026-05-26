@@ -6100,6 +6100,7 @@ function abrirEditAtiv(id){
     +'<button onclick="salvarEditAtiv()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#00396b;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">💾 Salvar</button>'
     +'<button onclick="fecharEditAtiv()" style="padding:11px 16px;border:1px solid #e0e0e0;border-radius:10px;background:#f5f5f5;font-family:inherit;font-size:12px;cursor:pointer;touch-action:manipulation">Cancelar</button>'
     +'<button onclick="apagarAtiv(\''+id+'\')" style="padding:11px 14px;border:none;border-radius:10px;background:#c62828;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation">🗑️</button>'
+    +(evIdOculto ? '<div style="padding:8px 16px 14px"><button onclick="sincronizarAtivAgenda(\'' +id+ '\')" style="width:100%;padding:9px;border:1px solid #1565c0;border-radius:10px;background:#e3f0ff;color:#0d47a1;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation">🔄 Sincronizar Reclamação/Causa/Solução com Agenda</button></div>' : '')
     +'</div></div>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
@@ -6137,6 +6138,31 @@ function salvarEditAtiv(){
     })
     .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
     .editarAtividade(dados);
+}
+
+function sincronizarAtivAgenda(id){
+  var a=_atividades.find(function(x){return x.id===id;});
+  if(!a||!a.evId){toast('Atividade sem evento vinculado','warn');return;}
+  // Dados SF da atividade que serão sincronizados para a agenda (se campos da agenda estiverem vazios)
+  var dados={
+    ativId:   id,
+    evId:     a.evId,
+    reclamacao:     a.sfReclamacao   ||'',
+    descricaoOT:    a.sfDescricao    ||'',
+    causaProblema:  a.sfCausaProblema||'',
+    solucaoAplicada:a.sfSolucaoAplicada||''
+  };
+  if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
+    toast('Nenhum dado de Reclamação/Causa/Solução para sincronizar','warn');return;
+  }
+  toast('Sincronizando com a agenda...','ok',3000);
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.success) toast('✅ '+r.msg,'ok');
+      else toast('Erro: '+(r&&r.error||'?'),'err');
+    })
+    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .sincronizarAtivComAgenda(dados);
 }
 
 function apagarAtiv(id){
@@ -10622,15 +10648,60 @@ function _sfSalvarDadosSheet(){
 }
 
 function fecharModalSF(){
-  // Auto-salvar campos SF na planilha ao fechar (se houver assunto ou conta preenchida)
-  var assunto = (document.getElementById('sfAssunto')||{}).value||'';
-  var conta   = (document.getElementById('sfConta')||{}).value||'';
-  if(_sfAtivId && (assunto||conta)){
-    _sfSalvarDadosSheet();
+  // Auto-salvar ao fechar — apenas campos NÃO vazios, sem postMessage para extensão
+  if(_sfAtivId){
+    var assunto = (document.getElementById('sfAssunto')||{}).value||'';
+    var conta   = (document.getElementById('sfConta')||{}).value||'';
+    if(assunto||conta) _sfSalvarSoPlanilha();
   }
   document.getElementById('sfCaseModal').style.display='none';
   document.body.style.overflow='';
   document.getElementById('sfContaSug').style.display='none';
+}
+
+// Salva na planilha apenas os campos preenchidos — não sobrescreve campos vazios
+function _sfSalvarSoPlanilha(){
+  if(!_sfAtivId) return;
+  // Coleta apenas campos com valor
+  function g(id){ var el=document.getElementById(id); return el?el.value:''; }
+  var dados = {};
+  var map = {
+    tipoRegistro:'sfTipoReg', subTipo:'sfSubTipo', origem:'sfOrigem',
+    conta:'sfConta', contato:'sfContato', assunto:'sfAssunto',
+    reclamacao:'sfReclamacao', descMaquina:'sfDescMaquina',
+    tipoIncidente:'sfTipoIncidente', produto:'sfProduto',
+    descricao:'sfDescricao', causaProblema:'sfCausaProblema',
+    solucaoAplicada:'sfSolucaoAplicada', tipoOT:'sfTipoOT', numOT:'sfNumOT',
+    horimetro:'sfHorimetro', ativo:'sfAtivo', serie:'sfSerie'
+  };
+  var temDado = false;
+  Object.keys(map).forEach(function(campo){
+    var val = g(map[campo]);
+    if(val){ dados[campo]=val; temDado=true; }
+  });
+  if(!temDado) return;
+  // Atualizar cache local _atividades com os dados salvos
+  var a = _atividades.find(function(x){return x.id===_sfAtivId;});
+  if(a){
+    if(dados.tipoRegistro)  a.sfTipo            = dados.tipoRegistro;
+    if(dados.subTipo)       a.sfSubTipo         = dados.subTipo;
+    if(dados.origem)        a.sfOrigem          = dados.origem;
+    if(dados.conta)         a.sfConta           = dados.conta;
+    if(dados.contato)       a.sfContato         = dados.contato;
+    if(dados.assunto)       a.sfAssunto         = dados.assunto;
+    if(dados.reclamacao)    a.sfReclamacao      = dados.reclamacao;
+    if(dados.tipoOT)        a.sfTipoOT          = dados.tipoOT;
+    if(dados.numOT)         a.sfNumOT           = dados.numOT;
+    if(dados.descricao)     a.sfDescricao       = dados.descricao;
+    if(dados.causaProblema) a.sfCausaProblema   = dados.causaProblema;
+    if(dados.solucaoAplicada) a.sfSolucaoAplicada = dados.solucaoAplicada;
+    // Re-renderizar lista para atualizar data-* do botão
+    renderAtividades();
+  }
+  google.script.run
+    .withSuccessHandler(function(r){ if(!r||!r.success) console.error('SF save err:',r); })
+    .withFailureHandler(function(e){ console.error('SF save fail:',e); })
+    .salvarDadosSF(_sfAtivId, dados);
 }
 
 // ── Verificar Base CRM ─────────────────────────────────────────
