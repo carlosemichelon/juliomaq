@@ -10146,18 +10146,46 @@ function abrirModalSF(btn){
   }
   if(casoCriado){
     sfAvisoBanner.style.display = 'block';
-    sfAvisoBanner.style.background = jaPreenchido ? '#e8f5e9' : '#fff3e0';
-    sfAvisoBanner.style.color      = jaPreenchido ? '#1b5e20' : '#e65100';
-    sfAvisoBanner.style.border     = jaPreenchido ? '1px solid #a5d6a7' : '1px solid #ffcc80';
-    sfAvisoBanner.textContent = jaPreenchido
-      ? '✅ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' — dados carregados'
-      : '⚠️ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' já existe no SF — campos não salvos na planilha';
+    // Verificar se dados estão completos ou parciais
+    var dadosCompletos = !!(sfAssunto && sfConta && sfContato);
+    var dadosParciais  = !!(sfAssunto || sfOrigem) && !dadosCompletos;
+    if(dadosCompletos){
+      sfAvisoBanner.style.background = '#e8f5e9';
+      sfAvisoBanner.style.color      = '#1b5e20';
+      sfAvisoBanner.style.border     = '1px solid #a5d6a7';
+      sfAvisoBanner.textContent = '✅ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' — dados completos';
+    } else if(dadosParciais){
+      sfAvisoBanner.style.background = '#fff8e1';
+      sfAvisoBanner.style.color      = '#f57f17';
+      sfAvisoBanner.style.border     = '1px solid #ffe082';
+      sfAvisoBanner.textContent = '⚠️ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' — dados parciais, complete e feche para salvar';
+    } else {
+      sfAvisoBanner.style.background = '#fff3e0';
+      sfAvisoBanner.style.color      = '#e65100';
+      sfAvisoBanner.style.border     = '1px solid #ffcc80';
+      sfAvisoBanner.textContent = '⚠️ Caso #'+sfCasoNum+(sfNumOT?' | OT: #'+sfNumOT:'')+' existe no SF — preencha os campos e feche para salvar';
+    }
   } else {
     sfAvisoBanner.style.display = 'none';
   }
 
   document.getElementById('sfAssunto').value        = sfAssunto || desc;
   document.getElementById('sfReclamacao').value     = sfReclam  || evReclamacaoAgenda || '';
+  // Se caso existente com dados parciais: destacar campos vazios para guiar preenchimento
+  setTimeout(function(){
+    var campos=['sfConta','sfContato','sfReclamacao'];
+    if(casoCriado && !sfConta){
+      campos.forEach(function(id){
+        var el=document.getElementById(id);
+        if(el&&!el.value) el.style.border='1.5px solid #f57f17';
+      });
+      var el=document.getElementById('sfConta'); if(el) el.focus();
+    } else if(casoCriado){
+      campos.forEach(function(id){
+        var el=document.getElementById(id); if(el) el.style.border='';
+      });
+    }
+  },300);
   document.getElementById('sfDescricao').value      = document.getElementById('sfDescricao').value || evDescricao || '';
   document.getElementById('sfCausaProblema').value  = document.getElementById('sfCausaProblema').value || evCausaAgenda || '';
   document.getElementById('sfSolucaoAplicada').value= document.getElementById('sfSolucaoAplicada').value || evSolucaoAgenda || '';
