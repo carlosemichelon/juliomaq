@@ -3954,7 +3954,22 @@ function toast(msg,type,dur){var t=document.getElementById('toast');if(!t)return
 
 // ── Filtros Resumo OS ─────────────────────────────────────────
 var filtroTipo='', filtroTec='', filtroMes='', filtroCliente='';
-function _osMes(dt){var p=String(dt||'').split('/');return p.length===3?p[2]+'-'+p[1]:'';}
+function _osMes(dt){
+  if(!dt) return '';
+  var s=String(dt);
+  // DD/MM/YYYY
+  var br=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if(br) return br[3]+'-'+br[2];
+  // YYYY-MM-DD
+  var iso=s.match(/^(\d{4})-(\d{2})/);
+  if(iso) return iso[1]+'-'+iso[2];
+  // Date.toString (Thu Jan 01 2026...)
+  var months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+              Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  var dm=s.match(/(\w{3})\s+(\d{4})/);
+  if(dm&&months[dm[1]]) return dm[2]+'-'+months[dm[1]];
+  return '';
+}
 function _osMesLabel(ym){
   var mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var p=String(ym).split('-');if(p.length!==2)return ym;
@@ -6007,6 +6022,8 @@ function renderAtiv(){
         +' data-sfbap="'+encodeURIComponent(a.sfBAPPeriodo||'')+'"'
         +' data-agduracao="'+encodeURIComponent(a.evDuracao||'')+'"'
         +' data-agkm="'+encodeURIComponent(a.evKm||'')+'"'
+        +' data-sfdataiso="'+encodeURIComponent(a.dataISO||'')+'"'
+        +' data-sfhorainicio="'+encodeURIComponent(a.evHoraInicio||'')+'"'
         +' data-sftipoiped="'+encodeURIComponent(a.sfTipoIncidentePedido||'')+'"'
         +' data-sfsubiped="'+encodeURIComponent(a.sfSubtipoIncidentePedido||'')+'"'
         +' onclick="abrirModalSF(this)"'
@@ -10081,6 +10098,10 @@ function abrirModalSF(btn){
   var evCausaAgenda      = decodeURIComponent(btn.getAttribute('data-sfevkcausa')||'');
   var evSolucaoAgenda    = decodeURIComponent(btn.getAttribute('data-sfevsol')||'');
   var evTecnicos         = decodeURIComponent(btn.getAttribute('data-sftecnicos')||'');
+  var evDuracao          = decodeURIComponent(btn.getAttribute('data-agduracao')||'');
+  var evKm               = decodeURIComponent(btn.getAttribute('data-agkm')||'');
+  var evDataISO          = decodeURIComponent(btn.getAttribute('data-sfdataiso')||'');
+  var evHoraInicio       = decodeURIComponent(btn.getAttribute('data-sfhorainicio')||'');
   // ── Banner de aviso se caso já foi criado ──────────────────
   var sfAvisoBanner = document.getElementById('sfAvisoCaso');
   if(!sfAvisoBanner){
@@ -10112,6 +10133,11 @@ function abrirModalSF(btn){
   document.getElementById('sfSerie').value       = sfSerie;
   document.getElementById('sfDescMaquina').value = sfDescMaq;
   document.getElementById('sfOperador').value     = evTecnicos||'';
+  // Guardar dados do evento na sessão para o sfData
+  window._sfEvDuracao  = evDuracao  || '';
+  window._sfEvKm       = evKm       || '';
+  window._sfEvDataISO  = evDataISO  || '';
+  window._sfEvHoraInicio = evHoraInicio || '';
   document.getElementById('sfTipoIncidente').value = sfTipoIncidente;
   document.getElementById('sfProduto').value       = sfProduto;
   document.getElementById('sfDescricao').value     = sfDescricao;
@@ -10480,7 +10506,13 @@ function _sfSalvarDadosSheet(){
     causaProblema:  document.getElementById('sfCausaProblema').value,
     solucaoAplicada:document.getElementById('sfSolucaoAplicada').value,
     tipoOT:         document.getElementById('sfTipoOT').value,
-    numOT:          document.getElementById('sfNumOT').value
+    numOT:          document.getElementById('sfNumOT').value,
+    // Dados do evento da agenda (para Apontamento de Horas)
+    tecnicos:   document.getElementById('sfOperador').value || window._sfEvTecnicos || '',
+    horaInicio: window._sfEvHoraInicio || '',
+    duracao:    parseFloat(window._sfEvDuracao) || 0,
+    km:         parseFloat(window._sfEvKm)      || 0,
+    dataISO:    window._sfEvDataISO || ''
   };
 
   // Envia para extensão Chrome (se instalada) via postMessage
