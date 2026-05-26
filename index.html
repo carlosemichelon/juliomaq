@@ -142,7 +142,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 .spin{width:42px;height:42px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 #ldtxt{font-size:14px;font-weight:700}
-#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;transition:transform .3s;z-index:1200;color:#fff;pointer-events:none;max-width:90vw;text-align:center}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;transition:transform .3s;z-index:99999;color:#fff;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast.ok{background:var(--gr)}#toast.err{background:#c0392b}#toast.warn{background:#b45309}
 </style>
@@ -6157,13 +6157,41 @@ function _sfSincronizarComAgenda(){
   if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
     toast('Preencha Reclamação, Descrição OT, Causa ou Solução primeiro','warn'); return;
   }
+  // Feedback visual no botão e banner
+  var btnS = document.getElementById('btnSincAgenda');
+  var txtOrig = btnS ? btnS.textContent : '';
+  if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
+  _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
   toast('Sincronizando com a agenda...','ok',3000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(r&&r.success) toast('✅ '+r.msg,'ok');
-      else toast('Erro: '+(r&&r.error||'?'),'err');
+      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      if(r&&r.success){
+        // Mostrar sucesso no botão PRIMEIRO, restaurar depois
+        if(btnS){
+          btnS.textContent='✅ Sincronizado!';
+          btnS.disabled=false; btnS.style.opacity='1';
+          btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7';
+          setTimeout(function(){
+            btnS.textContent=txtOrig;
+            btnS.style.background=''; btnS.style.color=''; btnS.style.border='';
+          },4000);
+        }
+        toast('✅ '+r.msg,'ok',4000);
+        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
+      } else {
+        if(btnS){ btnS.textContent='❌ Erro'; btnS.disabled=false; btnS.style.opacity='1';
+          btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a';
+          setTimeout(function(){ btnS.textContent=txtOrig; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; },3000);
+        }
+        toast('Erro: '+(r&&r.error||'?'),'err',5000);
+        _setStatus && _setStatus('❌ Erro ao sincronizar: '+(r&&r.error||'?'));
+      }
     })
-    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){
+      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      toast('Erro: '+e.message,'err',5000);
+    })
     .sincronizarAtivComAgenda(dados);
 }
 
@@ -6182,13 +6210,41 @@ function sincronizarAtivAgenda(id){
   if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
     toast('Nenhum dado de Reclamação/Causa/Solução para sincronizar','warn');return;
   }
+  // Feedback visual no botão e banner
+  var btnS = document.getElementById('btnSincAgenda');
+  var txtOrig = btnS ? btnS.textContent : '';
+  if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
+  _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
   toast('Sincronizando com a agenda...','ok',3000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(r&&r.success) toast('✅ '+r.msg,'ok');
-      else toast('Erro: '+(r&&r.error||'?'),'err');
+      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      if(r&&r.success){
+        // Mostrar sucesso no botão PRIMEIRO, restaurar depois
+        if(btnS){
+          btnS.textContent='✅ Sincronizado!';
+          btnS.disabled=false; btnS.style.opacity='1';
+          btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7';
+          setTimeout(function(){
+            btnS.textContent=txtOrig;
+            btnS.style.background=''; btnS.style.color=''; btnS.style.border='';
+          },4000);
+        }
+        toast('✅ '+r.msg,'ok',4000);
+        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
+      } else {
+        if(btnS){ btnS.textContent='❌ Erro'; btnS.disabled=false; btnS.style.opacity='1';
+          btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a';
+          setTimeout(function(){ btnS.textContent=txtOrig; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; },3000);
+        }
+        toast('Erro: '+(r&&r.error||'?'),'err',5000);
+        _setStatus && _setStatus('❌ Erro ao sincronizar: '+(r&&r.error||'?'));
+      }
     })
-    .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
+    .withFailureHandler(function(e){
+      if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; }
+      toast('Erro: '+e.message,'err',5000);
+    })
     .sincronizarAtivComAgenda(dados);
 }
 
