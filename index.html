@@ -1795,6 +1795,10 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
       <div class="f"><label class="fl">Descrição OT</label><textarea class="fi" id="agEditDesc" style="height:50px" placeholder="Descrição da Ordem de Trabalho..."></textarea></div>
       <div class="f"><label class="fl">Causa do Problema</label><textarea class="fi" id="agEditCausa" style="height:40px" placeholder="Causa identificada (opcional)..."></textarea></div>
       <div class="f"><label class="fl">Solução Aplicada</label><textarea class="fi" id="agEditSolucao" style="height:40px" placeholder="Solução aplicada (opcional)..."></textarea></div>
+      <div class="f" style="display:flex;gap:10px">
+        <div style="flex:1"><label class="fl">⏱️ Duração (h) <span style="font-size:10px;color:#888">horas trabalhadas</span></label><input class="fi" id="agEditDuracao" type="number" step="0.5" min="0" max="24" placeholder="Ex: 4.5"></div>
+        <div style="flex:1"><label class="fl">🚗 KM total <span style="font-size:10px;color:#888">deslocamento</span></label><input class="fi" id="agEditKm" type="number" step="1" min="0" placeholder="Ex: 120"></div>
+      </div>
       <div class="f"><label class="fl">Técnicos Destinados</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px 2px">
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#374151;font-weight:600;background:#f5f5f5;border-radius:8px;padding:4px 10px;border:1.5px solid var(--bd)" onclick="_toggleTecEdit(this)"><input type="checkbox" class="agEditTecChk" value="Carlos" style="display:none">Carlos</label>
@@ -8774,6 +8778,8 @@ function abrirEditEvento(ev){
   document.getElementById('agEditReclamacao').value   = ev.reclamacao||'';
   document.getElementById('agEditCausa').value        = ev.causaProblema||'';
   document.getElementById('agEditSolucao').value      = ev.solucaoAplicada||'';
+  var _elED=document.getElementById('agEditDuracao'); if(_elED) _elED.value = ev.duracao||'';
+  var _elEK=document.getElementById('agEditKm');      if(_elEK) _elEK.value = ev.km||'';
   // Data
   var dISO = ev.dataISO||'';
   // Normalizar para yyyy-mm-dd se vier como string bruta
@@ -8831,7 +8837,9 @@ function salvarEdicaoEvento(){
     descricao:       (document.getElementById('agEditDesc')||{}).value||'',
     reclamacao:      (document.getElementById('agEditReclamacao')||{}).value||'',
     causaProblema:   (document.getElementById('agEditCausa')||{}).value||'',
-    solucaoAplicada: (document.getElementById('agEditSolucao')||{}).value||''
+    solucaoAplicada: (document.getElementById('agEditSolucao')||{}).value||'',
+    duracao: parseFloat((document.getElementById('agEditDuracao')||{}).value)||0,
+    km:      parseFloat((document.getElementById('agEditKm')||{}).value)||0
   };
   _iniciarProgresso('📅 Editando evento',[{pct:30,label:'Salvando...'},{pct:75,label:'Atualizando...'}]);
   google.script.run
@@ -9973,7 +9981,7 @@ function confirmarCobrSenha(){
     <div style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin-bottom:10px">
       <div style="font-size:10px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Ordem de Trabalho (criada dentro do caso)</div>
 
-      <div class="sf-field-row" style="margin-bottom:0">
+      <div class="sf-field-row" style="margin-bottom:8px">
         <label class="sf-label">Horímetro / Hectare</label>
         <div style="display:flex;gap:6px">
           <input id="sfHorimetro" type="number" placeholder="Ex: 850"
@@ -9981,8 +9989,33 @@ function confirmarCobrSenha(){
         </div>
       </div>
 
+      <!-- Apontamento de Horas -->
+      <div class="sf-field-row" style="margin-bottom:0">
+        <label class="sf-label" style="color:#e65100;font-weight:700">⏱️ Dados para Apontamento de Horas</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <div style="flex:1">
+            <label class="sf-label" style="font-size:10px">Duração (h)</label>
+            <input id="sfDuracao" type="number" step="0.5" min="0" max="24"
+              placeholder="Ex: 4.5"
+              style="width:100%;padding:6px 8px;border:1px solid #ffcc80;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;background:#fff8f0">
+          </div>
+          <div style="flex:1">
+            <label class="sf-label" style="font-size:10px">KM Total</label>
+            <input id="sfKm" type="number" step="1" min="0"
+              placeholder="Ex: 120"
+              style="width:100%;padding:6px 8px;border:1px solid #ffcc80;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;background:#fff8f0">
+          </div>
+          <div style="flex:1">
+            <label class="sf-label" style="font-size:10px">Hora Início</label>
+            <input id="sfHoraInicio" type="time"
+              style="width:100%;padding:6px 8px;border:1px solid #ffcc80;border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;background:#fff8f0">
+          </div>
+        </div>
+      </div>
+
       <!-- sfNumOT fica no card da atividade, preenchido após salvar a OT no SF -->
       <input type="hidden" id="sfNumOT">
+      <input type="hidden" id="sfDataISO">
     </div>
 
     <!-- Ações -->
@@ -10138,6 +10171,15 @@ function abrirModalSF(btn){
   window._sfEvKm       = evKm       || '';
   window._sfEvDataISO  = evDataISO  || '';
   window._sfEvHoraInicio = evHoraInicio || '';
+  // Preencher campos visuais do modal
+  var elDur = document.getElementById('sfDuracao');
+  var elKm  = document.getElementById('sfKm');
+  var elHora= document.getElementById('sfHoraInicio');
+  var elISO = document.getElementById('sfDataISO');
+  if(elDur)  elDur.value  = evDuracao   || '';
+  if(elKm)   elKm.value   = evKm        || '';
+  if(elHora) elHora.value = evHoraInicio|| '';
+  if(elISO)  elISO.value  = evDataISO   || '';
   document.getElementById('sfTipoIncidente').value = sfTipoIncidente;
   document.getElementById('sfProduto').value       = sfProduto;
   document.getElementById('sfDescricao').value     = sfDescricao;
@@ -10508,11 +10550,11 @@ function _sfSalvarDadosSheet(){
     tipoOT:         document.getElementById('sfTipoOT').value,
     numOT:          document.getElementById('sfNumOT').value,
     // Dados do evento da agenda (para Apontamento de Horas)
-    tecnicos:   document.getElementById('sfOperador').value || window._sfEvTecnicos || '',
-    horaInicio: window._sfEvHoraInicio || '',
-    duracao:    parseFloat(window._sfEvDuracao) || 0,
-    km:         parseFloat(window._sfEvKm)      || 0,
-    dataISO:    window._sfEvDataISO || ''
+    tecnicos:   document.getElementById('sfOperador').value || '',
+    horaInicio: (document.getElementById('sfHoraInicio')||{value:''}).value || window._sfEvHoraInicio || '',
+    duracao:    parseFloat((document.getElementById('sfDuracao')||{value:0}).value) || parseFloat(window._sfEvDuracao) || 0,
+    km:         parseFloat((document.getElementById('sfKm')||{value:0}).value)      || parseFloat(window._sfEvKm)      || 0,
+    dataISO:    (document.getElementById('sfDataISO')||{value:''}).value || window._sfEvDataISO || ''
   };
 
   // Envia para extensão Chrome (se instalada) via postMessage
@@ -10552,6 +10594,12 @@ function _sfSalvarDadosSheet(){
 }
 
 function fecharModalSF(){
+  // Auto-salvar campos SF na planilha ao fechar (se houver assunto ou conta preenchida)
+  var assunto = (document.getElementById('sfAssunto')||{}).value||'';
+  var conta   = (document.getElementById('sfConta')||{}).value||'';
+  if(_sfAtivId && (assunto||conta)){
+    _sfSalvarDadosSheet();
+  }
   document.getElementById('sfCaseModal').style.display='none';
   document.body.style.overflow='';
   document.getElementById('sfContaSug').style.display='none';
