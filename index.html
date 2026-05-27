@@ -5615,12 +5615,31 @@ function renderResumoDespesas(){
 
   html+='</div>'; // fim resumoBox
 
-  // ── Gráfico de barras: Categoria + Comprador ─────────────────
+  // ── Gráfico de colunas: Categoria + Comprador ─────────────────
   if(rows.length>=1){
+    // Montar opções de meses, categorias e compradores para seletores
+    var mesesGraf={}, catsGraf={}, compsGraf={};
+    rows.forEach(function(d){
+      var m=_osMes(d.data); if(m) mesesGraf[m]=true;
+      if(d.categoria) catsGraf[d.categoria]=true;
+      if(d.comprador)  compsGraf[d.comprador]=true;
+    });
+    var optMeses='<option value="">Todos os meses</option>';
+    Object.keys(mesesGraf).sort().reverse().forEach(function(m){ optMeses+='<option value="'+m+'">'+_osMesLabel(m)+'</option>'; });
+    var optCats='<option value="">Todas as categorias</option>';
+    Object.keys(catsGraf).sort().forEach(function(c){ optCats+='<option value="'+c+'">'+c+'</option>'; });
+    var optComps='<option value="">Todos os compradores</option>';
+    Object.keys(compsGraf).sort().forEach(function(c){ optComps+='<option value="'+c+'">'+c+'</option>'; });
+
     html+='<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
-    html+='<div class="sh" style="background:#4a148c"><div class="si" style="background:rgba(255,255,255,.1)">📈</div>';
-    html+='Gastos por Categoria & Comprador</div>';
-    html+='<div style="padding:10px"><canvas id="despChart" style="width:100%;height:260px;display:block"></canvas></div>';
+    html+='<div class="sh" style="background:#4a148c"><div class="si" style="background:rgba(255,255,255,.1)">📊</div>Gastos por Categoria & Comprador';
+    // Seletores no header
+    html+=' <select id="despChartMes" onchange="_renderDespChart()" style="margin-left:6px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optMeses+'</select>';
+    html+=' <select id="despChartCat" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optCats+'</select>';
+    html+=' <select id="despChartComp" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optComps+'</select>';
+    html+='</div>';
+    html+='<div style="padding:10px 10px 4px;display:flex;justify-content:center"><canvas id="despChart" style="display:block;max-width:500px;width:100%"></canvas></div>';
+    html+='<div id="despChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
     html+='</div>';
   }
 
@@ -5680,6 +5699,7 @@ function renderResumoDespesas(){
   });
   el.innerHTML=html;
   // Desenhar gráfico após DOM atualizado
+  window._despChartRows = rows; // todos os dados filtrados para o gráfico refiltrar
   window._despChartCats = cats;
   window._despChartComps = compradores;
   window._despChartTotal = total;
@@ -5688,104 +5708,145 @@ function renderResumoDespesas(){
 
 function _renderDespChart(){
   var canvas=document.getElementById('despChart');
-  if(!canvas)return;
-  var cats = window._despChartCats||{};
-  var comps= window._despChartComps||{};
-  var total= window._despChartTotal||0;
-  if(!total||(!Object.keys(cats).length&&!Object.keys(comps).length))return;
+  if(!canvas) return;
 
-  var W=Math.max(canvas.offsetWidth||320, canvas.parentElement.offsetWidth||320);
-  var H=260;
+  // Filtros dos seletores do gráfico
+  var filtMes  = (document.getElementById('despChartMes') ||{}).value||'';
+  var filtCat  = (document.getElementById('despChartCat') ||{}).value||'';
+  var filtComp = (document.getElementById('despChartComp')||{}).value||'';
+
+  // Refiltrar dados
+  var rows = (window._despChartRows||[]).filter(function(d){
+    if(filtMes  && _osMes(d.data)!==filtMes)     return false;
+    if(filtCat  && d.categoria!==filtCat)          return false;
+    if(filtComp && d.comprador!==filtComp)         return false;
+    return true;
+  });
+
+  // Agregar por categoria e por comprador
+  var cats={}, comps={}, total=0;
+  rows.forEach(function(d){
+    var c=d.categoria||'Outros', v=parseFloat(d.valor)||0;
+    cats[c]=(cats[c]||0)+v;
+    comps[d.comprador||'?']=(comps[d.comprador||'?']||0)+v;
+    total+=v;
+  });
+
+  // Modo de exibição: se filtCat → mostrar por comprador; se filtComp → por categoria; default → por categoria
+  var usarComps = !!filtCat && !filtComp; // filtrou categoria → mostrar compradores
+  var labels, valores, titulo;
+  if(usarComps){
+    labels = Object.keys(comps).sort(function(a,b){return comps[b]-comps[a];});
+    valores= labels.map(function(k){return comps[k];});
+    titulo = filtCat;
+  } else {
+    labels = Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];});
+    valores= labels.map(function(k){return cats[k];});
+    titulo = filtComp||'Todas as categorias';
+  }
+
+  // Canvas proporcional centrado
+  var dispW = canvas.offsetWidth||canvas.parentElement.offsetWidth||320;
+  var W = Math.min(dispW, 500);
+  var H = Math.round(W*0.60); H=Math.max(H,200); H=Math.min(H,380);
   canvas.width=W*2; canvas.height=H*2;
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d'); ctx.scale(2,2);
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
 
-  // Paleta categorias
+  // Cores por categoria
   var catCores={
-    'Alimentação':          {bar:'#ef5350',text:'#b71c1c'},
-    'Hospedagem e Transporte':{bar:'#42a5f5',text:'#1565c0'},
-    'Itens de Serviço e Peças':{bar:'#ab47bc',text:'#4a148c'},
-    'Outros':               {bar:'#78909c',text:'#37474f'}
+    'Alimentação':              {bar:'rgba(229,57,53,0.85)',  leg:'#e53935'},
+    'Hospedagem e Transporte':  {bar:'rgba(30,136,229,0.85)', leg:'#1e88e5'},
+    'Itens de Serviço e Peças': {bar:'rgba(142,36,170,0.85)', leg:'#8e24aa'},
+    'Outros':                   {bar:'rgba(84,110,122,0.85)', leg:'#546e7a'}
   };
-  var compPaleta=['#00897b','#f4511e','#039be5','#8e24aa','#546e7a','#e53935'];
+  var compPaleta=['rgba(0,137,123,.85)','rgba(244,81,30,.85)','rgba(3,155,229,.85)','rgba(142,36,170,.85)','rgba(67,160,71,.85)'];
 
-  // Layout: lado a lado — cats esquerda, comps direita
-  var midX = Math.round(W*0.52);
-  var padL={t:16,r:8,b:52,l:12};
-  var padR={t:16,r:12,b:52,l:8};
-  var wL=midX-padL.l-padL.r, hC=H-padL.t-padL.b;
-  var wR=W-midX-padR.l-padR.r;
+  var n=labels.length;
+  if(n===0){
+    ctx.fillStyle='#aaa'; ctx.font='11px Arial'; ctx.textAlign='center';
+    ctx.fillText('Sem dados',W/2,H/2);
+    var leg=document.getElementById('despChartLegend'); if(leg)leg.innerHTML='';
+    return;
+  }
 
-  // Separador central
+  var pad={t:28, r:14, b:56, l:58};
+  var w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+  var maxV=Math.max.apply(null,valores)*1.18||1;
+
+  // Grid
   ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(midX,8); ctx.lineTo(midX,H-8); ctx.stroke();
+  for(var g=0;g<=5;g++){
+    var yy=pad.t+(h/5)*g;
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+w,yy); ctx.stroke();
+  }
 
-  // ── LADO ESQUERDO: barras por categoria ──────────────────────
-  var catKeys=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];});
-  var maxCat=Math.max.apply(null,catKeys.map(function(k){return cats[k];}));
-  var barH=Math.min(26, Math.floor((hC/Math.max(catKeys.length,1))*0.72));
-  var barGap=Math.floor((hC-catKeys.length*barH)/(catKeys.length+1));
-
-  ctx.fillStyle='#374151'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
-  ctx.fillText('Por Categoria', padL.l+wL/2, padL.t-4);
-
-  catKeys.forEach(function(cat,i){
-    var y=padL.t+barGap*(i+1)+barH*i;
-    var bw=maxCat>0?Math.round((cats[cat]/maxCat)*wL):0;
-    var cor=catCores[cat]||{bar:'#78909c',text:'#37474f'};
-    // Barra
-    var r2=Math.min(3,barH/2);
-    ctx.fillStyle=cor.bar+'cc';
-    _roundRect(ctx,padL.l,y,Math.max(bw,2),barH,r2); ctx.fill();
-    // Label categoria
-    var label=cat.length>18?cat.substring(0,17)+'…':cat;
-    ctx.fillStyle='#333'; ctx.font='8px Arial'; ctx.textAlign='left';
-    ctx.fillText(label, padL.l, y-3);
-    // Valor
-    ctx.fillStyle=cor.text; ctx.font='bold 9px Arial'; ctx.textAlign='left';
-    ctx.fillText('R$'+Math.round(cats[cat]).toLocaleString('pt-BR'), padL.l+bw+4, y+barH/2+3);
-    // Percentual
-    var pct=total>0?Math.round(cats[cat]/total*100):0;
-    ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='left';
-    if(bw>20) ctx.fillText(pct+'%', padL.l+4, y+barH/2+3);
+  // Colunas verticais
+  var barW = Math.max(16, Math.min(48, w/n*0.6));
+  labels.forEach(function(lbl,i){
+    var xc = pad.l + (i+0.5)*(w/n);
+    var bh = (valores[i]/maxV)*h; if(bh<1)return;
+    var by = pad.t+h-bh;
+    var corObj = usarComps ? {bar:compPaleta[i%compPaleta.length]} : (catCores[lbl]||{bar:'rgba(100,100,100,.8)'});
+    var r2=Math.min(4,barW/2);
+    ctx.fillStyle=corObj.bar;
+    ctx.beginPath();
+    ctx.moveTo(xc-barW/2+r2,by);
+    ctx.lineTo(xc+barW/2-r2,by); ctx.quadraticCurveTo(xc+barW/2,by,xc+barW/2,by+r2);
+    ctx.lineTo(xc+barW/2,pad.t+h); ctx.lineTo(xc-barW/2,pad.t+h);
+    ctx.lineTo(xc-barW/2,by+r2); ctx.quadraticCurveTo(xc-barW/2,by,xc-barW/2+r2,by);
+    ctx.closePath(); ctx.fill();
+    // Valor acima
+    ctx.fillStyle='#333'; ctx.font='bold 8px Arial'; ctx.textAlign='center';
+    ctx.fillText('R$'+Math.round(valores[i]).toLocaleString('pt-BR'), xc, by-5);
+    // % dentro
+    var pct=total>0?Math.round(valores[i]/total*100):0;
+    if(bh>18){ ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.fillText(pct+'%',xc,by+14); }
+    // Label X (abreviado)
+    var shortLabel = lbl.length>10 ? lbl.split(' ')[0].substring(0,10) : lbl;
+    ctx.fillStyle='#555'; ctx.font='9px Arial';
+    ctx.save(); ctx.translate(xc,pad.t+h+8); ctx.rotate(-Math.PI/5);
+    ctx.textAlign='right'; ctx.fillText(shortLabel,0,0); ctx.restore();
   });
 
-  // ── LADO DIREITO: barras por comprador ───────────────────────
-  var compKeys=Object.keys(comps).sort(function(a,b){return comps[b]-comps[a];});
-  var maxComp=Math.max.apply(null,compKeys.map(function(k){return comps[k];}));
-  var barHR=Math.min(26, Math.floor((hC/Math.max(compKeys.length,1))*0.72));
-  var barGapR=Math.floor((hC-compKeys.length*barHR)/(compKeys.length+1));
-  var xR=midX+padR.l;
+  // Eixo Y
+  ctx.fillStyle='#555'; ctx.font='9px Arial'; ctx.textAlign='right';
+  for(var g=0;g<=5;g++){
+    var vv=(maxV/5)*g;
+    ctx.fillText('R$'+Math.round(vv).toLocaleString('pt-BR'),pad.l-4,pad.t+h-(vv/maxV)*h+3);
+  }
+  ctx.save(); ctx.translate(12,pad.t+h/2); ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#555'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
+  ctx.fillText('Valor (R$)',0,0); ctx.restore();
 
-  ctx.fillStyle='#374151'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
-  ctx.fillText('Por Comprador', xR+wR/2, padR.t-4);
+  // Total no topo
+  ctx.fillStyle='#4a148c'; ctx.font='bold 10px Arial'; ctx.textAlign='right';
+  ctx.fillText('Total: R$'+Math.round(total).toLocaleString('pt-BR'), W-pad.r, pad.t-6);
 
-  compKeys.forEach(function(comp,i){
-    var y=padR.t+barGapR*(i+1)+barHR*i;
-    var bw=maxComp>0?Math.round((comps[comp]/maxComp)*wR):0;
-    var cor=compPaleta[i%compPaleta.length];
-    var r2=Math.min(3,barHR/2);
-    ctx.fillStyle=cor+'cc';
-    _roundRect(ctx,xR,y,Math.max(bw,2),barHR,r2); ctx.fill();
-    var label=comp.length>14?comp.substring(0,13)+'…':comp;
-    ctx.fillStyle='#333'; ctx.font='8px Arial'; ctx.textAlign='left';
-    ctx.fillText(label, xR, y-3);
-    ctx.fillStyle=cor; ctx.font='bold 9px Arial'; ctx.textAlign='left';
-    ctx.fillText('R$'+Math.round(comps[comp]).toLocaleString('pt-BR'), xR+bw+4, y+barHR/2+3);
-    var pct=total>0?Math.round(comps[comp]/total*100):0;
-    ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='left';
-    if(bw>20) ctx.fillText(pct+'%', xR+4, y+barHR/2+3);
-  });
+  // Borda
+  ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
+  ctx.strokeRect(pad.l,pad.t,w,h);
 
-  // Linha divisória horizontal no rodapé
-  var footY=H-padL.b+8;
-  ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,footY); ctx.lineTo(W,footY); ctx.stroke();
-  // Total
-  ctx.fillStyle='#4a148c'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
-  ctx.fillText('Total: R$'+Math.round(total).toLocaleString('pt-BR'), W/2, footY+14);
+  // Legenda DOM abaixo
+  var legDiv=document.getElementById('despChartLegend');
+  if(legDiv){
+    var legHtml='';
+    labels.forEach(function(lbl,i){
+      var corLeg = usarComps
+        ? compPaleta[i%compPaleta.length].replace('rgba','rgb').replace(',0.85)',')')
+        : (catCores[lbl]||{leg:'#555'}).leg;
+      var pct=total>0?Math.round(valores[i]/total*100):0;
+      legHtml+='<div style="display:flex;align-items:center;gap:6px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:5px 10px;flex:1;min-width:110px">'
+        +'<div style="width:10px;height:10px;border-radius:2px;background:'+corLeg+';flex-shrink:0"></div>'
+        +'<div><div style="font-size:10px;font-weight:700;color:#333">'+lbl+'</div>'
+        +'<div style="font-size:10px;color:#666">R$'+Math.round(valores[i]).toLocaleString('pt-BR')+' ('+pct+'%)</div>'
+        +'</div></div>';
+    });
+    legDiv.innerHTML=legHtml;
+  }
 }
+
 
 // ── Resumo Veículos ───────────────────────────────────────────
 var _vResUnlocked=false;
