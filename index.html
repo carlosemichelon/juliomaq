@@ -2948,7 +2948,7 @@ function saveVei(){
       }
     })
     .withFailureHandler(function(e){ hideLoad(); if(btn) btn.disabled=false; toast('Erro: '+e.message,'err'); })
-    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),local:g('vmLocal'),cnpj:g('vmCNPJ'),assinatura:vmSigData||''});
+    .salvarManutencao({data:g('vmDt'),veiculo:vei,tipo:tp,tecnico:g('vmTec'),hodometro:g('vmHodo'),valor:g('vmVal'),descricao:g('vmDesc'),local:g('vmLocal'),cnpj:g('vmCNPJ'),litros:parseFloat(g('vmLitros'))||0,precoLitro:parseFloat(g('vmPrecoLitro'))||0,assinatura:vmSigData||''});
 }
 var _veiData=[];var _veiFiltroVei='';var _veiFiltroTipo='';
 function setVeiFiltro(campo,val){
@@ -5217,6 +5217,9 @@ function maskCNPJ(inp){
 function previewDespFoto(inp){
   var f=inp.files[0]; if(!f)return;
   _despFotoB64=null; _despFotoMime=null;
+  // Resetar o outro input (evita conflito entre câmera e galeria)
+  if(inp.id==='dFotoCamera'){ var _og=document.getElementById('dFotoInp'); if(_og)_og.value=''; }
+  else { var _oc=document.getElementById('dFotoCamera'); if(_oc)_oc.value=''; }
   var _nm=document.getElementById('dFotoNome');if(_nm)_nm.textContent='Processando...';
   var isHeic=f.type==='image/heic'||f.type==='image/heif'||
     f.name.toLowerCase().endsWith('.heic')||f.name.toLowerCase().endsWith('.heif');
@@ -5243,8 +5246,13 @@ function previewDespFoto(inp){
       var compressed=cv.toDataURL('image/jpeg',0.7);
       _despFotoB64=compressed; _despFotoMime='image/jpeg';
       var _nm3=document.getElementById('dFotoNome');if(_nm3)_nm3.textContent=f.name;
-      var _fi2b=document.getElementById('dFotoImg');if(_fi2b){_fi2b.style.display='';_fi2b.src=compressed;}
-      var _pv2=document.getElementById('dFotoPreview');if(_pv2)_pv2.style.display='block';
+      var _pv2=document.getElementById('dFotoPreview');
+      if(_pv2){
+        _pv2.style.display='block';
+        var _fi2b=document.getElementById('dFotoImg');
+        if(!_fi2b){ _fi2b=document.createElement('img'); _fi2b.id='dFotoImg'; _fi2b.style.cssText='max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--bd)'; _pv2.appendChild(_fi2b); }
+        _fi2b.style.display='block'; _fi2b.src=compressed;
+      }
     };
     img.onerror=function(){
       // Fallback para formatos não suportados pelo canvas
@@ -5261,9 +5269,10 @@ function previewDespFoto(inp){
 function clearDespFoto(){
   _despFotoB64=null; _despFotoMime=null;
   var nm=document.getElementById('dFotoNome');if(nm)nm.textContent='Nenhuma foto';
-  var pv=document.getElementById('dFotoPreview');if(pv)pv.style.display='none';
-  var fi=document.getElementById('dFotoImg');if(fi)fi.src='';
-  var inp=document.getElementById('dFotoInp');if(inp)inp.value='';
+  var pv=document.getElementById('dFotoPreview');if(pv){ pv.style.display='none'; pv.innerHTML='<img id="dFotoImg" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--bd)">'; }
+  // Resetar AMBOS os inputs para permitir re-seleção do mesmo arquivo
+  var inp=document.getElementById('dFotoInp'); if(inp)inp.value='';
+  var cam=document.getElementById('dFotoCamera'); if(cam)cam.value='';
 }
 
 function salvarDesp(){
