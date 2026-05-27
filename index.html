@@ -5634,9 +5634,9 @@ function renderResumoDespesas(){
     html+='<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
     html+='<div class="sh" style="background:#4a148c"><div class="si" style="background:rgba(255,255,255,.1)">📊</div>Gastos por Categoria & Comprador';
     // Seletores no header
-    html+=' <select id="despChartMes" onchange="_renderDespChart()" style="margin-left:6px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optMeses+'</select>';
-    html+=' <select id="despChartCat" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optCats+'</select>';
-    html+=' <select id="despChartComp" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">'+optComps+'</select>';
+    html+=' <select id="despChartMes" onchange="_renderDespChart()" style="margin-left:6px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">'+optMeses+'</select>';
+    html+=' <select id="despChartCat" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">'+optCats+'</select>';
+    html+=' <select id="despChartComp" onchange="_renderDespChart()" style="margin-left:4px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">'+optComps+'</select>';
     html+='</div>';
     html+='<div style="padding:10px 10px 4px;display:flex;justify-content:center"><canvas id="despChart" style="display:block;max-width:500px;width:100%"></canvas></div>';
     html+='<div id="despChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
@@ -6190,12 +6190,12 @@ function carregarResumoVei(){
         // Seletor de mês para o gráfico
         var mesesAbast = {};
         dadosAbast.forEach(function(v){ var m=_osMes(v.data); if(m) mesesAbast[m]=true; });
-        html += ' <select id="vChartMes" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
+        html += ' <select id="vChartMes" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a1a7a;color:#fff">';
         html += '<option value="">Todos os meses</option>';
         Object.keys(mesesAbast).sort().reverse().forEach(function(m){ html += '<option value="'+m+'">'+_osMesLabel(m)+'</option>'; });
         html += '</select>';
         // Seletor de camionete
-        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
+        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:4px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">';
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
