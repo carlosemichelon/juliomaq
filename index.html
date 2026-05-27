@@ -5670,8 +5670,11 @@ function _renderVeiChart(){
   var canvas = document.getElementById('veiChart');
   if(!canvas) return;
   var filtroVei = (document.getElementById('vChartVei')||{}).value||'';
+  var filtroMes = (document.getElementById('vChartMes')||{}).value||'';
   var dados = (window._veiDadosAbast||[]).filter(function(v){
-    return !filtroVei || v.veiculo===filtroVei;
+    var okVei = !filtroVei || v.veiculo===filtroVei;
+    var okMes = !filtroMes || _osMes(v.data)===filtroMes;
+    return okVei && okMes;
   }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
 
   if(dados.length<2){ canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
@@ -5947,7 +5950,15 @@ function carregarResumoVei(){
         // Seletor camionete
         var veicsAbast = {};
         dadosAbast.forEach(function(v){ veicsAbast[v.veiculo]=true; });
-        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
+        // Seletor de mês para o gráfico
+        var mesesAbast = {};
+        dadosAbast.forEach(function(v){ var m=_osMes(v.data); if(m) mesesAbast[m]=true; });
+        html += ' <select id="vChartMes" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
+        html += '<option value="">Todos os meses</option>';
+        Object.keys(mesesAbast).sort().reverse().forEach(function(m){ html += '<option value="'+m+'">'+_osMesLabel(m)+'</option>'; });
+        html += '</select>';
+        // Seletor de camionete
+        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:4px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
