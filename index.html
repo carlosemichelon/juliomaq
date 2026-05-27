@@ -5677,22 +5677,30 @@ function _renderVeiChart(){
     return okVei && okMes;
   }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
 
-  if(dados.length<2){ canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+  var W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 320;
+  var H = 300;
+  canvas.width  = W * 2; canvas.height = H * 2;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  var ctx = canvas.getContext('2d'); ctx.scale(2,2);
 
-  // Dimensionar canvas
-  var W=canvas.offsetWidth||canvas.parentElement.offsetWidth||320;
-  var H=220;
-  canvas.width=W*2; canvas.height=H*2; canvas.style.width=W+'px'; canvas.style.height=H+'px';
-  var ctx=canvas.getContext('2d'); ctx.scale(2,2);
+  if(dados.length < 2){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#aaa'; ctx.font='12px Arial'; ctx.textAlign='center';
+    ctx.fillText('Sem dados suficientes para o filtro selecionado', W/2, H/2);
+    return;
+  }
 
-  var pad={t:20,r:20,b:50,l:70};
-  var w=W-pad.l-pad.r, h=H-pad.t-pad.b;
-
-  // Cores por veículo
-  var cores={'':['#1565c0','#e3f2fd']};
-  var todasVeics=[]; dados.forEach(function(v){ if(todasVeics.indexOf(v.veiculo)<0) todasVeics.push(v.veiculo); });
-  var paleta=[['#1565c0','#e3f2fd'],['#bf360c','#fbe9e7'],['#1a6b2a','#e8f5e9'],['#6a1b9a','#f3e5f5']];
-  todasVeics.forEach(function(v,i){ cores[v]=paleta[i%paleta.length]; });
+  // Paleta por camionete
+  var todasVeics = [];
+  dados.forEach(function(v){ if(todasVeics.indexOf(v.veiculo)<0) todasVeics.push(v.veiculo); });
+  var paleta=[
+    {linha:'#1565c0',barra:'rgba(21,101,192,0.35)',ponto:'#1565c0'},
+    {linha:'#bf360c',barra:'rgba(191,54,12,0.35)',ponto:'#bf360c'},
+    {linha:'#1a6b2a',barra:'rgba(26,107,42,0.35)',ponto:'#1a6b2a'},
+    {linha:'#6a1b9a',barra:'rgba(106,27,154,0.35)',ponto:'#6a1b9a'}
+  ];
+  var coresVei = {};
+  todasVeics.forEach(function(v,i){ coresVei[v]=paleta[i%paleta.length]; });
 
   var hodos = dados.map(function(v){ return parseFloat(v.hodometro)||0; });
   var vals  = dados.map(function(v){ return parseFloat(v.valor)||0; });
@@ -5701,97 +5709,174 @@ function _renderVeiChart(){
     var m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
     return m ? m[1]+'/'+m[2] : s.substring(0,5);
   });
+  var n = dados.length;
 
-  var minH=Math.min.apply(null,hodos), maxH=Math.max.apply(null,hodos);
-  var minV=0, maxV=Math.max.apply(null,vals)*1.1||100;
-  if(maxH===minH) maxH=minH+1;
+  // Margens: esquerda para hodo, direita para valor, base para datas
+  var pad = {t:12, r:60, b:56, l:72};
+  var w = W - pad.l - pad.r;
+  var h = H - pad.t - pad.b;
 
-  ctx.clearRect(0,0,W,H);
+  var minH = Math.min.apply(null,hodos)*0.995;
+  var maxH = Math.max.apply(null,hodos)*1.005;
+  var maxV = Math.max.apply(null,vals)*1.15 || 100;
+  if(maxH===minH){ minH-=1; maxH+=1; }
+
+  // Helpers de coordenadas
+  var xPos = function(i){ return n===1 ? pad.l+w/2 : pad.l + i*(w/(n-1)); };
+  var yHodo = function(v){ return pad.t + h - ((v-minH)/(maxH-minH))*h; };
+  var yVal  = function(v){ return pad.t + h - (v/maxV)*h; };
+
+  // Fundo
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
 
-  var n=dados.length;
-  var barW=Math.max(6,Math.min(24,(w/n)*0.5));
-  var x0=function(i){ return pad.l+i*(w/(n-1)); };
-  var yH=function(v){ return pad.t+h-(((v-minH)/(maxH-minH))*h); };
-  var yV=function(v){ return pad.t+h-((v/maxV)*h); };
-
-  // Grid linhas
+  // Grid horizontal (5 linhas)
   ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
-  for(var g=0;g<=4;g++){
-    var yy=pad.t+(h/4)*g;
+  for(var g=0;g<=5;g++){
+    var yy = pad.t + (h/5)*g;
     ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+w,yy); ctx.stroke();
   }
+  // Grid vertical por ponto
+  ctx.strokeStyle='#f7f7f7'; ctx.lineWidth=0.5;
+  for(var i=0;i<n;i++){
+    ctx.beginPath(); ctx.moveTo(xPos(i),pad.t); ctx.lineTo(xPos(i),pad.t+h); ctx.stroke();
+  }
 
-  // Barras de valor (agrupadas por camionete se todas)
-  var veiGrupos={};
-  dados.forEach(function(d,i){ var v=d.veiculo; (veiGrupos[v]=veiGrupos[v]||[]).push(i); });
-  Object.keys(veiGrupos).forEach(function(vei,vi){
-    var cor=cores[vei]||paleta[0];
-    ctx.fillStyle=cor[0]+'99'; // semi-transparente
-    veiGrupos[vei].forEach(function(i){
-      var bh=pad.t+h-yV(vals[i]);
-      ctx.fillRect(x0(i)-barW/2, yV(vals[i]), barW, bh);
-    });
+  // Barras de valor — agrupadas por camionete
+  var barW = Math.max(8, Math.min(28, (w/Math.max(n,1))*0.55));
+  dados.forEach(function(d,i){
+    var cor = coresVei[d.veiculo]||paleta[0];
+    var bh  = (vals[i]/maxV)*h;
+    var by  = pad.t+h-bh;
+    ctx.fillStyle = cor.barra;
+    ctx.beginPath();
+    var radius=3;
+    ctx.moveTo(xPos(i)-barW/2+radius, by);
+    ctx.lineTo(xPos(i)+barW/2-radius, by);
+    ctx.quadraticCurveTo(xPos(i)+barW/2, by, xPos(i)+barW/2, by+radius);
+    ctx.lineTo(xPos(i)+barW/2, pad.t+h);
+    ctx.lineTo(xPos(i)-barW/2, pad.t+h);
+    ctx.lineTo(xPos(i)-barW/2, by+radius);
+    ctx.quadraticCurveTo(xPos(i)-barW/2, by, xPos(i)-barW/2+radius, by);
+    ctx.closePath(); ctx.fill();
+    // Valor em cima da barra
+    if(vals[i]>0){
+      ctx.fillStyle=cor.linha; ctx.font='bold 8px Arial'; ctx.textAlign='center';
+      ctx.fillText('R$'+Math.round(vals[i]).toLocaleString('pt-BR'), xPos(i), by-4);
+    }
   });
 
-  // Linhas de hodômetro por veículo
-  Object.keys(veiGrupos).forEach(function(vei,vi){
-    var cor=(cores[vei]||paleta[0])[0];
-    var idxs=veiGrupos[vei];
-    ctx.strokeStyle=cor; ctx.lineWidth=2.5; ctx.lineJoin='round';
-    ctx.beginPath();
+  // Linhas de hodômetro por camionete
+  todasVeics.forEach(function(vei){
+    var idxs = [];
+    dados.forEach(function(d,i){ if(d.veiculo===vei) idxs.push(i); });
+    if(idxs.length===0) return;
+    var cor = coresVei[vei]||paleta[0];
+    // Linha
+    ctx.beginPath(); ctx.strokeStyle=cor.linha; ctx.lineWidth=2.5; ctx.lineJoin='round';
     idxs.forEach(function(i,j){
-      if(j===0) ctx.moveTo(x0(i), yH(hodos[i]));
-      else ctx.lineTo(x0(i), yH(hodos[i]));
+      if(j===0) ctx.moveTo(xPos(i), yHodo(hodos[i]));
+      else      ctx.lineTo(xPos(i), yHodo(hodos[i]));
     });
     ctx.stroke();
     // Pontos
     idxs.forEach(function(i){
-      ctx.beginPath(); ctx.arc(x0(i),yH(hodos[i]),4,0,2*Math.PI);
+      ctx.beginPath(); ctx.arc(xPos(i), yHodo(hodos[i]), 5, 0, 2*Math.PI);
       ctx.fillStyle='#fff'; ctx.fill();
-      ctx.strokeStyle=cor; ctx.lineWidth=2; ctx.stroke();
+      ctx.strokeStyle=cor.ponto; ctx.lineWidth=2.5; ctx.stroke();
+      // Hodômetro acima do ponto
+      ctx.fillStyle=cor.linha; ctx.font='bold 8px Arial'; ctx.textAlign='center';
+      ctx.fillText(Math.round(hodos[i]).toLocaleString('pt-BR'), xPos(i), yHodo(hodos[i])-9);
     });
   });
 
-  // Eixo X — datas
-  ctx.fillStyle='#666'; ctx.font='9px Arial'; ctx.textAlign='center';
-  dados.forEach(function(d,i){
-    ctx.fillText(datas[i], x0(i), pad.t+h+14);
-  });
-  // Rotacionar se muitos pontos
-  if(n>6){
-    ctx.save(); ctx.fillStyle='#999'; ctx.font='8px Arial';
-    dados.forEach(function(d,i){
-      ctx.save(); ctx.translate(x0(i), pad.t+h+12); ctx.rotate(-Math.PI/4);
-      ctx.fillText(datas[i],0,0); ctx.restore();
-    });
+  // Eixo Y esquerdo — hodômetro
+  ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='right';
+  for(var g=0;g<=5;g++){
+    var vv = minH + ((maxH-minH)/5)*g;
+    var yy = pad.t+h - ((vv-minH)/(maxH-minH))*h;
+    ctx.fillText(Math.round(vv).toLocaleString('pt-BR'), pad.l-6, yy+3);
+  }
+  // Label Y esquerdo
+  ctx.save();
+  ctx.translate(11, pad.t+h/2); ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#1565c0'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
+  ctx.fillText('Hodômetro (km)',0,0);
+  ctx.restore();
+
+  // Eixo Y direito — valor
+  ctx.fillStyle='#666'; ctx.font='9px Arial'; ctx.textAlign='left';
+  for(var g=0;g<=5;g++){
+    var vv2 = (maxV/5)*g;
+    var yy2 = pad.t+h - (vv2/maxV)*h;
+    ctx.fillText('R$'+Math.round(vv2).toLocaleString('pt-BR'), W-pad.r+6, yy2+3);
+  }
+  // Label Y direito
+  ctx.save();
+  ctx.translate(W-10, pad.t+h/2); ctx.rotate(Math.PI/2);
+  ctx.fillStyle='#555'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
+  ctx.fillText('Valor (R$)',0,0);
+  ctx.restore();
+
+  // Eixo X — datas (mostrar todas, resumidas DD/MM)
+  ctx.fillStyle='#555'; ctx.font='9px Arial'; ctx.textAlign='center';
+  // Se pontos muito próximos, mostrar em diagonal
+  var step = n<=10 ? 1 : Math.ceil(n/10);
+  for(var i=0;i<n;i+=step){
+    ctx.save();
+    ctx.translate(xPos(i), pad.t+h+4);
+    if(n>8){ ctx.rotate(-Math.PI/5); ctx.textAlign='right'; }
+    ctx.fillText(datas[i],0,0);
     ctx.restore();
   }
 
-  // Eixo Y esquerdo (hodômetro)
-  ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='right';
-  for(var g=0;g<=4;g++){
-    var vv=minH+((maxH-minH)/4)*g;
-    ctx.fillText(Math.round(vv).toLocaleString('pt-BR'), pad.l-5, pad.t+h-((vv-minH)/(maxH-minH))*h+3);
-  }
-  // Label Y esquerdo
-  ctx.save(); ctx.translate(12, pad.t+h/2); ctx.rotate(-Math.PI/2);
-  ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='center';
-  ctx.fillText('Hodômetro (km)', 0, 0); ctx.restore();
+  // Borda do gráfico
+  ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
+  ctx.strokeRect(pad.l, pad.t, w, h);
 
-  // Legenda
-  var legY=H-12;
-  var legX=pad.l;
-  Object.keys(veiGrupos).forEach(function(vei,vi){
-    var cor=(cores[vei]||paleta[0])[0];
-    ctx.fillStyle=cor; ctx.fillRect(legX,legY-8,12,8);
-    ctx.fillStyle='#374151'; ctx.font='9px Arial'; ctx.textAlign='left';
-    ctx.fillText(vei||'Todas',legX+15,legY);
-    legX+=ctx.measureText(vei||'Todas').width+30;
+  // ── Legenda no canto superior direito do canvas ──────────────
+  var legPad=8, legItemH=16, legW=110;
+  var nItems = todasVeics.length+1;
+  var legH   = legPad*2 + nItems*legItemH;
+  var legX   = pad.l+w - legW - 4;
+  var legY   = pad.t + 4;
+
+  // Fundo da legenda
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  ctx.strokeStyle='#ddd'; ctx.lineWidth=1;
+  _roundRect(ctx, legX, legY, legW, legH, 6);
+  ctx.fill(); ctx.stroke();
+
+  // Itens da legenda
+  todasVeics.forEach(function(vei,i){
+    var cor = coresVei[vei]||paleta[i];
+    var iy  = legY + legPad + i*legItemH + legItemH/2;
+    // Ícone linha
+    ctx.beginPath(); ctx.strokeStyle=cor.linha; ctx.lineWidth=2;
+    ctx.moveTo(legX+legPad, iy); ctx.lineTo(legX+legPad+18, iy); ctx.stroke();
+    ctx.beginPath(); ctx.arc(legX+legPad+9, iy, 3, 0, 2*Math.PI);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle=cor.linha; ctx.lineWidth=2; ctx.stroke();
+    // Texto
+    ctx.fillStyle='#333'; ctx.font='9px Arial'; ctx.textAlign='left';
+    var label = vei.length>12 ? vei.substring(0,12)+'…' : vei;
+    ctx.fillText(label, legX+legPad+24, iy+3);
   });
-  // Legenda barras
-  ctx.fillStyle='#1565c090'; ctx.fillRect(legX,legY-8,12,8);
-  ctx.fillStyle='#374151'; ctx.fillText('Valor (R$)',legX+15,legY);
+  // Barra (valor)
+  var iy2 = legY + legPad + todasVeics.length*legItemH + legItemH/2;
+  ctx.fillStyle='rgba(100,100,100,0.4)';
+  ctx.fillRect(legX+legPad, iy2-5, 18, 10);
+  ctx.fillStyle='#555'; ctx.font='9px Arial'; ctx.textAlign='left';
+  ctx.fillText('Valor (R$)', legX+legPad+24, iy2+3);
+}
+
+function _roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
 }
 
 function toggleResumoVei(){
@@ -5962,7 +6047,7 @@ function carregarResumoVei(){
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
-        html += '<div style="padding:10px"><canvas id="veiChart" style="width:100%;height:220px;max-height:220px"></canvas></div>';
+        html += '<div style="padding:10px"><canvas id="veiChart" style="width:100%;height:300px;display:block"></canvas></div>';
         html += '</div>';
       }
 
