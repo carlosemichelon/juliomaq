@@ -5666,6 +5666,131 @@ function renderResumoDespesas(){
 
 // ── Resumo Veículos ───────────────────────────────────────────
 var _vResUnlocked=false;
+function _renderVeiChart(){
+  var canvas = document.getElementById('veiChart');
+  if(!canvas) return;
+  var filtroVei = (document.getElementById('vChartVei')||{}).value||'';
+  var dados = (window._veiDadosAbast||[]).filter(function(v){
+    return !filtroVei || v.veiculo===filtroVei;
+  }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
+
+  if(dados.length<2){ canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+
+  // Dimensionar canvas
+  var W=canvas.offsetWidth||canvas.parentElement.offsetWidth||320;
+  var H=220;
+  canvas.width=W*2; canvas.height=H*2; canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d'); ctx.scale(2,2);
+
+  var pad={t:20,r:20,b:50,l:70};
+  var w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+
+  // Cores por veículo
+  var cores={'':['#1565c0','#e3f2fd']};
+  var todasVeics=[]; dados.forEach(function(v){ if(todasVeics.indexOf(v.veiculo)<0) todasVeics.push(v.veiculo); });
+  var paleta=[['#1565c0','#e3f2fd'],['#bf360c','#fbe9e7'],['#1a6b2a','#e8f5e9'],['#6a1b9a','#f3e5f5']];
+  todasVeics.forEach(function(v,i){ cores[v]=paleta[i%paleta.length]; });
+
+  var hodos = dados.map(function(v){ return parseFloat(v.hodometro)||0; });
+  var vals  = dados.map(function(v){ return parseFloat(v.valor)||0; });
+  var datas = dados.map(function(v){
+    var s=String(v.data||'');
+    var m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? m[1]+'/'+m[2] : s.substring(0,5);
+  });
+
+  var minH=Math.min.apply(null,hodos), maxH=Math.max.apply(null,hodos);
+  var minV=0, maxV=Math.max.apply(null,vals)*1.1||100;
+  if(maxH===minH) maxH=minH+1;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+
+  var n=dados.length;
+  var barW=Math.max(6,Math.min(24,(w/n)*0.5));
+  var x0=function(i){ return pad.l+i*(w/(n-1)); };
+  var yH=function(v){ return pad.t+h-(((v-minH)/(maxH-minH))*h); };
+  var yV=function(v){ return pad.t+h-((v/maxV)*h); };
+
+  // Grid linhas
+  ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
+  for(var g=0;g<=4;g++){
+    var yy=pad.t+(h/4)*g;
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+w,yy); ctx.stroke();
+  }
+
+  // Barras de valor (agrupadas por camionete se todas)
+  var veiGrupos={};
+  dados.forEach(function(d,i){ var v=d.veiculo; (veiGrupos[v]=veiGrupos[v]||[]).push(i); });
+  Object.keys(veiGrupos).forEach(function(vei,vi){
+    var cor=cores[vei]||paleta[0];
+    ctx.fillStyle=cor[0]+'99'; // semi-transparente
+    veiGrupos[vei].forEach(function(i){
+      var bh=pad.t+h-yV(vals[i]);
+      ctx.fillRect(x0(i)-barW/2, yV(vals[i]), barW, bh);
+    });
+  });
+
+  // Linhas de hodômetro por veículo
+  Object.keys(veiGrupos).forEach(function(vei,vi){
+    var cor=(cores[vei]||paleta[0])[0];
+    var idxs=veiGrupos[vei];
+    ctx.strokeStyle=cor; ctx.lineWidth=2.5; ctx.lineJoin='round';
+    ctx.beginPath();
+    idxs.forEach(function(i,j){
+      if(j===0) ctx.moveTo(x0(i), yH(hodos[i]));
+      else ctx.lineTo(x0(i), yH(hodos[i]));
+    });
+    ctx.stroke();
+    // Pontos
+    idxs.forEach(function(i){
+      ctx.beginPath(); ctx.arc(x0(i),yH(hodos[i]),4,0,2*Math.PI);
+      ctx.fillStyle='#fff'; ctx.fill();
+      ctx.strokeStyle=cor; ctx.lineWidth=2; ctx.stroke();
+    });
+  });
+
+  // Eixo X — datas
+  ctx.fillStyle='#666'; ctx.font='9px Arial'; ctx.textAlign='center';
+  dados.forEach(function(d,i){
+    ctx.fillText(datas[i], x0(i), pad.t+h+14);
+  });
+  // Rotacionar se muitos pontos
+  if(n>6){
+    ctx.save(); ctx.fillStyle='#999'; ctx.font='8px Arial';
+    dados.forEach(function(d,i){
+      ctx.save(); ctx.translate(x0(i), pad.t+h+12); ctx.rotate(-Math.PI/4);
+      ctx.fillText(datas[i],0,0); ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  // Eixo Y esquerdo (hodômetro)
+  ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='right';
+  for(var g=0;g<=4;g++){
+    var vv=minH+((maxH-minH)/4)*g;
+    ctx.fillText(Math.round(vv).toLocaleString('pt-BR'), pad.l-5, pad.t+h-((vv-minH)/(maxH-minH))*h+3);
+  }
+  // Label Y esquerdo
+  ctx.save(); ctx.translate(12, pad.t+h/2); ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='center';
+  ctx.fillText('Hodômetro (km)', 0, 0); ctx.restore();
+
+  // Legenda
+  var legY=H-12;
+  var legX=pad.l;
+  Object.keys(veiGrupos).forEach(function(vei,vi){
+    var cor=(cores[vei]||paleta[0])[0];
+    ctx.fillStyle=cor; ctx.fillRect(legX,legY-8,12,8);
+    ctx.fillStyle='#374151'; ctx.font='9px Arial'; ctx.textAlign='left';
+    ctx.fillText(vei||'Todas',legX+15,legY);
+    legX+=ctx.measureText(vei||'Todas').width+30;
+  });
+  // Legenda barras
+  ctx.fillStyle='#1565c090'; ctx.fillRect(legX,legY-8,12,8);
+  ctx.fillStyle='#374151'; ctx.fillText('Valor (R$)',legX+15,legY);
+}
+
 function toggleResumoVei(){
   if(!_vResUnlocked){
     _pedirSenhaCCL(function(){
@@ -5811,7 +5936,32 @@ function carregarResumoVei(){
         html+='</div>';
       });
 
+      // ── Gráfico Hodômetro + Valor por data (abastecimentos) ────
+      // Filtrar apenas abastecimentos com hodômetro > 0
+      var dadosAbast = filtered.filter(function(v){ return v.tipo==='Abastecimento' && parseFloat(v.hodometro)>0; })
+        .sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
+
+      if(dadosAbast.length>=2){
+        html += '<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
+        html += '<div class="sh" style="background:#1a4a7a"><div class="si" style="background:rgba(255,255,255,.1)">📈</div>Hodômetro & Valores — Abastecimentos';
+        // Seletor camionete
+        var veicsAbast = {};
+        dadosAbast.forEach(function(v){ veicsAbast[v.veiculo]=true; });
+        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:none;border-radius:6px;padding:2px 6px;font-family:inherit;background:rgba(255,255,255,.2);color:#fff">';
+        html += '<option value="">Todas</option>';
+        Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
+        html += '</select></div>';
+        html += '<div style="padding:10px"><canvas id="veiChart" style="width:100%;height:220px;max-height:220px"></canvas></div>';
+        html += '</div>';
+      }
+
       document.getElementById('vResContent').innerHTML=html;
+
+      // Desenhar gráfico após DOM atualizado
+      if(dadosAbast.length>=2){
+        window._veiDadosAbast = dadosAbast;
+        setTimeout(_renderVeiChart, 50);
+      }
     })
     .withFailureHandler(function(){document.getElementById('vResContent').innerHTML='<div class="empty">Erro ao carregar</div>';})
     .getManutencoes();
