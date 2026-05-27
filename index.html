@@ -5790,48 +5790,50 @@ function _renderDespChart(){
 // ── Resumo Veículos ───────────────────────────────────────────
 var _vResUnlocked=false;
 function _renderVeiChart(){
-  var canvas = document.getElementById('veiChart');
-  if(!canvas) return;
+  var wrap = document.getElementById('veiChart');
+  if(!wrap) return;
 
   var filtroVei = (document.getElementById('vChartVei')||{}).value||'';
   var filtroMes = (document.getElementById('vChartMes')||{}).value||'';
 
-  // Filtrar dados
   var todos = (window._veiDadosAbast||[]).filter(function(v){
     if(filtroMes && _osMes(v.data)!==filtroMes) return false;
     if(filtroVei && v.veiculo!==filtroVei) return false;
     return true;
   }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
 
-  // Canvas
-  var W = Math.max(canvas.offsetWidth||320, canvas.parentElement.offsetWidth||320);
-  var H = 300;
-  canvas.width=W*2; canvas.height=H*2;
-  canvas.style.width=W+'px'; canvas.style.height=H+'px';
-  var ctx=canvas.getContext('2d'); ctx.scale(2,2);
+  // Canvas ocupa largura total disponível, altura proporcional
+  var dispW = wrap.offsetWidth||wrap.parentElement.offsetWidth||320;
+  var W = Math.min(dispW, 480); // máximo 480px — proporcional
+  var H = Math.round(W * 0.60); // 60% da largura — proporção fixa
+  H = Math.max(H, 200); H = Math.min(H, 360);
+
+  wrap.width  = W*2; wrap.height = H*2;
+  wrap.style.width = W+'px'; wrap.style.height = H+'px';
+  var ctx = wrap.getContext('2d'); ctx.scale(2,2);
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
 
   if(todos.length===0){
     ctx.fillStyle='#aaa'; ctx.font='12px Arial'; ctx.textAlign='center';
     ctx.fillText('Sem dados para o filtro selecionado',W/2,H/2);
+    // Limpar legenda
+    var leg=document.getElementById('veiChartLegend');
+    if(leg) leg.innerHTML='';
     return;
   }
 
-  // Paleta por veículo
   var veicsUnicos=[];
   todos.forEach(function(v){ if(veicsUnicos.indexOf(v.veiculo)<0) veicsUnicos.push(v.veiculo); });
   var paleta=[
-    {linha:'#1565c0',barra:'rgba(21,101,192,0.75)',texto:'#1565c0'},
-    {linha:'#bf360c',barra:'rgba(191,54,12,0.75)',texto:'#bf360c'},
-    {linha:'#1a6b2a',barra:'rgba(26,107,42,0.75)',texto:'#1a6b2a'},
-    {linha:'#6a1b9a',barra:'rgba(106,27,154,0.75)',texto:'#6a1b9a'}
+    {linha:'#1565c0',barra:'rgba(21,101,192,0.8)',texto:'#1565c0'},
+    {linha:'#bf360c',barra:'rgba(191,54,12,0.8)',texto:'#bf360c'},
+    {linha:'#1a6b2a',barra:'rgba(26,107,42,0.8)',texto:'#1a6b2a'},
+    {linha:'#6a1b9a',barra:'rgba(106,27,154,0.8)',texto:'#6a1b9a'}
   ];
   var coresVei={};
   veicsUnicos.forEach(function(v,i){ coresVei[v]=paleta[i%paleta.length]; });
 
-  var modoIndividual = !!filtroVei; // camionete específica = linha hodômetro + barras valor
-
-  // Preparar valores
+  var modoIndividual = !!filtroVei;
   var datas = todos.map(function(v){
     var s=String(v.data||'');
     var m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
@@ -5839,20 +5841,18 @@ function _renderVeiChart(){
   });
   var vals  = todos.map(function(v){ return parseFloat(v.valor)||0; });
   var hodos = todos.map(function(v){ return parseFloat(v.hodometro)||0; });
-  var n = todos.length;
+  var n=todos.length;
 
-  // Margens: modo individual tem eixo Y direito (hodômetro)
-  var pad = {t:28, r: modoIndividual?58:18, b:60, l:58};
+  var pad={t:24, r:modoIndividual?58:14, b:48, l:56};
   var w=W-pad.l-pad.r, h=H-pad.t-pad.b;
 
-  // Escalas
-  var maxV = Math.max.apply(null,vals)*1.18||100;
+  var maxV=Math.max.apply(null,vals)*1.18||100;
   var minH=Math.min.apply(null,hodos)*0.995, maxH=Math.max.apply(null,hodos)*1.005;
   if(maxH===minH){minH-=1;maxH+=1;}
 
-  var xPos = function(i){ return n===1?pad.l+w/2:pad.l+i*(w/(n-1)); };
-  var yVal  = function(v){ return pad.t+h-(v/maxV)*h; };
-  var yHodo = function(v){ return pad.t+h-((v-minH)/(maxH-minH))*h; };
+  var xPos=function(i){ return n===1?pad.l+w/2:pad.l+i*(w/(n-1)); };
+  var yVal =function(v){ return pad.t+h-(v/maxV)*h; };
+  var yHodo=function(v){ return pad.t+h-((v-minH)/(maxH-minH))*h; };
 
   // Grid
   ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
@@ -5861,16 +5861,14 @@ function _renderVeiChart(){
     ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+w,yy); ctx.stroke();
   }
 
-  // Barras de valor (por cor de veículo)
-  var barW = Math.max(8, Math.min(32, (w/Math.max(n,1))*0.6));
+  // Barras de valor
+  var barW=Math.max(8,Math.min(36,(w/Math.max(n,1))*0.6));
   todos.forEach(function(d,i){
     var cor=coresVei[d.veiculo]||paleta[0];
-    var bh=(vals[i]/maxV)*h;
-    if(bh<1) return;
+    var bh=(vals[i]/maxV)*h; if(bh<1)return;
     var by=pad.t+h-bh;
-    // Barra arredondada
-    ctx.fillStyle=cor.barra;
     var r2=Math.min(3,barW/2);
+    ctx.fillStyle=cor.barra;
     ctx.beginPath();
     ctx.moveTo(xPos(i)-barW/2+r2,by);
     ctx.lineTo(xPos(i)+barW/2-r2,by); ctx.quadraticCurveTo(xPos(i)+barW/2,by,xPos(i)+barW/2,by+r2);
@@ -5878,57 +5876,56 @@ function _renderVeiChart(){
     ctx.lineTo(xPos(i)-barW/2,by+r2); ctx.quadraticCurveTo(xPos(i)-barW/2,by,xPos(i)-barW/2+r2,by);
     ctx.closePath(); ctx.fill();
     // Valor acima
-    ctx.fillStyle=cor.texto; ctx.font='bold 8px Arial'; ctx.textAlign='center';
-    ctx.fillText('R$'+Math.round(vals[i]).toLocaleString('pt-BR'), xPos(i), by-4);
+    ctx.fillStyle=cor.texto; ctx.font='bold '+(W<380?'7':'8')+'px Arial'; ctx.textAlign='center';
+    ctx.fillText('R$'+Math.round(vals[i]).toLocaleString('pt-BR'),xPos(i),by-4);
   });
 
-  // Linha hodômetro — só em modo individual
-  if(modoIndividual && hodos.some(function(h){return h>0;})){
+  // Linha hodômetro — modo individual
+  if(modoIndividual && hodos.some(function(hh){return hh>0;})){
     ctx.beginPath(); ctx.strokeStyle='#1565c0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
     var started=false;
     todos.forEach(function(d,i){
-      if(hodos[i]<=0) return;
+      if(hodos[i]<=0)return;
       if(!started){ctx.moveTo(xPos(i),yHodo(hodos[i]));started=true;}
       else ctx.lineTo(xPos(i),yHodo(hodos[i]));
     });
     ctx.stroke();
     todos.forEach(function(d,i){
-      if(hodos[i]<=0) return;
+      if(hodos[i]<=0)return;
       ctx.beginPath(); ctx.arc(xPos(i),yHodo(hodos[i]),4,0,2*Math.PI);
       ctx.fillStyle='#fff'; ctx.fill();
       ctx.strokeStyle='#1565c0'; ctx.lineWidth=2; ctx.stroke();
       ctx.fillStyle='#1565c0'; ctx.font='8px Arial'; ctx.textAlign='center';
-      ctx.fillText(Math.round(hodos[i]).toLocaleString('pt-BR'), xPos(i), yHodo(hodos[i])-8);
+      ctx.fillText(Math.round(hodos[i]).toLocaleString('pt-BR'),xPos(i),yHodo(hodos[i])-8);
     });
-    // Eixo Y direito (hodômetro)
+    // Eixo Y direito
     ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='left';
     for(var g=0;g<=4;g++){
       var vv=minH+((maxH-minH)/4)*g;
-      ctx.fillText(Math.round(vv).toLocaleString('pt-BR'), W-pad.r+4, pad.t+h-((vv-minH)/(maxH-minH))*h+3);
+      ctx.fillText(Math.round(vv).toLocaleString('pt-BR'),W-pad.r+4,pad.t+h-((vv-minH)/(maxH-minH))*h+3);
     }
     ctx.save(); ctx.translate(W-10,pad.t+h/2); ctx.rotate(Math.PI/2);
     ctx.fillStyle='#1565c0'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
     ctx.fillText('Hodômetro (km)',0,0); ctx.restore();
   }
 
-  // Eixo Y esquerdo (valor)
+  // Eixo Y esquerdo
   ctx.fillStyle='#555'; ctx.font='9px Arial'; ctx.textAlign='right';
   for(var g=0;g<=5;g++){
     var vv2=(maxV/5)*g;
-    var yy2=pad.t+h-(vv2/maxV)*h;
-    ctx.fillText('R$'+Math.round(vv2).toLocaleString('pt-BR'), pad.l-5, yy2+3);
+    ctx.fillText('R$'+Math.round(vv2).toLocaleString('pt-BR'),pad.l-4,pad.t+h-(vv2/maxV)*h+3);
   }
   ctx.save(); ctx.translate(12,pad.t+h/2); ctx.rotate(-Math.PI/2);
   ctx.fillStyle='#555'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
   ctx.fillText('Valor (R$)',0,0); ctx.restore();
 
-  // Eixo X — datas (diagonal se muitos)
-  ctx.fillStyle='#555'; ctx.font='9px Arial';
+  // Eixo X — datas
+  ctx.fillStyle='#555'; ctx.font=(W<380?'8':'9')+'px Arial';
   var step=Math.ceil(n/12);
   for(var i=0;i<n;i+=step){
     ctx.save(); ctx.translate(xPos(i),pad.t+h+6);
-    if(n>8){ctx.rotate(-Math.PI/4); ctx.textAlign='right';}
-    else   {ctx.textAlign='center';}
+    if(n>8){ctx.rotate(-Math.PI/4);ctx.textAlign='right';}
+    else{ctx.textAlign='center';}
     ctx.fillText(datas[i],0,0); ctx.restore();
   }
 
@@ -5936,32 +5933,31 @@ function _renderVeiChart(){
   ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
   ctx.strokeRect(pad.l,pad.t,w,h);
 
-  // Legenda — canto superior esquerdo dentro do canvas
-  var legX=pad.l+8, legY=pad.t+6;
-  var legItems=[];
-  veicsUnicos.forEach(function(v){ legItems.push({label:v,cor:coresVei[v]||paleta[0],tipo:'barra'}); });
-  if(modoIndividual && hodos.some(function(h){return h>0;})) legItems.push({label:'Hodômetro',cor:{barra:'#1565c0',linha:'#1565c0'},tipo:'linha'});
-
-  var legW=Math.max.apply(null,legItems.map(function(l){return l.label.length}))*6+36;
-  var legH=legItems.length*16+10;
-  ctx.fillStyle='rgba(255,255,255,0.92)';
-  _roundRect(ctx,legX,legY,legW,legH,5); ctx.fill();
-  ctx.strokeStyle='#ddd'; ctx.lineWidth=1; _roundRect(ctx,legX,legY,legW,legH,5); ctx.stroke();
-
-  legItems.forEach(function(item,i){
-    var iy=legY+8+i*16+7;
-    if(item.tipo==='barra'){
-      ctx.fillStyle=item.cor.barra; ctx.fillRect(legX+8,iy-5,14,10);
-    } else {
-      ctx.beginPath(); ctx.strokeStyle=item.cor.linha; ctx.lineWidth=2;
-      ctx.moveTo(legX+8,iy); ctx.lineTo(legX+22,iy); ctx.stroke();
-      ctx.beginPath(); ctx.arc(legX+15,iy,3,0,2*Math.PI);
-      ctx.fillStyle='#fff'; ctx.fill();
-      ctx.strokeStyle=item.cor.linha; ctx.lineWidth=2; ctx.stroke();
+  // ── Legenda abaixo em grid via DOM ─────────────────────────
+  var legDiv = document.getElementById('veiChartLegend');
+  if(legDiv){
+    var legHtml='';
+    // Por veículo
+    veicsUnicos.forEach(function(vei){
+      var cor = coresVei[vei]||paleta[0];
+      var totalVei = todos.filter(function(d){return d.veiculo===vei;})
+                         .reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
+      var countVei = todos.filter(function(d){return d.veiculo===vei;}).length;
+      legHtml += '<div style="display:flex;align-items:center;gap:6px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:6px 10px;min-width:120px">'
+        +'<div style="width:12px;height:12px;border-radius:3px;background:'+cor.barra+';flex-shrink:0"></div>'
+        +'<div>'
+        +'<div style="font-size:11px;font-weight:700;color:#333">'+vei+'</div>'
+        +'<div style="font-size:10px;color:#666">R$'+Math.round(totalVei).toLocaleString('pt-BR')+' · '+countVei+' abast.</div>'
+        +'</div></div>';
+    });
+    if(modoIndividual && hodos.some(function(hh){return hh>0;})){
+      legHtml += '<div style="display:flex;align-items:center;gap:6px;background:#e3f0ff;border:1px solid #90caf9;border-radius:8px;padding:6px 10px;min-width:120px">'
+        +'<div style="width:12px;height:3px;background:#1565c0;flex-shrink:0"></div>'
+        +'<div style="font-size:11px;font-weight:700;color:#1565c0">Hodômetro (km)</div>'
+        +'</div>';
     }
-    ctx.fillStyle='#333'; ctx.font='9px Arial'; ctx.textAlign='left';
-    ctx.fillText(item.label,legX+26,iy+3);
-  });
+    legDiv.innerHTML = legHtml;
+  }
 }
 
 function _roundRect(ctx,x,y,w,h,r){
@@ -6142,7 +6138,8 @@ function carregarResumoVei(){
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
-        html += '<div style="padding:10px"><canvas id="veiChart" style="width:100%;height:300px;display:block"></canvas></div>';
+        html += '<div style="padding:10px 10px 4px;display:flex;justify-content:center"><canvas id="veiChart" style="display:block;max-width:480px;width:100%"></canvas></div>'
+        + '<div id="veiChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
         html += '</div>';
       }
 
