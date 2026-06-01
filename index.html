@@ -5864,8 +5864,17 @@ function _renderVeiChart(){
   }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
 
   // Canvas — largura total disponível, altura proporcional
-  var W = wrap.offsetWidth||wrap.parentElement.offsetWidth||320;
-  var H = Math.round(W * 0.60); H=Math.max(H,200); H=Math.min(H,380);
+  // Usar largura da seção pai (card) para não ficar limitado pelo offsetWidth do canvas
+  var _parent = wrap.parentElement || wrap;
+  var W = Math.max(
+    wrap.offsetWidth||0,
+    _parent.offsetWidth||0,
+    (_parent.parentElement||{}).offsetWidth||0,
+    280
+  );
+  // Subtrair padding do container (aprox 8px cada lado)
+  W = Math.max(W - 16, 260);
+  var H = Math.round(W * 0.65); H=Math.max(H,240); H=Math.min(H,420);
   wrap.width=W*2; wrap.height=H*2;
   wrap.style.width=W+'px'; wrap.style.height=H+'px';
   var ctx=wrap.getContext('2d'); ctx.scale(2,2);
@@ -6160,7 +6169,7 @@ function carregarResumoVei(){
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
-        html += '<div style="padding:10px 10px 4px"><canvas id="veiChart" style="display:block;width:100%"></canvas></div>'
+        html += '<div style="padding:8px 4px 4px"><canvas id="veiChart" style="display:block;width:100%;min-height:260px"></canvas></div>'
         + '<div id="veiChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
         html += '</div>';
       }
