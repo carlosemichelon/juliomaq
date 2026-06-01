@@ -6541,6 +6541,12 @@ function abrirEditAtiv(id){
     +'<input type="hidden" id="ativEditEvId" value="'+evIdOculto+'">'
     +'<div class="f"><label class="fl">Tópico</label><select class="fi" id="ativEditTopico">'+topicoOpts+'</select></div>'
     +'<div class="f"><label class="fl">Descrição *</label><textarea class="fi" id="ativEditDesc" style="height:60px">'+a.descricao+'</textarea></div>'
+    +(evIdOculto?(function(){
+        var _escRec=(a.evReclamacao||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var _escCau=(a.evCausa||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var _escSol=(a.evSolucao||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return '<div class="f"><label class="fl" style="color:#5c8ee6;font-weight:700">📅 Reclamação (Agenda)</label><textarea class="fi" id="ativEditReclamacao" style="height:38px">'+_escRec+'</textarea></div>'          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'          +'<div class="f"><label class="fl" style="color:#5c8ee6;font-weight:700">📅 Causa (Agenda)</label><textarea class="fi" id="ativEditCausa" style="height:35px">'+_escCau+'</textarea></div>'          +'<div class="f"><label class="fl" style="color:#5c8ee6;font-weight:700">📅 Solução (Agenda)</label><textarea class="fi" id="ativEditSolucao" style="height:35px">'+_escSol+'</textarea></div>'          +'</div>';
+      })():'')
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 0">'
     +'<div><label class="fl">Data</label><input class="fi" id="ativEditDt" type="date" value="'+dtVal+'"></div>'
     +'<div><label class="fl">Status</label><select class="fi" id="ativEditStatus">'+statusOpts+'</select></div>'
@@ -10747,9 +10753,7 @@ function abrirModalSF(btn){
       });
     }
   },300);
-  document.getElementById('sfDescricao').value      = document.getElementById('sfDescricao').value || evDescricao || '';
-  document.getElementById('sfCausaProblema').value  = document.getElementById('sfCausaProblema').value || evCausaAgenda || '';
-  document.getElementById('sfSolucaoAplicada').value= document.getElementById('sfSolucaoAplicada').value || evSolucaoAgenda || '';
+  // sfDescricao/sfCausa/sfSolucao com fallback agenda (ver abaixo)
   document.getElementById('sfConta').value       = sfConta;
   document.getElementById('sfContato').value     = sfContato;
   document.getElementById('sfSerie').value       = sfSerie;
@@ -10777,9 +10781,9 @@ function abrirModalSF(btn){
   if(elISO)  elISO.value  = evDataISO   || '';
   document.getElementById('sfTipoIncidente').value = sfTipoIncidente;
   document.getElementById('sfProduto').value       = sfProduto;
-  document.getElementById('sfDescricao').value     = sfDescricao;
-  document.getElementById('sfCausaProblema').value = sfCausa;
-  document.getElementById('sfSolucaoAplicada').value = sfSolucao;
+  document.getElementById('sfDescricao').value      = sfDescricao      || evDescricao      || '';
+  document.getElementById('sfCausaProblema').value  = sfCausa          || evCausaAgenda    || '';
+  document.getElementById('sfSolucaoAplicada').value= sfSolucao        || evSolucaoAgenda  || '';
   document.getElementById('sfNumOT').value         = sfNumOT;
   document.getElementById('sfHorimetro').value     = decodeURIComponent(btn.getAttribute('data-sfhorimetro')||'');
 
