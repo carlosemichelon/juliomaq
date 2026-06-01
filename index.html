@@ -6590,19 +6590,21 @@ function _sfSincronizarComAgenda(){
   if(!_sfAtivId){ toast('Nenhuma atividade selecionada','warn'); return; }
   var a=_atividades.find(function(x){return x.id===_sfAtivId;});
   if(!a){ toast('Atividade não encontrada','warn'); return; }
-  function g(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  function g(id){ var el=document.getElementById(id); return el?(el.value||'').trim():''; }
   var dados={
     ativId:   _sfAtivId,
     evId:     a.evId||'',
     reclamacao:      g('sfReclamacao'),
     descricaoOT:     g('sfDescricao'),
     causaProblema:   g('sfCausaProblema'),
-    solucaoAplicada: g('sfSolucaoAplicada')
+    solucaoAplicada: g('sfSolucaoAplicada'),
+    duracao:         g('sfDuracao'),
+    km:              g('sfKm'),
+    horaInicio:      g('sfHoraInicio')
   };
-  if(!dados.evId){ toast('Esta atividade não tem evento da agenda vinculado','warn'); return; }
-  if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
-    toast('Preencha Reclamação, Descrição OT, Causa ou Solução primeiro','warn'); return;
-  }
+  if(!dados.evId){ toast('Atividade sem evento da agenda vinculado','warn'); return; }
+  var temDado=dados.reclamacao||dados.descricaoOT||dados.causaProblema||dados.solucaoAplicada||dados.duracao||dados.km;
+  if(!temDado){ toast('Preencha ao menos um campo antes de sincronizar','warn'); return; }
   // Feedback visual no botão e banner
   var btnS = document.getElementById('btnSincAgenda');
   var txtOrig = btnS ? btnS.textContent : '';
