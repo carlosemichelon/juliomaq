@@ -6519,9 +6519,18 @@ function _salvarCasoSF(input){
 
 
 function _sfSincronizarComAgenda(){
-  if(!_sfAtivId){ toast('Nenhuma atividade selecionada','warn'); return; }
+  // ── Passo 1: validar _sfAtivId ───────────────────────────
+  if(!_sfAtivId){
+    toast('⚠️ Nenhuma atividade selecionada','warn',4000);
+    return;
+  }
   var a=_atividades.find(function(x){return x.id===_sfAtivId;});
-  if(!a){ toast('Atividade não encontrada','warn'); return; }
+  if(!a){
+    toast('⚠️ Atividade não encontrada no cache','warn',4000);
+    return;
+  }
+
+  // ── Passo 2: coletar dados dos campos do modal ────────────
   function g(id){ var el=document.getElementById(id); return el?(el.value||'').trim():''; }
   var dados={
     ativId:   _sfAtivId,
@@ -6534,46 +6543,83 @@ function _sfSincronizarComAgenda(){
     km:              g('sfKm'),
     horaInicio:      g('sfHoraInicio')
   };
-  if(!dados.evId){ toast('Atividade sem evento da agenda vinculado','warn'); return; }
-  var temDado=dados.reclamacao||dados.descricaoOT||dados.causaProblema||dados.solucaoAplicada||dados.duracao||dados.km;
-  if(!temDado){ toast('Preencha ao menos um campo antes de sincronizar','warn'); return; }
-  // Feedback visual no botão e banner
+
+  // ── Passo 3: validar evId ─────────────────────────────────
+  if(!dados.evId){
+    toast('⚠️ Esta atividade não tem evento da agenda vinculado (evId vazio)','warn',5000);
+    console.warn('[JM Sinc] evId vazio — a.evId:', a.evId, '| a.id:', a.id);
+    return;
+  }
+
+  // ── Passo 4: verificar se há dados para sincronizar ───────
+  var temDado = dados.reclamacao||dados.descricaoOT||dados.causaProblema||dados.solucaoAplicada||dados.duracao||dados.km;
+  if(!temDado){
+    toast('⚠️ Nenhum campo preenchido para sincronizar (Reclamação, Causa, Solução, Duração ou KM)','warn',5000);
+    return;
+  }
+
+  // ── Passo 5: feedback visual no botão ─────────────────────
   var btnS = document.getElementById('btnSincAgenda');
   var txtOrig = btnS ? btnS.textContent : '';
-  if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
-  _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
-  toast('Sincronizando... (evId: '+(dados.evId?'✅':'❌ vazio')+')','ok',5000);
-  console.log('[JM Sinc] Chamando sincronizarAtivComAgenda...');
+  function _restaurarBtnSinc(){
+    if(btnS){
+      btnS.textContent = txtOrig;
+      btnS.disabled    = false;
+      btnS.style.opacity = '1';
+      btnS.style.background = '';
+      btnS.style.color      = '';
+      btnS.style.border     = '';
+    }
+  }
+  if(btnS){ btnS.textContent='⏳ Enviando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
 
-  function _restaurarBtnSinc(){ if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; } }
+  // Mostrar resumo do que vai sincronizar
+  var resumo = [];
+  if(dados.reclamacao)      resumo.push('Reclamação');
+  if(dados.descricaoOT)     resumo.push('Descrição OT');
+  if(dados.causaProblema)   resumo.push('Causa');
+  if(dados.solucaoAplicada) resumo.push('Solução');
+  if(dados.duracao)         resumo.push('Duração');
+  if(dados.km)              resumo.push('KM');
+  toast('📤 Sincronizando: '+resumo.join(', ')+'...','ok',6000);
+  console.log('[JM Sinc] Enviando para backend:', JSON.stringify(dados));
 
-  // Diagnóstico antes de chamar o backend
-  console.log('[JM Sinc] _sfAtivId:', _sfAtivId, '| evId:', dados.evId, '| temDado:', !!temDado);
-  console.log('[JM Sinc] dados:', JSON.stringify(dados));
-
-  // Timeout de segurança: restaura botão após 15s se não houver resposta
+  // ── Passo 6: timeout de segurança 10s ─────────────────────
   var _sincTimeout = setTimeout(function(){
     _restaurarBtnSinc();
-    toast('⏱ Sem resposta do servidor (15s) — verifique o deploy','err',6000);
-    console.warn('[JM Sinc] TIMEOUT — backend não respondeu em 15s');
-  }, 8000);
+    toast('⏱️ Sem resposta do servidor em 10s — refaça o deploy','err',7000);
+    console.warn('[JM Sinc] TIMEOUT 10s — backend não respondeu');
+  }, 10000);
 
+  // ── Passo 7: chamar backend ───────────────────────────────
   google.script.run
     .withSuccessHandler(function(r){
       clearTimeout(_sincTimeout);
       if(r&&r.success){
-        if(btnS){ btnS.textContent='✅ Sincronizado!'; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#e8f5e9'; btnS.style.color='#1b5e20'; btnS.style.border='1px solid #a5d6a7'; setTimeout(_restaurarBtnSinc,4000); }
-        toast('✅ '+r.msg,'ok',4000);
-        _setStatus && _setStatus('✅ Agenda atualizada: '+r.msg,'linear-gradient(135deg,#2e7d32,#1b5e20)');
+        if(btnS){
+          btnS.textContent = '✅ Sincronizado!';
+          btnS.disabled    = false;
+          btnS.style.opacity = '1';
+          btnS.style.background = '#e8f5e9';
+          btnS.style.color      = '#1b5e20';
+          btnS.style.border     = '1px solid #a5d6a7';
+          setTimeout(_restaurarBtnSinc, 4000);
+        }
+        toast('✅ Agenda atualizada: '+r.msg,'ok',5000);
+        _setStatus && _setStatus('✅ Agenda: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
+        console.log('[JM Sinc] Sucesso:', r.msg);
       } else {
-        if(btnS){ btnS.textContent='❌ '+( r&&r.error?'Erro':'Nada sincronizado'); btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background='#ffebee'; btnS.style.color='#c62828'; btnS.style.border='1px solid #ef9a9a'; setTimeout(_restaurarBtnSinc,3000); }
-        toast((r&&r.msg)||'Nada para sincronizar','warn',4000);
+        _restaurarBtnSinc();
+        var errMsg = (r&&r.error) || (r&&r.msg) || 'Erro desconhecido';
+        toast('❌ Não sincronizado: '+errMsg,'err',6000);
+        console.error('[JM Sinc] Falha:', r);
       }
     })
     .withFailureHandler(function(e){
       clearTimeout(_sincTimeout);
       _restaurarBtnSinc();
-      toast('Falha: '+e.message,'err',5000);
+      toast('❌ Erro de conexão: '+e.message,'err',6000);
+      console.error('[JM Sinc] Falha de conexão:', e);
     })
     .sincronizarAtivComAgenda(dados);
 }
