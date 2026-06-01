@@ -6578,6 +6578,10 @@ function salvarEditAtiv(){
   var idRef=(document.getElementById('ativEditObs')||{}).value.trim();
   var casoSF=(document.getElementById('ativEditCasoSF')||{}).value.trim();
   var nota=(document.getElementById('ativEditObsNota')||{}).value.trim();
+  var agReclam  = ((document.getElementById('ativEditReclamacao')||{}).value||'').trim();
+  var agCausa   = ((document.getElementById('ativEditCausa')||{}).value||'').trim();
+  var agSolucao = ((document.getElementById('ativEditSolucao')||{}).value||'').trim();
+
   var dados={
     id:id,
     topico:(document.getElementById('ativEditTopico')||{}).value||'Servicos',
@@ -6592,8 +6596,28 @@ function salvarEditAtiv(){
   toast('Salvando...','ok',3000);
   google.script.run
     .withSuccessHandler(function(r){
-      if(r&&r.success){fecharEditAtiv();loadAtividades();toast('Atualizado!','ok');}
-      else toast('Erro: '+(r&&r.error||'?'),'err');
+      if(r&&r.success){
+        // Se tem evId e campos da agenda preenchidos, sincronizar com AgendaEventos
+        if(evId2 && (agReclam||agCausa||agSolucao)){
+          var dadosAg = {
+            ativId: id, evId: evId2,
+            reclamacao: agReclam, causaProblema: agCausa, solucaoAplicada: agSolucao,
+            descricaoOT: desc
+          };
+          google.script.run
+            .withSuccessHandler(function(ra){
+              fecharEditAtiv(); loadAtividades();
+              if(ra&&ra.success && ra.msg && ra.msg.indexOf('nada')<0)
+                toast('Atualizado + Agenda: '+ra.msg,'ok');
+              else
+                toast('Atualizado!','ok');
+            })
+            .withFailureHandler(function(){ fecharEditAtiv(); loadAtividades(); toast('Atualizado!','ok'); })
+            .sincronizarAtivComAgenda(dadosAg);
+        } else {
+          fecharEditAtiv(); loadAtividades(); toast('Atualizado!','ok');
+        }
+      } else toast('Erro: '+(r&&r.error||'?'),'err');
     })
     .withFailureHandler(function(e){toast('Erro: '+e.message,'err');})
     .editarAtividade(dados);
