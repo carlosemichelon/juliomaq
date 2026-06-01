@@ -6671,13 +6671,14 @@ function sincronizarAtivAgenda(id){
   var a=_atividades.find(function(x){return x.id===id;});
   if(!a||!a.evId){toast('Atividade sem evento vinculado','warn');return;}
   // Dados SF da atividade que serão sincronizados para a agenda (se campos da agenda estiverem vazios)
+  // Usar campos SF se preenchidos, senão fallback para dados da agenda (ev*)
   var dados={
     ativId:   id,
     evId:     a.evId,
-    reclamacao:     a.sfReclamacao   ||'',
-    descricaoOT:    a.sfDescricao    ||'',
-    causaProblema:  a.sfCausaProblema||'',
-    solucaoAplicada:a.sfSolucaoAplicada||''
+    reclamacao:     a.sfReclamacao     || a.evReclamacao || '',
+    descricaoOT:    a.sfDescricao      || a.evDescricao  || '',
+    causaProblema:  a.sfCausaProblema  || a.evCausa      || '',
+    solucaoAplicada:a.sfSolucaoAplicada|| a.evSolucao    || ''
   };
   if(!dados.reclamacao&&!dados.descricaoOT&&!dados.causaProblema&&!dados.solucaoAplicada){
     toast('Nenhum dado de Reclamação/Causa/Solução para sincronizar','warn');return;
