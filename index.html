@@ -6606,7 +6606,6 @@ function _sfSincronizarComAgenda(){
           setTimeout(_restaurarBtnSinc, 4000);
         }
         toast('✅ Agenda atualizada: '+r.msg,'ok',5000);
-        _setStatus && _setStatus('✅ Agenda: '+r.msg, 'linear-gradient(135deg,#2e7d32,#1b5e20)');
         console.log('[JM Sinc] Sucesso:', r.msg);
       } else {
         _restaurarBtnSinc();
@@ -6618,7 +6617,7 @@ function _sfSincronizarComAgenda(){
     .withFailureHandler(function(e){
       clearTimeout(_sincTimeout);
       _restaurarBtnSinc();
-      toast('❌ Erro de conexão: '+e.message,'err',6000);
+      toast('❌ Erro de conexão: '+String(e.message||e),'err',6000);
       console.error('[JM Sinc] Falha de conexão:', e);
     })
     .sincronizarAtivComAgenda(dados);
