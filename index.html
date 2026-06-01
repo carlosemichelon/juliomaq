@@ -5863,33 +5863,31 @@ function _renderVeiChart(){
     return true;
   }).sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
 
-  // Canvas ocupa largura total disponível, altura proporcional
-  var dispW = wrap.offsetWidth||wrap.parentElement.offsetWidth||320;
-  var W = Math.min(dispW, 480); // máximo 480px — proporcional
-  var H = Math.round(W * 0.60); // 60% da largura — proporção fixa
-  H = Math.max(H, 200); H = Math.min(H, 360);
-
-  wrap.width  = W*2; wrap.height = H*2;
-  wrap.style.width = W+'px'; wrap.style.height = H+'px';
-  var ctx = wrap.getContext('2d'); ctx.scale(2,2);
+  // Canvas — largura total disponível, altura proporcional
+  var W = wrap.offsetWidth||wrap.parentElement.offsetWidth||320;
+  var H = Math.round(W * 0.60); H=Math.max(H,200); H=Math.min(H,380);
+  wrap.width=W*2; wrap.height=H*2;
+  wrap.style.width=W+'px'; wrap.style.height=H+'px';
+  var ctx=wrap.getContext('2d'); ctx.scale(2,2);
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
 
   if(todos.length===0){
     ctx.fillStyle='#aaa'; ctx.font='12px Arial'; ctx.textAlign='center';
     ctx.fillText('Sem dados para o filtro selecionado',W/2,H/2);
-    // Limpar legenda
-    var leg=document.getElementById('veiChartLegend');
-    if(leg) leg.innerHTML='';
+    var leg=document.getElementById('veiChartLegend'); if(leg) leg.innerHTML='';
     return;
   }
 
+  // Paleta
   var veicsUnicos=[];
   todos.forEach(function(v){ if(veicsUnicos.indexOf(v.veiculo)<0) veicsUnicos.push(v.veiculo); });
   var paleta=[
     {linha:'#1565c0',barra:'rgba(21,101,192,0.8)',texto:'#1565c0'},
     {linha:'#bf360c',barra:'rgba(191,54,12,0.8)',texto:'#bf360c'},
     {linha:'#1a6b2a',barra:'rgba(26,107,42,0.8)',texto:'#1a6b2a'},
-    {linha:'#6a1b9a',barra:'rgba(106,27,154,0.8)',texto:'#6a1b9a'}
+    {linha:'#6a1b9a',barra:'rgba(106,27,154,0.8)',texto:'#6a1b9a'},
+    {linha:'#00695c',barra:'rgba(0,105,92,0.8)',texto:'#00695c'},
+    {linha:'#f57f17',barra:'rgba(245,127,23,0.8)',texto:'#e65100'}
   ];
   var coresVei={};
   veicsUnicos.forEach(function(v,i){ coresVei[v]=paleta[i%paleta.length]; });
@@ -5904,16 +5902,25 @@ function _renderVeiChart(){
   var hodos = todos.map(function(v){ return parseFloat(v.hodometro)||0; });
   var n=todos.length;
 
-  var pad={t:24, r:modoIndividual?58:14, b:48, l:56};
+  // Margens — padding lateral 12% para colunas ficarem 'para dentro'
+  var lateralPct = 0.12;
+  var pad={t:28, r:modoIndividual?62:18, b:50, l:60};
   var w=W-pad.l-pad.r, h=H-pad.t-pad.b;
 
+  // Escala X: margem de 12% em cada lado dentro da área útil
+  var xMin = pad.l + w*lateralPct;
+  var xMax = pad.l + w*(1-lateralPct);
+  var xRange = xMax - xMin;
+  var xPos = function(i){ return n===1 ? pad.l+w/2 : xMin + i*(xRange/(n-1)); };
+
   var maxV=Math.max.apply(null,vals)*1.18||100;
-  var minH=Math.min.apply(null,hodos)*0.995, maxH=Math.max.apply(null,hodos)*1.005;
+  var hodosFilt = hodos.filter(function(h){return h>0;});
+  var minH = hodosFilt.length ? Math.min.apply(null,hodosFilt)*0.995 : 0;
+  var maxH = hodosFilt.length ? Math.max.apply(null,hodosFilt)*1.005 : 1;
   if(maxH===minH){minH-=1;maxH+=1;}
 
-  var xPos=function(i){ return n===1?pad.l+w/2:pad.l+i*(w/(n-1)); };
-  var yVal =function(v){ return pad.t+h-(v/maxV)*h; };
-  var yHodo=function(v){ return pad.t+h-((v-minH)/(maxH-minH))*h; };
+  var yVal  = function(v){ return pad.t+h-(v/maxV)*h; };
+  var yHodo = function(v){ return pad.t+h-((v-minH)/(maxH-minH))*h; };
 
   // Grid
   ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
@@ -5923,12 +5930,12 @@ function _renderVeiChart(){
   }
 
   // Barras de valor
-  var barW=Math.max(8,Math.min(36,(w/Math.max(n,1))*0.6));
+  var barW = Math.max(6, Math.min(36, (xRange/Math.max(n,1))*0.55));
   todos.forEach(function(d,i){
     var cor=coresVei[d.veiculo]||paleta[0];
     var bh=(vals[i]/maxV)*h; if(bh<1)return;
     var by=pad.t+h-bh;
-    var r2=Math.min(3,barW/2);
+    var r2=Math.min(4,barW/2);
     ctx.fillStyle=cor.barra;
     ctx.beginPath();
     ctx.moveTo(xPos(i)-barW/2+r2,by);
@@ -5936,13 +5943,12 @@ function _renderVeiChart(){
     ctx.lineTo(xPos(i)+barW/2,pad.t+h); ctx.lineTo(xPos(i)-barW/2,pad.t+h);
     ctx.lineTo(xPos(i)-barW/2,by+r2); ctx.quadraticCurveTo(xPos(i)-barW/2,by,xPos(i)-barW/2+r2,by);
     ctx.closePath(); ctx.fill();
-    // Valor acima
     ctx.fillStyle=cor.texto; ctx.font='bold '+(W<380?'7':'8')+'px Arial'; ctx.textAlign='center';
     ctx.fillText('R$'+Math.round(vals[i]).toLocaleString('pt-BR'),xPos(i),by-4);
   });
 
-  // Linha hodômetro — modo individual
-  if(modoIndividual && hodos.some(function(hh){return hh>0;})){
+  // Linha hodômetro — modo individual (inclui veículos sem hodômetro)
+  if(modoIndividual && hodosFilt.length>0){
     ctx.beginPath(); ctx.strokeStyle='#1565c0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
     var started=false;
     todos.forEach(function(d,i){
@@ -5959,7 +5965,6 @@ function _renderVeiChart(){
       ctx.fillStyle='#1565c0'; ctx.font='8px Arial'; ctx.textAlign='center';
       ctx.fillText(Math.round(hodos[i]).toLocaleString('pt-BR'),xPos(i),yHodo(hodos[i])-8);
     });
-    // Eixo Y direito
     ctx.fillStyle='#1565c0'; ctx.font='9px Arial'; ctx.textAlign='left';
     for(var g=0;g<=4;g++){
       var vv=minH+((maxH-minH)/4)*g;
@@ -5994,30 +5999,29 @@ function _renderVeiChart(){
   ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
   ctx.strokeRect(pad.l,pad.t,w,h);
 
-  // ── Legenda abaixo em grid via DOM ─────────────────────────
-  var legDiv = document.getElementById('veiChartLegend');
+  // Legenda DOM — compacta: fonte 9px, padding reduzido, sem min-width
+  var legDiv=document.getElementById('veiChartLegend');
   if(legDiv){
     var legHtml='';
-    // Por veículo
     veicsUnicos.forEach(function(vei){
-      var cor = coresVei[vei]||paleta[0];
-      var totalVei = todos.filter(function(d){return d.veiculo===vei;})
-                         .reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
-      var countVei = todos.filter(function(d){return d.veiculo===vei;}).length;
-      legHtml += '<div style="display:flex;align-items:center;gap:6px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:6px 10px;min-width:120px">'
-        +'<div style="width:12px;height:12px;border-radius:3px;background:'+cor.barra+';flex-shrink:0"></div>'
+      var cor=coresVei[vei]||paleta[0];
+      var totalVei=todos.filter(function(d){return d.veiculo===vei;})
+                        .reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
+      var countVei=todos.filter(function(d){return d.veiculo===vei;}).length;
+      legHtml+='<div style="display:flex;align-items:center;gap:4px;background:#fafafa;border:1px solid #eee;border-radius:6px;padding:3px 7px">'
+        +'<div style="width:9px;height:9px;border-radius:2px;background:'+cor.barra+';flex-shrink:0"></div>'
         +'<div>'
-        +'<div style="font-size:11px;font-weight:700;color:#333">'+vei+'</div>'
-        +'<div style="font-size:10px;color:#666">R$'+Math.round(totalVei).toLocaleString('pt-BR')+' · '+countVei+' abast.</div>'
+        +'<div style="font-size:9px;font-weight:700;color:#333;white-space:nowrap">'+vei+'</div>'
+        +'<div style="font-size:9px;color:#666;white-space:nowrap">R$'+Math.round(totalVei).toLocaleString('pt-BR')+' · '+countVei+'x</div>'
         +'</div></div>';
     });
-    if(modoIndividual && hodos.some(function(hh){return hh>0;})){
-      legHtml += '<div style="display:flex;align-items:center;gap:6px;background:#e3f0ff;border:1px solid #90caf9;border-radius:8px;padding:6px 10px;min-width:120px">'
-        +'<div style="width:12px;height:3px;background:#1565c0;flex-shrink:0"></div>'
-        +'<div style="font-size:11px;font-weight:700;color:#1565c0">Hodômetro (km)</div>'
+    if(modoIndividual && hodosFilt.length>0){
+      legHtml+='<div style="display:flex;align-items:center;gap:4px;background:#e3f0ff;border:1px solid #90caf9;border-radius:6px;padding:3px 7px">'
+        +'<div style="width:14px;height:2px;background:#1565c0;flex-shrink:0"></div>'
+        +'<div style="font-size:9px;font-weight:700;color:#1565c0;white-space:nowrap">Hodômetro</div>'
         +'</div>';
     }
-    legDiv.innerHTML = legHtml;
+    legDiv.innerHTML=legHtml;
   }
 }
 
@@ -6132,6 +6136,37 @@ function carregarResumoVei(){
       }
       html+='</div>'; // fim resumoBox
 
+      // ── Gráfico Hodômetro + Valor por data (abastecimentos) ────
+      // Inclui todos os abastecimentos — veículos sem hodômetro aparecem só como barras
+      var dadosAbast = filtered.filter(function(v){ return v.tipo==='Abastecimento'; })
+        .sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
+
+      if(dadosAbast.length>=2){
+        html += '<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
+        var totalAbast = dadosAbast.reduce(function(s,v){ return s+(parseFloat(v.valor)||0); },0);
+        html += '<div class="sh" style="background:#1a4a7a"><div class="si" style="background:rgba(255,255,255,.1)">📈</div>Hodômetro & Valores — Abastecimentos <span style="margin-left:8px;font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:10px;font-weight:700">Total: R$'+Math.round(totalAbast).toLocaleString('pt-BR')+'</span>';
+        // Seletor camionete
+        var veicsAbast = {};
+        dadosAbast.forEach(function(v){ veicsAbast[v.veiculo]=true; });
+        // Seletor de mês para o gráfico
+        var mesesAbast = {};
+        dadosAbast.forEach(function(v){ var m=_osMes(v.data); if(m) mesesAbast[m]=true; });
+        html += ' <select id="vChartMes" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a1a7a;color:#fff">';
+        html += '<option value="">Todos os meses</option>';
+        Object.keys(mesesAbast).sort().reverse().forEach(function(m){ html += '<option value="'+m+'">'+_osMesLabel(m)+'</option>'; });
+        html += '</select>';
+        // Seletor de camionete
+        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:4px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">';
+        html += '<option value="">Todas</option>';
+        Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
+        html += '</select></div>';
+        html += '<div style="padding:10px 10px 4px"><canvas id="veiChart" style="display:block;width:100%"></canvas></div>'
+        + '<div id="veiChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
+        html += '</div>';
+      }
+
+
+
       // Cache para edição
       _veiRows=rows||[];
 
@@ -6175,34 +6210,6 @@ function carregarResumoVei(){
         }
         html+='</div>';
       });
-
-      // ── Gráfico Hodômetro + Valor por data (abastecimentos) ────
-      // Filtrar apenas abastecimentos com hodômetro > 0
-      var dadosAbast = filtered.filter(function(v){ return v.tipo==='Abastecimento' && parseFloat(v.hodometro)>0; })
-        .sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
-
-      if(dadosAbast.length>=2){
-        html += '<div style="background:var(--wh);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden">';
-        html += '<div class="sh" style="background:#1a4a7a"><div class="si" style="background:rgba(255,255,255,.1)">📈</div>Hodômetro & Valores — Abastecimentos';
-        // Seletor camionete
-        var veicsAbast = {};
-        dadosAbast.forEach(function(v){ veicsAbast[v.veiculo]=true; });
-        // Seletor de mês para o gráfico
-        var mesesAbast = {};
-        dadosAbast.forEach(function(v){ var m=_osMes(v.data); if(m) mesesAbast[m]=true; });
-        html += ' <select id="vChartMes" onchange="_renderVeiChart()" style="margin-left:8px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a1a7a;color:#fff">';
-        html += '<option value="">Todos os meses</option>';
-        Object.keys(mesesAbast).sort().reverse().forEach(function(m){ html += '<option value="'+m+'">'+_osMesLabel(m)+'</option>'; });
-        html += '</select>';
-        // Seletor de camionete
-        html += ' <select id="vChartVei" onchange="_renderVeiChart()" style="margin-left:4px;font-size:10px;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 6px;font-family:inherit;background:#3a0066;color:#fff">';
-        html += '<option value="">Todas</option>';
-        Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
-        html += '</select></div>';
-        html += '<div style="padding:10px 10px 4px;display:flex;justify-content:center"><canvas id="veiChart" style="display:block;max-width:480px;width:100%"></canvas></div>'
-        + '<div id="veiChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
-        html += '</div>';
-      }
 
       document.getElementById('vResContent').innerHTML=html;
 
