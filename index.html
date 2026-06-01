@@ -6456,7 +6456,7 @@ function renderAtiv(){
         +' data-sfativo="'+encodeURIComponent(a.sfAtivo||'')+'"'
         +' data-sfserie="'+encodeURIComponent(a.sfSerie||'')+'"'
         +' data-sfassunto="'+encodeURIComponent(a.sfAssunto||'')+'"'
-        +' data-sfreclam="'+encodeURIComponent((a.sfReclamacao||'').substring(0,500))+'"'
+        +' data-sfreclam="'+encodeURIComponent((a.sfReclamacao||a.evReclamacao||'').substring(0,500))+'"'
         +' data-sfdescmaq="'+encodeURIComponent(a.sfDescMaquina||'')+'"'
         +' data-sfevdesc="'+encodeURIComponent((a.evDescricao||'').substring(0,500))+'"'
         +' data-sfevreclamacao="'+encodeURIComponent((a.evReclamacao||'').substring(0,500))+'"'
@@ -6464,9 +6464,9 @@ function renderAtiv(){
         +' data-sfevsol="'+encodeURIComponent((a.evSolucao||'').substring(0,500))+'"'
         +' data-sftipoinci="'+encodeURIComponent(a.sfTipoIncidente||'')+'"'
         +' data-sfproduto="'+encodeURIComponent(a.sfProduto||'')+'"'
-        +' data-sfdescricao="'+encodeURIComponent((a.sfDescricao||'').substring(0,500))+'"'
-        +' data-sfcausa="'+encodeURIComponent((a.sfCausaProblema||'').substring(0,500))+'"'
-        +' data-sfsolucao="'+encodeURIComponent((a.sfSolucaoAplicada||'').substring(0,500))+'"'
+        +' data-sfdescricao="'+encodeURIComponent((a.sfDescricao||a.evReclamacao||'').substring(0,500))+'"'
+        +' data-sfcausa="'+encodeURIComponent((a.sfCausaProblema||a.evCausa||'').substring(0,500))+'"'
+        +' data-sfsolucao="'+encodeURIComponent((a.sfSolucaoAplicada||a.evSolucao||'').substring(0,500))+'"'
         +' data-sftipoOT="'+encodeURIComponent(a.sfTipoOT||'')+'"'
         +' data-sfnumOT="'+encodeURIComponent(a.sfNumOT||'')+'"'
         +' data-sfhorimetro="'+encodeURIComponent(a.sfHorimetro||'')+'"'
@@ -6591,31 +6591,21 @@ function salvarEditAtiv(){
     idRef:idRef,
     observacao:nota,
     casoSF:casoSF,
-    evId:evId2
+    evId:evId2,
+    // Campos de descrição/causa/solução — salvos direto nas cols SF da Atividade
+    sfDescricao:      agReclam,
+    sfCausaProblema:  agCausa,
+    sfSolucaoAplicada:agSolucao
   };
   toast('Salvando...','ok',3000);
   google.script.run
     .withSuccessHandler(function(r){
       if(r&&r.success){
-        // Se tem evId e campos da agenda preenchidos, sincronizar com AgendaEventos
+        fecharEditAtiv(); loadAtividades(); toast('Atualizado!','ok');
+        // Se tem evId, também sincronizar com AgendaEventos (opcional)
         if(evId2 && (agReclam||agCausa||agSolucao)){
-          var dadosAg = {
-            ativId: id, evId: evId2,
-            reclamacao: agReclam, causaProblema: agCausa, solucaoAplicada: agSolucao,
-            descricaoOT: desc
-          };
           google.script.run
-            .withSuccessHandler(function(ra){
-              fecharEditAtiv(); loadAtividades();
-              if(ra&&ra.success && ra.msg && ra.msg.indexOf('nada')<0)
-                toast('Atualizado + Agenda: '+ra.msg,'ok');
-              else
-                toast('Atualizado!','ok');
-            })
-            .withFailureHandler(function(){ fecharEditAtiv(); loadAtividades(); toast('Atualizado!','ok'); })
-            .sincronizarAtivComAgenda(dadosAg);
-        } else {
-          fecharEditAtiv(); loadAtividades(); toast('Atualizado!','ok');
+            .sincronizarAtivComAgenda({ativId:id,evId:evId2,reclamacao:agReclam,causaProblema:agCausa,solucaoAplicada:agSolucao,descricaoOT:desc});
         }
       } else toast('Erro: '+(r&&r.error||'?'),'err');
     })
@@ -11224,9 +11214,13 @@ function fecharModalSF(){
   // Auto-salvar ao fechar — apenas campos NÃO vazios, sem postMessage para extensão
   try{
     if(_sfAtivId){
-      var assunto = (document.getElementById('sfAssunto')||{}).value||'';
-      var conta   = (document.getElementById('sfConta')||{}).value||'';
-      if(assunto||conta) _sfSalvarSoPlanilha();
+      // Salvar se qualquer campo SF tiver valor (não só assunto/conta)
+      var _temQualquerCampo = ['sfAssunto','sfConta','sfContato','sfOrigem',
+        'sfTipoReg','sfReclamacao','sfDescricao','sfCausaProblema','sfSolucaoAplicada',
+        'sfTipoOT','sfNumOT'].some(function(id){
+          var el=document.getElementById(id); return el&&el.value;
+        });
+      if(_temQualquerCampo) _sfSalvarSoPlanilha();
     }
   }catch(e){ console.error('[SF] fechar save err:',e); }
 }
@@ -11256,18 +11250,21 @@ function _sfSalvarSoPlanilha(){
   // Atualizar cache local _atividades com os dados salvos
   var a = _atividades.find(function(x){return x.id===_sfAtivId;});
   if(a){
-    if(dados.tipoRegistro)  a.sfTipo            = dados.tipoRegistro;
-    if(dados.subTipo)       a.sfSubTipo         = dados.subTipo;
-    if(dados.origem)        a.sfOrigem          = dados.origem;
-    if(dados.conta)         a.sfConta           = dados.conta;
-    if(dados.contato)       a.sfContato         = dados.contato;
-    if(dados.assunto)       a.sfAssunto         = dados.assunto;
-    if(dados.reclamacao)    a.sfReclamacao      = dados.reclamacao;
-    if(dados.tipoOT)        a.sfTipoOT          = dados.tipoOT;
-    if(dados.numOT)         a.sfNumOT           = dados.numOT;
-    if(dados.descricao)     a.sfDescricao       = dados.descricao;
-    if(dados.causaProblema) a.sfCausaProblema   = dados.causaProblema;
-    if(dados.solucaoAplicada) a.sfSolucaoAplicada = dados.solucaoAplicada;
+    if(dados.tipoRegistro)   a.sfTipo             = dados.tipoRegistro;
+    if(dados.subTipo)        a.sfSubTipo          = dados.subTipo;
+    if(dados.origem)         a.sfOrigem           = dados.origem;
+    if(dados.conta)          a.sfConta            = dados.conta;
+    if(dados.contato)        a.sfContato          = dados.contato;
+    if(dados.assunto)        a.sfAssunto          = dados.assunto;
+    if(dados.reclamacao)     a.sfReclamacao       = dados.reclamacao;
+    if(dados.tipoOT)         a.sfTipoOT           = dados.tipoOT;
+    if(dados.numOT)          a.sfNumOT            = dados.numOT;
+    if(dados.descricao)      a.sfDescricao        = dados.descricao;
+    if(dados.causaProblema)  a.sfCausaProblema    = dados.causaProblema;
+    if(dados.solucaoAplicada)a.sfSolucaoAplicada  = dados.solucaoAplicada;
+    if(dados.horimetro)      a.sfHorimetro        = dados.horimetro;
+    if(dados.ativo)          a.sfAtivo            = dados.ativo;
+    if(dados.serie)          a.sfSerie            = dados.serie;
     // Re-renderizar lista para atualizar data-* do botão
     if(typeof renderAtiv==='function') renderAtiv();
   }
