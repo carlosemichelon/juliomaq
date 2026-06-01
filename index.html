@@ -6637,15 +6637,21 @@ function _sfSincronizarComAgenda(){
   var txtOrig = btnS ? btnS.textContent : '';
   if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
   _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
-  toast('Sincronizando...','ok',3000);
+  toast('Sincronizando... (evId: '+(dados.evId?'✅':'❌ vazio')+')','ok',5000);
+  console.log('[JM Sinc] Chamando sincronizarAtivComAgenda...');
 
   function _restaurarBtnSinc(){ if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; } }
+
+  // Diagnóstico antes de chamar o backend
+  console.log('[JM Sinc] _sfAtivId:', _sfAtivId, '| evId:', dados.evId, '| temDado:', !!temDado);
+  console.log('[JM Sinc] dados:', JSON.stringify(dados));
 
   // Timeout de segurança: restaura botão após 15s se não houver resposta
   var _sincTimeout = setTimeout(function(){
     _restaurarBtnSinc();
-    toast('Sem resposta — verifique o deploy','err',5000);
-  }, 15000);
+    toast('⏱ Sem resposta do servidor (15s) — verifique o deploy','err',6000);
+    console.warn('[JM Sinc] TIMEOUT — backend não respondeu em 15s');
+  }, 8000);
 
   google.script.run
     .withSuccessHandler(function(r){
@@ -6688,14 +6694,20 @@ function sincronizarAtivAgenda(id){
   var txtOrig = btnS ? btnS.textContent : '';
   if(btnS){ btnS.textContent='⏳ Sincronizando...'; btnS.disabled=true; btnS.style.opacity='0.7'; }
   _setStatus && _setStatus('🔄 Sincronizando dados com a agenda...');
-  toast('Sincronizando...','ok',3000);
+  toast('Sincronizando... (evId: '+(dados.evId?'✅':'❌ vazio')+')','ok',5000);
+  console.log('[JM Sinc] Chamando sincronizarAtivComAgenda...');
 
   function _restaurarBtnSinc(){ if(btnS){ btnS.textContent=txtOrig; btnS.disabled=false; btnS.style.opacity='1'; btnS.style.background=''; btnS.style.color=''; btnS.style.border=''; } }
+
+  // Diagnóstico antes de chamar o backend
+  console.log('[JM Sinc] _sfAtivId:', _sfAtivId, '| evId:', dados.evId, '| temDado:', !!temDado);
+  console.log('[JM Sinc] dados:', JSON.stringify(dados));
 
   // Timeout de segurança: restaura botão após 15s se não houver resposta
   var _sincTimeout = setTimeout(function(){
     _restaurarBtnSinc();
-    toast('Sem resposta — verifique o deploy','err',5000);
+    toast('⏱ Sem resposta do servidor (15s) — verifique o deploy','err',6000);
+    console.warn('[JM Sinc] TIMEOUT — backend não respondeu em 15s');
   }, 15000);
 
   google.script.run
