@@ -5866,15 +5866,12 @@ function _renderVeiChart(){
   // Canvas — largura total disponível, altura proporcional
   // Usar largura da seção pai (card) para não ficar limitado pelo offsetWidth do canvas
   var _parent = wrap.parentElement || wrap;
-  var W = Math.max(
-    wrap.offsetWidth||0,
-    _parent.offsetWidth||0,
-    (_parent.parentElement||{}).offsetWidth||0,
-    280
-  );
+  var W = window.innerWidth || document.documentElement.clientWidth || 360;
+  W = Math.max(W - 8, 300);
+  var H = Math.round(W * 0.65); H=Math.max(H,260); H=Math.min(H,480);
   // Subtrair padding do container (aprox 8px cada lado)
-  W = Math.max(W - 16, 260);
-  var H = Math.round(W * 0.65); H=Math.max(H,240); H=Math.min(H,420);
+  W = Math.max(W - 4, 280); // mínimo padding
+  var H = Math.round(W * 0.70); H=Math.max(H,260); H=Math.min(H,480);
   wrap.width=W*2; wrap.height=H*2;
   wrap.style.width=W+'px'; wrap.style.height=H+'px';
   var ctx=wrap.getContext('2d'); ctx.scale(2,2);
@@ -6169,7 +6166,7 @@ function carregarResumoVei(){
         html += '<option value="">Todas</option>';
         Object.keys(veicsAbast).forEach(function(v){ html += '<option value="'+v+'">'+v+'</option>'; });
         html += '</select></div>';
-        html += '<div style="padding:8px 4px 4px"><canvas id="veiChart" style="display:block;width:100%;min-height:260px"></canvas></div>'
+        html += '<div style="padding:6px 0 4px"><canvas id="veiChart" style="display:block;width:100%;min-height:260px"></canvas></div>'
         + '<div id="veiChartLegend" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px"></div>';
         html += '</div>';
       }
