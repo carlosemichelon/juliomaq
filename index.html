@@ -5877,10 +5877,12 @@ function _renderVeiChart(){
   // Canvas — largura total disponível, altura proporcional
   // Usar largura da seção pai (card) para não ficar limitado pelo offsetWidth do canvas
   var _parent = wrap.parentElement || wrap;
-  var W = window.innerWidth || document.documentElement.clientWidth || 360;
-  W = Math.max(W - 8, 300);
-  var H = Math.round(W * 0.65); H=Math.max(H,260); H=Math.min(H,480);
-  // Subtrair padding do container (aprox 8px cada lado)
+  var W = Math.min(
+    Math.max((wrap.parentElement && wrap.parentElement.offsetWidth) || wrap.offsetWidth || 360, 260) - 24,
+    400
+  );
+  var H = Math.round(W * 0.55); H=Math.max(H,180); H=Math.min(H,260);
+  // sizing proporcional max 400x260
   W = Math.max(W - 4, 280); // mínimo padding
   var H = Math.round(W * 0.70); H=Math.max(H,260); H=Math.min(H,480);
   wrap.width=W*2; wrap.height=H*2;
