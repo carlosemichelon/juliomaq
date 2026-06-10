@@ -2027,11 +2027,14 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 <div id="toast"></div>
 
 <script>
+
 // ── GAS Shim ─────────────────────────────────────────────────────────────────
 // Quando o Index.html é hospedado fora do Apps Script (ex: Netlify),
 // substitui google.script.run por chamadas fetch() ao backend do Apps Script.
 // Quando hospedado no próprio Apps Script, o objeto google.script já existe
 // e este bloco é ignorado.
+var _ativFiltro = '';
+var _ativBuscaCliente = '';
 (function(){
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbykpm254ow6Gsx2aFOOaw14tIZJ6uGOhTcFbYirfKt1_LUsLhEo1t8wO_S_dureH0A5/exec';
   if(typeof google!=='undefined'&&google&&google.script&&google.script.run) return;
@@ -6260,7 +6263,7 @@ function confirmarHistSenha(){
 // ─────────────────────────────────────────────────────────────
 
 // ══ ATIVIDADES SALESFORCE ═════════════════════════════════════
-var _atividades = [], _ativFiltro = '', _ativBuscaCliente = '';
+var _atividades = [];
 
 var _TOPICOS = {
   'Entregas':    {ico:'📦', cor:'#1a4a7a'},
