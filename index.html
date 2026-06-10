@@ -723,6 +723,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
     </div>
     <div style="display:flex;gap:5px;padding:4px 12px 4px;flex-wrap:wrap;overflow-x:auto">
       <button class="aFBtn on" id="afb_all" onclick="setAtivFiltro('')">Todos</button>
+      <button class="aFBtn" id="afb_enc" onclick="_toggleEncerrados(this)" style="background:#f0f0f0;color:#555">📁 Encerrados</button>
       <button class="aFBtn" id="afb_ent" onclick="setAtivFiltro('Entregas')">📦 Entregas</button>
       <button class="aFBtn" id="afb_gar" onclick="setAtivFiltro('Garantia')">🛡️ Garantia</button>
       <button class="aFBtn" id="afb_ser" onclick="setAtivFiltro('Servicos')">🔧 Serviços</button>
@@ -2035,6 +2036,7 @@ button.cact:last-child{border-right:none}.cai{font-size:16px}.cal{font-size:9px;
 // e este bloco é ignorado.
 var _ativFiltro = '';
 var _ativBuscaCliente = '';
+var _mostrarEncerrados = false;
 (function(){
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbykpm254ow6Gsx2aFOOaw14tIZJ6uGOhTcFbYirfKt1_LUsLhEo1t8wO_S_dureH0A5/exec';
   if(typeof google!=='undefined'&&google&&google.script&&google.script.run) return;
@@ -6305,6 +6307,14 @@ function toggleNovaAtiv(){
   }
 }
 
+function _toggleEncerrados(btn){
+  _mostrarEncerrados = !_mostrarEncerrados;
+  btn.classList.toggle('on', _mostrarEncerrados);
+  btn.style.background = _mostrarEncerrados ? 'var(--bl)' : '#f0f0f0';
+  btn.style.color      = _mostrarEncerrados ? '#fff'       : '#555';
+  renderAtiv();
+}
+
 function _ativBuscaInput(val){
   _ativBuscaCliente = (val||'').trim().toLowerCase();
   renderAtiv();
@@ -6392,6 +6402,10 @@ function renderAtiv(){
     return a;
   }).filter(function(a){
     if(_ativFiltro && (a.topico||'Servicos')!==_ativFiltro) return false;
+    // OT Pendentes: ocultar Encerrados por padrão (a menos que filtro seja 'Encerrado')
+    if(!_ativFiltro || _ativFiltro==='OT Pendentes'){
+      if(a.status==='Encerrado' && !_mostrarEncerrados) return false;
+    }
     // Filtro por nome de cliente
     if(_ativBuscaCliente){
       var _cli = String(a.descricao||a.idRef||'').toLowerCase();
